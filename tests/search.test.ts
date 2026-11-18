@@ -1,0 +1,176 @@
+import { expect, test } from 'vitest';
+import { makeTestDb } from './helpers/db';
+import { addCompanyAlias, findOrCreateCompany } from '@/lib/companies/repo';
+import { bulkCreateApplications, markApplied } from '@/lib/applications/repo';
+import { registerPosting, saveAnalysis } from '@/lib/postings/repo';
+import { saveResumeVersion } from '@/lib/resume/repo';
+import { emptyResume } from '@/lib/resume/schema';
+import type { AnalysisResult } from '@/lib/ai/tasks/schemas';
+import { searchApplications, groupDashboardRows, getDashboardStats, type DashboardRow } from '@/lib/search/dashboard';
+import type { ApplicationStatus, SiteId } from '@/lib/domain/types';
+
+type Row = Parameters<typeof bulkCreateApplications>[0][number];
+const row = (companyName: string, status: ApplicationStatus, site: SiteId, appliedAt = '2026-11-01'): Row => ({
+  companyName,
+  positionTitle: `${companyName} 포지션`,
+  site,
+  appliedAt,
+  status,
+});
+
+function result(score: number, company = '카카오'): AnalysisResult {
+  return {
+    posting: {
+      companyDisplayName: company,
+      companyLegalName: null,
+      positionTitle: 'BE',
+      experienceRequirement: null,
+      employmentType: null,
+      location: null,
+      deadline: null,
+      salary: null,
+      responsibilities: [],
+      requirements: [],
+      preferred: [],
+      techStack: [],
+    },
+    fit: { score, breakdown: [] },
+    strengths: [],
+    gaps: [],
+    preferenceMismatches: [],
+    tailoringAdvice: '',
+  };
+}
+
+test('search finds by legal name and alias', () => {
+  const db = makeTestDb();
+  findOrCreateCompany({ displayName: '토스', legalName: '(주)비바리퍼블리카' }, db);
+  bulkCreateApplications(
+    [row('토스', 'applied', 'wanted'), row('토스뱅크', 'applied', 'wanted'), row('카카오', 'applied', 'wanted')],
+    db,
+  );
+  expect(searchApplications({ text: '토스' }, db).map((r) => r.companyName).sort()).toEqual(['토스', '토스뱅크']);
+  expect(searchApplications({ text: '비바리' }, db)).toHaveLength(1);
+  const kakaoId = searchApplications({ text: '카카오' }, db)[0].companyId;
+  addCompanyAlias(kakaoId, 'Kakao', db);
+  expect(searchApplications({ text: 'kakao' }, db)).toHaveLength(1);
+});
+
+test('search matches position title substring', () => {
+  const db = makeTestDb();
+  bulkCreateApplications(
+    [{ companyName: 'A사', positionTitle: 'Senior Backend Engineer', site: 'wanted', appliedAt: '2026-11-01', status: 'applied' }],
+    db,
+  );
+  expect(searchApplications({ text: 'backend' }, db)).toHaveLength(1);
+});
+
+test('filters by status and site, sorted by appliedAt desc', () => {
+  const db = makeTestDb();
+  bulkCreateApplications(
+    [
+      row('A', 'applied', 'wanted', '2026-10-01'),
+      row('B', 'rejected', 'wanted', '2026-11-05'),
+      row('C', 'applied', 'jobkorea', '2026-11-10'),
+      row('D', 'applied', 'wanted', '2026-11-20'),
+    ],
+    db,
+  );
+  expect(searchApplications({}, db).map((r) => r.companyName)).toEqual(['D', 'C', 'B', 'A']);
+  expect(searchApplications({ status: 'applied', site: 'wanted' }, db).map((r) => r.companyName)).toEqual(['D', 'A']);
+  expect(searchApplications({ from: '2026-11-01', to: '2026-11-10' }, db).map((r) => r.companyName)).toEqual(['C', 'B']);
+});
+
+test('DashboardRow carries fit score and base resume label', () => {
+  const db = makeTestDb();
+  saveResumeVersion(emptyResume(), undefined, db);
+  const v2 = saveResumeVersion(emptyResume(), undefined, db);
+  const reg = registerPosting({ url: 'https://www.wanted.co.kr/wd/5' }, db);
+  saveAnalysis(reg.postingId, v2.id, result(77), reg.jobId!, db);
+  markApplied({ postingId: reg.postingId }, db);
+  const r = searchApplications({}, db)[0];
+  expect(r).toMatchObject({
+    postingId: reg.postingId,
+    fitScore: 77,
+    resumeLabel: '기본 v2',
+    resumeBaseVersionNo: 2,
+    interviewRound: null,
+  });
+});
+
+test('getDashboardStats counts this month and analyzed-not-applied', () => {
+  const db = makeTestDb();
+  bulkCreateApplications(
+    [
+      row('A', 'applied', 'wanted', '2026-11-03'),
+      row('B', 'interview', 'wanted', '2026-11-10'),
+      row('C', 'rejected', 'jobkorea', '2026-10-30'),
+    ],
+    db,
+  );
+  const resume = saveResumeVersion(emptyResume(), undefined, db);
+  const reg = registerPosting({ url: 'https://example.com/p' }, db);
+  saveAnalysis(reg.postingId, resume.id, result(50, 'Z'), reg.jobId!, db);
+  const s = getDashboardStats(new Date(2026, 10, 16), db);
+  expect(s.appliedThisMonth).toBe(2);
+  expect(s.byStatus).toMatchObject({ applied: 1, interview: 1, rejected: 1, document_passed: 0, final_passed: 0, withdrawn: 0 });
+  expect(s.bySite).toMatchObject({ wanted: 2, jobkorea: 1, remember: 0, groupby: 0, other: 0 });
+  expect(s.analyzedNotApplied).toBe(1);
+});
+
+let n = 0;
+function dr(over: Partial<DashboardRow>): DashboardRow {
+  n += 1;
+  return {
+    applicationId: n,
+    postingId: null,
+    companyId: n,
+    companyName: `c${n}`,
+    positionTitle: 'p',
+    site: 'wanted',
+    appliedAt: '2026-11-01',
+    status: 'applied',
+    interviewRound: null,
+    fitScore: null,
+    resumeLabel: null,
+    resumeBaseVersionNo: null,
+    ...over,
+  };
+}
+
+test('groupDashboardRows by site keeps fixed order and pass rate', () => {
+  const rows = [
+    dr({ site: 'wanted', status: 'document_passed' }),
+    dr({ site: 'wanted', status: 'applied' }),
+    dr({ site: 'wanted', status: 'withdrawn' }),
+    dr({ site: 'jobkorea', status: 'rejected' }),
+  ];
+  const g = groupDashboardRows(rows, 'site');
+  expect(g.map((x) => x.key)).toEqual(['wanted', 'jobkorea']);
+  expect(g[0]).toMatchObject({ label: '원티드', passed: 1, decided: 1 });
+  expect(g[1]).toMatchObject({ passed: 0, decided: 1 });
+});
+
+test('groupDashboardRows by status keeps all five columns', () => {
+  const rows = [dr({ status: 'interview', interviewRound: 2 }), dr({ status: 'rejected' }), dr({ status: 'withdrawn' })];
+  const g = groupDashboardRows(rows, 'status');
+  expect(g.map((x) => x.key)).toEqual(['applied', 'document_passed', 'interview', 'final_passed', 'closed']);
+  expect(g.find((x) => x.key === 'applied')!.rows).toEqual([]);
+  expect(g.find((x) => x.key === 'interview')!.rows).toHaveLength(1);
+  expect(g.find((x) => x.key === 'closed')).toMatchObject({ label: '종료' });
+  expect(g.find((x) => x.key === 'closed')!.rows).toHaveLength(2);
+});
+
+test('groupDashboardRows by resume puts unknown last', () => {
+  const rows = [
+    dr({ resumeLabel: '기본 v2', resumeBaseVersionNo: 2 }),
+    dr({ resumeLabel: '기본 v3', resumeBaseVersionNo: 3 }),
+    dr({}),
+    dr({ resumeLabel: '기본 v3', resumeBaseVersionNo: 3, status: 'final_passed' }),
+  ];
+  const g = groupDashboardRows(rows, 'resume');
+  expect(g.map((x) => x.key)).toEqual(['v3', 'v2', 'none']);
+  expect(g[0].rows).toHaveLength(2);
+  expect(g[2].label).toBe('모름');
+  expect(g[0]).toMatchObject({ passed: 1, decided: 1 });
+});

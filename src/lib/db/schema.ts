@@ -79,7 +79,7 @@ export const applications = sqliteTable('applications', {
   siteNote: text('site_note'),
   appliedAt: text('applied_at').notNull(), // YYYY-MM-DD
   submittedResume: text('submitted_resume', { mode: 'json' })
-    .$type<{ kind: 'base'; versionId: number }>()
+    .$type<{ kind: 'base'; versionId: number } | { kind: 'imported' }>()
     .notNull(),
   status: text('status').$type<ApplicationStatus>().notNull(),
   interviewRound: integer('interview_round'),
