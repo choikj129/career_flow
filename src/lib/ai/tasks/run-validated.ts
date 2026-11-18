@@ -21,6 +21,11 @@ export async function runValidated<T>(
   const p1 = schema.safeParse(first.output);
   if (p1.success) return { data: p1.data, sessionId: first.sessionId, usage: first.usage };
 
+  // 세션이 없으면 원문 없이 "다시 맞춰 달라"고만 요청하게 되어 내용을 지어낼 위험이 있다. 재시도하지 않는다.
+  if (!first.sessionId) {
+    throw new AiError('schema', `AI 응답이 형식에 맞지 않습니다: ${describeIssues(p1.error)}`);
+  }
+
   const second = await runner.run({
     ...req,
     resumeSessionId: first.sessionId,
