@@ -1,7 +1,7 @@
 import { and, desc, eq, inArray, isNotNull } from 'drizzle-orm';
 import { getDb, type Db } from '@/lib/db/client';
 import { aiJobs, analyses, applications, companies, postings } from '@/lib/db/schema';
-import { canonicalizeUrl, detectSite } from '@/lib/domain/normalize';
+import { assertHttpUrl, canonicalizeUrl, detectSite } from '@/lib/domain/normalize';
 import type { SiteId } from '@/lib/domain/types';
 import { enqueueJob } from '@/lib/ai/queue';
 import type { AnalysisResult } from '@/lib/ai/tasks/schemas';
@@ -19,6 +19,7 @@ export function registerPosting(
   const url = input.url?.trim() || undefined;
   const pastedText = input.pastedText?.trim() || undefined;
   if (!url && !pastedText) throw new Error('공고 링크나 본문 중 하나는 필요합니다');
+  if (url) assertHttpUrl(url);
 
   let canonicalUrl: string | null = null;
   if (url) {

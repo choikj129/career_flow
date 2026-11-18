@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
+import { assertHttpUrl } from '@/lib/domain/normalize';
 import { latestJobFor } from '@/lib/ai/queue';
 import {
   deletePosting,
@@ -19,9 +20,9 @@ export async function registerPostingAction(_prev: RegisterState, formData: Form
   const url = String(formData.get('url') ?? '').trim();
   if (url) {
     try {
-      new URL(url);
-    } catch {
-      return { error: '올바른 공고 주소가 아닙니다. https://로 시작하는 전체 주소를 넣어 주세요.' };
+      assertHttpUrl(url);
+    } catch (e) {
+      return { error: e instanceof Error ? e.message : String(e) };
     }
   }
   try {

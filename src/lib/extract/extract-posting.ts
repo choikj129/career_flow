@@ -1,4 +1,5 @@
 import { AiError } from '@/lib/ai/runner';
+import { assertHttpUrl } from '@/lib/domain/normalize';
 import { withBrowser } from './browser';
 
 export const MIN_POSTING_TEXT_LENGTH = 300;
@@ -42,8 +43,13 @@ function clean(text: string): string {
 
 export async function extractPostingText(
   url: string,
-  opts: { profileDir?: string; timeoutMs?: number } = {},
+  opts: { profileDir?: string; timeoutMs?: number; /** 테스트에서 로컬 fixture(file:)를 열 때만 */ allowFileUrl?: boolean } = {},
 ): Promise<{ text: string; title: string }> {
+  try {
+    if (!(opts.allowFileUrl && url.startsWith('file:'))) assertHttpUrl(url);
+  } catch (e) {
+    throw new AiError('extract_failed', e instanceof Error ? e.message : String(e));
+  }
   try {
     return await withBrowser(
       async (ctx) => {

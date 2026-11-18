@@ -12,7 +12,7 @@ const tmpProfile = () => mkdtempSync(join(tmpdir(), 'cf-profile-'));
 
 describe('extractPostingText', () => {
   test('extracts JS-rendered text from page', async () => {
-    const r = await extractPostingText(pathToFileURL(FULL).href, { profileDir: tmpProfile() });
+    const r = await extractPostingText(pathToFileURL(FULL).href, { profileDir: tmpProfile(), allowFileUrl: true });
     expect(r.text).toContain('자격요건');
     expect(r.text.length).toBeGreaterThanOrEqual(MIN_POSTING_TEXT_LENGTH);
     expect(r.title).toContain('서버 개발자');
@@ -20,9 +20,18 @@ describe('extractPostingText', () => {
 
   test('fails on too-short text', async () => {
     await expect(
-      extractPostingText(pathToFileURL(EMPTY).href, { profileDir: tmpProfile() }),
+      extractPostingText(pathToFileURL(EMPTY).href, { profileDir: tmpProfile(), allowFileUrl: true }),
     ).rejects.toMatchObject({ kind: 'extract_failed' });
   }, 60_000);
+
+  test('TC-NEW-12 http(s)가 아닌 주소는 브라우저를 열기 전에 거부한다', async () => {
+    for (const u of ['file:///C:/Windows/win.ini', 'javascript:alert(1)', 'ftp://example.com/a']) {
+      await expect(extractPostingText(u, { profileDir: tmpProfile() }), u).rejects.toMatchObject({
+        kind: 'extract_failed',
+        message: expect.stringContaining('올바른 공고 주소가 아닙니다'),
+      });
+    }
+  });
 
   test('fails on unreachable url as extract_failed', async () => {
     await expect(
@@ -41,7 +50,7 @@ describe('withBrowser', () => {
           await new Promise((r) => setTimeout(r, 100));
           spans.push({ start, end: Date.now() });
         },
-        { profileDir: tmpProfile() },
+        { profileDir: tmpProfile(), allowFileUrl: true },
       );
     const p1 = run();
     const p2 = run();

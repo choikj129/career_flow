@@ -1,16 +1,17 @@
 import type { SiteId } from './types';
 
+// 긴 패턴을 먼저 적용한다(corporation 이 corp 보다 먼저). 영문 접미사는 단어 경계를 요구한다.
 const CORP_PATTERNS: RegExp[] = [
   /\(주\)/g,
   /\(유\)/g,
   /주식회사/g,
   /유한회사/g,
-  /\bco\s*\.?\s*,?\s*ltd\.?/g,
-  /\bltd\.?/g,
-  /\binc\.?/g,
-  /\bcorp\.?/g,
+  /\bco\s*\.?\s*,?\s*ltd\b\.?/g,
   /\bcorporation\b/g,
   /\bcompany\b/g,
+  /\bltd\b\.?/g,
+  /\binc\b\.?/g,
+  /\bcorp\b\.?/g,
 ];
 
 export function normalizeCompanyName(name: string): string {
@@ -19,7 +20,31 @@ export function normalizeCompanyName(name: string): string {
   return s.replace(/[^\p{L}\p{N}]/gu, '');
 }
 
-const TRACKING_KEYS = new Set(['oem_code', 'rpagecode', 'logpath', 'sc', 'ref', 'referer', 'source']);
+export const INVALID_POSTING_URL_MESSAGE = '올바른 공고 주소가 아닙니다. https://로 시작하는 전체 주소를 넣어 주세요.';
+
+/** 공고 주소는 http:, https: 만 허용한다. 아니면 한국어 오류를 던진다. 검사 함수는 이것 하나만 쓴다. */
+export function assertHttpUrl(url: string): URL {
+  let u: URL;
+  try {
+    u = new URL(url.trim());
+  } catch {
+    throw new Error(INVALID_POSTING_URL_MESSAGE);
+  }
+  if (u.protocol !== 'http:' && u.protocol !== 'https:') throw new Error(INVALID_POSTING_URL_MESSAGE);
+  return u;
+}
+
+export function isHttpUrl(url: string): boolean {
+  try {
+    assertHttpUrl(url);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+const TRACKING_KEYS = new Set(['oem_code', 'rpagecode', 'logpath', 'sc', 'ref', 'referer', 'source',
+  'gclid', 'fbclid', 'mc_cid', 'mc_eid', 'igshid']);
 
 export function canonicalizeUrl(url: string): string {
   const u = new URL(url.trim());

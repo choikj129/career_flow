@@ -39,7 +39,7 @@ test.describe('공고 등록 화면', () => {
     await expect(page).toHaveURL(/\/postings\/new/);
   });
 
-  test('TC-NEW-12 [BUG] http(s)가 아닌 주소(file:, javascript:)는 등록 단계에서 거부해야 한다', async ({ page }) => {
+  test('TC-NEW-12 http(s)가 아닌 주소(file:, javascript:)는 등록 단계에서 거부해야 한다', async ({ page }) => {
     await page.goto('/postings/new');
     await page.locator('#url').fill('file:///C:/Windows/win.ini');
     await page.getByRole('button', { name: '등록하고 분석' }).click();

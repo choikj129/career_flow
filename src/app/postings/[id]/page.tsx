@@ -13,6 +13,7 @@ import {
 } from "@/lib/applications/repo";
 import { getCompany, getCompanyUsage } from "@/lib/companies/repo";
 import { eventDate, formatDateTime } from "@/lib/domain/dates";
+import { isHttpUrl } from "@/lib/domain/normalize";
 import { getLatestAnalysis, getPosting, listAnalyses, listSiteNotes } from "@/lib/postings/repo";
 import { getLatestResume, getResumeVersion } from "@/lib/resume/repo";
 import { AnalysisView } from "../../_components/AnalysisView";
@@ -109,7 +110,7 @@ async function PostingDetail({
             <SiteBadge site={posting.site} note={posting.siteNote} large />
             {analyzed && <span>{posting.deadline ? `마감 ${posting.deadline}` : "상시 채용"}</span>}
             <span>{formatDateTime(posting.createdAt).split(" ").slice(0, 2).join(" ")} 등록</span>
-            {posting.url && (
+            {posting.url && isHttpUrl(posting.url) && (
               <a href={posting.url} target="_blank" rel="noopener noreferrer">
                 원본 공고 열기 ↗
               </a>
