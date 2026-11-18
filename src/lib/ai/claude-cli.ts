@@ -21,6 +21,24 @@ export function buildClaudeArgs(req: AiRunRequest): string[] {
   return args;
 }
 
+/** 구독 로그인 대신 API 과금·다른 공급자로 새지 않도록 자식 프로세스에서 제거하는 환경변수. */
+const STRIPPED_ENV = [
+  'ANTHROPIC_API_KEY',
+  'ANTHROPIC_AUTH_TOKEN',
+  'ANTHROPIC_BASE_URL',
+  'CLAUDE_CODE_USE_BEDROCK',
+  'CLAUDE_CODE_USE_VERTEX',
+];
+
+/** claude 자식 프로세스 환경. 항상 구독 로그인으로 처리되도록 API 관련 변수를 지운다. */
+export function buildChildEnv(extra: Record<string, string> = {}): NodeJS.ProcessEnv {
+  const env: NodeJS.ProcessEnv = { ...process.env, ...extra };
+  for (const key of Object.keys(env)) {
+    if (STRIPPED_ENV.includes(key.toUpperCase())) delete env[key];
+  }
+  return env;
+}
+
 const AUTH_RE = /authenticat|oauth|log ?in|login/i;
 const LIMIT_RE = /usage limit|rate limit|limit reached|quota/i;
 const AUTH_HINT = '터미널에서 `claude`를 실행해 다시 로그인하세요.';
@@ -74,7 +92,7 @@ function killTree(pid: number | undefined, child: { kill: (signal?: NodeJS.Signa
 export function runClaudeVersion(
   opts: { bin?: string; env?: Record<string, string> } = {},
 ): Promise<{ ok: boolean; text: string }> {
-  const env = { ...process.env, ...opts.env };
+  const env = buildChildEnv(opts.env);
   let bin = opts.bin ?? config.claudeBin;
   let prefix: string[] = [];
   if (process.platform === 'win32') {
@@ -113,7 +131,7 @@ export class ClaudeCliRunner implements AiRunner {
 
   run(req: AiRunRequest): Promise<AiRunResult> {
     const started = Date.now();
-    const env = { ...process.env, ...this.opts.env };
+    const env = buildChildEnv(this.opts.env);
     let bin = this.opts.bin ?? config.claudeBin;
     let prefix = this.opts.binArgs ?? [];
     if (process.platform === 'win32' && !this.opts.binArgs) {
@@ -151,9 +169,11 @@ export class ClaudeCliRunner implements AiRunner {
 
       child.on('close', (code) => {
         done(() => {
-          let json: any;
+          let json: Record<string, unknown>;
           try {
-            json = JSON.parse(stdout);
+            const parsed: unknown = JSON.parse(stdout);
+            if (parsed === null || typeof parsed !== 'object') throw new Error('not an object');
+            json = parsed as Record<string, unknown>;
           } catch {
             const text = (stderr || stdout).trim();
             const kind = classify(text);
@@ -161,9 +181,9 @@ export class ClaudeCliRunner implements AiRunner {
             reject(new AiError(kind, msg));
             return;
           }
-          const sessionId: string | undefined = typeof json?.session_id === 'string' ? json.session_id : undefined;
-          if (json?.is_error || (code !== 0 && code !== null)) {
-            const text = String(json?.result ?? stderr ?? '').trim();
+          const sessionId: string | undefined = typeof json.session_id === 'string' ? json.session_id : undefined;
+          if (json.is_error || (code !== 0 && code !== null)) {
+            const text = String(json.result ?? stderr ?? '').trim();
             const kind = classify(text);
             const msg = kind === 'auth' ? `${text}\n${AUTH_HINT}` : text || 'Claude Code 오류';
             reject(new AiError(kind, msg, sessionId));

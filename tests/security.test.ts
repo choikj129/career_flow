@@ -82,7 +82,7 @@ describe('API 키 미사용', () => {
     }
   });
 
-  test('TC-AI-24 [BUG] 사용자 환경에 ANTHROPIC_API_KEY가 있어도 claude 자식 프로세스에는 넘기지 않는다(구독 로그인으로 처리)', async () => {
+  test('TC-AI-24 사용자 환경에 ANTHROPIC_API_KEY가 있어도 claude 자식 프로세스에는 넘기지 않는다(구독 로그인으로 처리)', async () => {
     // 환경변수에 API 키가 있으면 claude가 구독 대신 API 과금을 쓸 수 있다.
     vi.stubEnv('ANTHROPIC_API_KEY', 'sk-test-should-not-leak');
     vi.stubEnv('ANTHROPIC_AUTH_TOKEN', 'token-should-not-leak');
@@ -140,5 +140,20 @@ describe('로컬 전용', () => {
     const ignore = readFileSync(join(ROOT, '.gitignore'), 'utf8').split(/\r?\n/);
     expect(ignore).toContain('/data/');
     expect(ignore).toContain('/data-*/');
+  });
+});
+
+describe('자식 프로세스 환경', () => {
+  test('TC-AI-24 buildChildEnv 는 API 과금·공급자 변수를 모두 지우고 테스트용 env 는 유지한다', async () => {
+    const { buildChildEnv } = await import('@/lib/ai/claude-cli');
+    for (const k of ['ANTHROPIC_API_KEY', 'ANTHROPIC_AUTH_TOKEN', 'ANTHROPIC_BASE_URL', 'CLAUDE_CODE_USE_BEDROCK', 'CLAUDE_CODE_USE_VERTEX']) {
+      vi.stubEnv(k, 'x');
+    }
+    const env = buildChildEnv({ FAKE_CLAUDE_MODE: 'ok' });
+    for (const k of ['ANTHROPIC_API_KEY', 'ANTHROPIC_AUTH_TOKEN', 'ANTHROPIC_BASE_URL', 'CLAUDE_CODE_USE_BEDROCK', 'CLAUDE_CODE_USE_VERTEX']) {
+      expect(env[k], k).toBeUndefined();
+    }
+    expect(env.FAKE_CLAUDE_MODE).toBe('ok');
+    expect(env.PATH ?? env.Path).toBeTruthy();
   });
 });
