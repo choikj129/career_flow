@@ -70,6 +70,38 @@ function killTree(pid: number | undefined, child: { kill: (signal?: NodeJS.Signa
   }
 }
 
+/** `claude --version`만 실행한다(설치 확인용, 모델을 부르지 않는다). */
+export function runClaudeVersion(
+  opts: { bin?: string; env?: Record<string, string> } = {},
+): Promise<{ ok: boolean; text: string }> {
+  const env = { ...process.env, ...opts.env };
+  let bin = opts.bin ?? config.claudeBin;
+  let prefix: string[] = [];
+  if (process.platform === 'win32') {
+    const r = resolveWindowsBin(bin, env);
+    bin = r.bin;
+    prefix = r.prefix;
+  }
+  return new Promise((resolvePromise) => {
+    let out = '';
+    let settled = false;
+    const finish = (v: { ok: boolean; text: string }) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolvePromise(v);
+    };
+    const child = spawn(bin, [...prefix, '--version'], { env, shell: false, windowsHide: true });
+    const timer = setTimeout(() => {
+      killTree(child.pid, child);
+      finish({ ok: false, text: '' });
+    }, 15_000);
+    child.stdout.setEncoding('utf8').on('data', (d: string) => (out += d));
+    child.on('error', () => finish({ ok: false, text: '' }));
+    child.on('close', (code) => finish({ ok: code === 0, text: out.trim() }));
+  });
+}
+
 export interface ClaudeCliRunnerOptions {
   bin?: string;
   binArgs?: string[]; // bin 뒤, 공통 옵션 앞에 붙는 인자(테스트용)

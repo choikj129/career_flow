@@ -1,9 +1,20 @@
-import { existsSync, mkdirSync, readdirSync, unlinkSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, statSync, unlinkSync } from 'node:fs';
 import { join } from 'node:path';
 import { config } from '@/lib/config';
 import { getDb, type Db } from '@/lib/db/client';
 
 const KEEP = 30;
+
+/** 가장 최근 백업 파일의 수정 시각(ISO). 없으면 null. */
+export function latestBackupAt(dir: string = config.backupDir): string | null {
+  if (!existsSync(dir)) return null;
+  let best = 0;
+  for (const f of readdirSync(dir)) {
+    if (!/^career-flow-\d{8}.*\.db$/.test(f)) continue;
+    best = Math.max(best, statSync(join(dir, f)).mtimeMs);
+  }
+  return best ? new Date(best).toISOString() : null;
+}
 
 function stamp(d: Date): string {
   const p = (n: number) => String(n).padStart(2, '0');

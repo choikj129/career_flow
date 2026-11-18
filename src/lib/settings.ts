@@ -22,3 +22,16 @@ export function setModelFor(type: JobType, model: string, db: Db = getDb()): voi
     .onConflictDoUpdate({ target: settings.key, set: { value: model } })
     .run();
 }
+
+export function getSetting(key: string, db: Db = getDb()): string | undefined {
+  return db.select().from(settings).where(eq(settings.key, key)).get()?.value;
+}
+
+export function setSetting(key: string, value: string, db: Db = getDb()): void {
+  db.insert(settings)
+    .values({ key, value })
+    .onConflictDoUpdate({ target: settings.key, set: { value } })
+    .run();
+}
+
+export const MODEL_CHOICES = ['opus', 'sonnet', 'haiku'] as const;
