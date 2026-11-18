@@ -332,3 +332,21 @@ test('listAnalyzedNotApplied returns newest first with latest fit score', () => 
   expect(list.map((r) => r.positionTitle)).toEqual(['두번째', '백엔드 개발자']);
   expect(list[0].fitScore).toBe(55);
 });
+
+test('TC-CO-F4 setPostingCompany 는 없는 회사를 거부한다', () => {
+  const db = makeTestDb();
+  const { postingId } = analyzedPosting(db, 'https://example.com/f4a');
+  const before = getPosting(postingId, db)!.companyId;
+  expect(() => setPostingCompany(postingId, 99999, db)).toThrow('존재하지 않는 회사입니다');
+  expect(getPosting(postingId, db)!.companyId).toBe(before);
+});
+
+test('TC-CO-F4 setPostingCompany 는 지원 기록의 회사도 함께 바꾼다', () => {
+  const db = makeTestDb();
+  const { postingId } = analyzedPosting(db, 'https://example.com/f4b');
+  markApplied({ postingId, appliedAt: '2026-11-01' }, db);
+  const other = findOrCreateCompany({ displayName: '네이버' }, db);
+  setPostingCompany(postingId, other, db);
+  expect(getPosting(postingId, db)!.companyId).toBe(other);
+  expect(getApplicationForPosting(postingId, db)!.companyId).toBe(other);
+});

@@ -210,7 +210,17 @@ export function listUnanalyzedPostings(db: Db = getDb()): PendingPostingRow[] {
 }
 
 export function setPostingCompany(postingId: number, companyId: number, db: Db = getDb()): void {
-  db.update(postings).set({ companyId }).where(eq(postings.id, postingId)).run();
+  db.transaction((tx) => {
+    if (!tx.select({ id: companies.id }).from(companies).where(eq(companies.id, companyId)).get()) {
+      throw new Error('존재하지 않는 회사입니다');
+    }
+    if (!tx.select({ id: postings.id }).from(postings).where(eq(postings.id, postingId)).get()) {
+      throw new Error('공고를 찾을 수 없습니다');
+    }
+    tx.update(postings).set({ companyId }).where(eq(postings.id, postingId)).run();
+    // 이 공고로 지원한 기록이 있으면 회사도 함께 바꾼다(중복 지원 검사가 어긋나지 않도록).
+    tx.update(applications).set({ companyId }).where(eq(applications.postingId, postingId)).run();
+  });
 }
 
 /** 지원 기록이 있거나 작업이 실행 중이면 거부. 대기 중 작업은 취소하고 분석은 함께 지운다. */
