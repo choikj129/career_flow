@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { config, ensureDataDirs } from '@/lib/config';
 import * as schema from './schema';
 
-export type Db = BetterSQLite3Database<typeof schema>;
+export type Db = BetterSQLite3Database<typeof schema> & { $client: Database.Database };
 
 export function createDb(path: string): Db {
   const sqlite = new Database(path);
