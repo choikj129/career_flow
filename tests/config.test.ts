@@ -1,0 +1,14 @@
+import { mkdtempSync, existsSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { expect, test } from 'vitest';
+
+test('ensureDataDirs creates all dirs under CAREER_FLOW_DATA_DIR', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'cf-'));
+  process.env.CAREER_FLOW_DATA_DIR = dir;
+  const { config, ensureDataDirs } = await import('@/lib/config');
+  ensureDataDirs();
+  for (const p of [config.uploadsDir, config.aiWorkDir, config.browserProfileDir, config.backupDir])
+    expect(existsSync(p)).toBe(true);
+  expect(config.dbPath).toBe(join(dir, 'career-flow.db'));
+});
