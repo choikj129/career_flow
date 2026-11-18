@@ -1,6 +1,6 @@
-import { mkdtempSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { config } from '@/lib/config';
 import { ClaudeCliRunner, runClaudeVersion } from './claude-cli';
 import { AiError, type AiRunner } from './runner';
 
@@ -16,6 +16,8 @@ export interface HealthDeps {
   checkLogin?: boolean;
   runVersion?: () => Promise<{ ok: boolean; text: string }>;
   runner?: AiRunner;
+  /** 로그인 확인용 작업 폴더(테스트용). 기본은 config.aiWorkDir 아래 고정 폴더. */
+  workDir?: string;
 }
 
 const LOGIN_HINT = '로그인이 필요합니다. 터미널에서 `claude`를 실행해 로그인하세요.';
@@ -38,13 +40,15 @@ export async function checkClaudeHealth(deps: HealthDeps = {}): Promise<ClaudeHe
     return { installed: true, version, loggedIn: null, message: '설치되어 있습니다.' };
   }
   const runner = deps.runner ?? new ClaudeCliRunner();
+  const workDir = deps.workDir ?? join(config.aiWorkDir, 'health'); // 매번 새 폴더를 만들지 않는다
   try {
+    mkdirSync(workDir, { recursive: true });
     await runner.run({
       prompt: '연결 확인입니다. ok 필드를 true로 답하세요.',
       jsonSchema: { type: 'object', properties: { ok: { type: 'boolean' } }, required: ['ok'] },
       model: 'haiku',
       tools: [],
-      cwd: mkdtempSync(join(tmpdir(), 'cf-health-')),
+      cwd: workDir,
       timeoutMs: 60_000,
     });
     return { installed: true, version, loggedIn: true, message: '로그인되어 있습니다.' };

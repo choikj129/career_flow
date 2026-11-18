@@ -1,4 +1,7 @@
-import { resolve } from 'node:path';
+import { mkdtempSync, readdirSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
+import type { AiRunRequest } from '@/lib/ai/runner';
 import { describe, expect, test } from 'vitest';
 import { ClaudeCliRunner } from '@/lib/ai/claude-cli';
 import { checkClaudeHealth } from '@/lib/ai/health';
@@ -29,15 +32,17 @@ describe('checkClaudeHealth', () => {
     expect(r.message).toContain('설치');
   });
   test('login check ok uses haiku and no tools', async () => {
-    let req: any;
+    let req!: AiRunRequest;
     const runner = {
-      run: async (q: any) => {
+      run: async (q: AiRunRequest) => {
         req = q;
         return { output: { ok: true }, sessionId: '', usage: {}, durationMs: 1 };
       },
     };
-    const r = await checkClaudeHealth({ ...versionOk, checkLogin: true, runner });
+    const workDir = join(mkdtempSync(join(tmpdir(), 'cf-hw-')), 'health');
+    const r = await checkClaudeHealth({ ...versionOk, checkLogin: true, runner, workDir });
     expect(r.loggedIn).toBe(true);
+    expect(req.cwd).toBe(workDir);
     expect(req.model).toBe('haiku');
     expect(req.tools).toEqual([]);
     expect(req.prompt.length).toBeLessThan(200);
@@ -55,4 +60,19 @@ describe('checkClaudeHealth', () => {
     const r = await checkClaudeHealth({ ...versionOk, checkLogin: true, runner: fake('limit') });
     expect(r.loggedIn).toBe(true);
   });
+});
+
+test('TC-SET-HEALTH-DIR 로그인 확인을 반복해도 임시 폴더가 늘지 않고 같은 폴더를 쓴다', async () => {
+  const root = mkdtempSync(join(tmpdir(), 'cf-hw-'));
+  const workDir = join(root, 'health');
+  const cwds: string[] = [];
+  const runner = {
+    run: async (q: AiRunRequest) => {
+      cwds.push(q.cwd);
+      return { output: { ok: true }, sessionId: '', usage: {}, durationMs: 1 };
+    },
+  };
+  for (let i = 0; i < 3; i++) await checkClaudeHealth({ ...versionOk, checkLogin: true, runner, workDir });
+  expect(new Set(cwds)).toEqual(new Set([workDir]));
+  expect(readdirSync(root)).toEqual(['health']);
 });
