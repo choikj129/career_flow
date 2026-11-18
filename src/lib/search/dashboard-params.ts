@@ -1,4 +1,4 @@
-import { todayLocal } from '@/lib/domain/dates';
+import { todayLocal, validDate } from '@/lib/domain/dates';
 import {
   APPLICATION_STATUSES,
   SITE_IDS,
@@ -25,7 +25,7 @@ export type DashboardParams = {
 type Raw = Record<string, string | string[] | undefined>;
 
 const first = (v: string | string[] | undefined): string | undefined => (Array.isArray(v) ? v[0] : v);
-const isDate = (v: string | undefined): v is string => !!v && /^\d{4}-\d{2}-\d{2}$/.test(v);
+const isDate = (v: string | undefined): v is string => !!v && validDate(v);
 
 export function parseDashboardParams(sp: Raw): DashboardParams {
   const view = first(sp.view);

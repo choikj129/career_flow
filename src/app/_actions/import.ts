@@ -5,7 +5,8 @@ import { SITE_IDS } from '@/lib/domain/types';
 import { enqueueJob } from '@/lib/ai/queue';
 import { bulkCreateApplications } from '@/lib/applications/repo';
 import { markExistingRows } from '@/lib/applications/import-review';
-import { rowsToRegister, type CheckedRow } from '@/lib/applications/import-rows';
+import { validDate } from '@/lib/domain/dates';
+import { checkedRowsSchema, existingRowsSchema, rowsToRegister, type CheckedRow } from '@/lib/applications/import-rows';
 import { saveUploads } from '@/lib/uploads/store';
 import { run } from './run';
 import type { ActionResult } from './types';
@@ -41,18 +42,17 @@ export async function startApplicationImportAction(
 }
 
 /** 검토 표에서 회사·지원일을 고친 뒤 "이미 있음"을 다시 판단한다. */
-export async function checkExistingAction(
-  rows: { companyName: string; appliedAt: string }[],
-): Promise<boolean[]> {
-  return markExistingRows(
-    rows.slice(0, 500).map((r) => ({ companyName: String(r.companyName ?? ''), appliedAt: String(r.appliedAt ?? '') })),
-  );
+export async function checkExistingAction(rows: { companyName: string; appliedAt: string }[]): Promise<boolean[]> {
+  const parsed = existingRowsSchema.safeParse(rows);
+  if (!parsed.success) return Array.isArray(rows) ? rows.map(() => false) : [];
+  return markExistingRows(parsed.data.map((r) => ({ ...r, appliedAt: validDate(r.appliedAt) ? r.appliedAt : '' })));
 }
 
 export async function commitApplicationImportAction(rows: CheckedRow[]): Promise<ActionResult> {
   let count = 0;
   const r = await run(() => {
-    const toSave = rowsToRegister(rows);
+    const parsed = checkedRowsSchema.parse(rows);
+    const toSave = rowsToRegister(parsed);
     if (toSave.length === 0) throw new Error('등록할 행을 선택하세요.');
     count = bulkCreateApplications(toSave);
   });

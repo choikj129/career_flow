@@ -1,4 +1,6 @@
-import type { ApplicationStatus, SiteId } from '@/lib/domain/types';
+import { z } from 'zod';
+import { validDate } from '@/lib/domain/dates';
+import { APPLICATION_STATUSES, SITE_IDS, type ApplicationStatus, type SiteId } from '@/lib/domain/types';
 
 // 클라이언트 컴포넌트에서도 쓴다. DB·파일에 닿는 모듈을 import하지 않는다.
 
@@ -12,13 +14,6 @@ export type ReviewRow = {
 };
 export type CheckedRow = ReviewRow & { checked: boolean };
 export type RowField = 'companyName' | 'positionTitle' | 'appliedAt';
-
-function validDate(s: string): boolean {
-  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s.trim());
-  if (!m) return false;
-  const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
-  return d.getUTCFullYear() === +m[1] && d.getUTCMonth() === +m[2] - 1 && d.getUTCDate() === +m[3];
-}
 
 /** 비어 있거나 잘못된 필수 칸. 출처 이름(기타)은 선택이다. */
 export function missingFields(r: ReviewRow): RowField[] {
@@ -49,3 +44,27 @@ export function rowsToRegister(rows: CheckedRow[]) {
       };
     });
 }
+
+export const MAX_IMPORT_ROWS = 500;
+
+/** 서버 액션 입력 검증. site·status 는 enum, 날짜는 실제 있는 날짜, 문자열은 길이 제한. */
+export const checkedRowsSchema = z
+  .array(
+    z.object({
+      companyName: z.string().max(200),
+      positionTitle: z.string().max(200),
+      site: z.enum(SITE_IDS as [SiteId, ...SiteId[]]),
+      siteNote: z.string().max(100),
+      appliedAt: z.string().max(10),
+      status: z.enum(APPLICATION_STATUSES as [ApplicationStatus, ...ApplicationStatus[]]),
+      checked: z.boolean(),
+    })
+      // 체크하지 않은 행은 빈 칸이어도 되므로 날짜는 체크된 행만 검사한다.
+      .refine((r) => !r.checked || validDate(r.appliedAt), { path: ['appliedAt'], message: '날짜 형식이 올바르지 않습니다' }),
+  )
+  .max(MAX_IMPORT_ROWS);
+
+/** "이미 있음" 판단용. 날짜는 입력 중일 수 있어 형식만 느슨하게 보고(길이 제한), 잘못된 날짜는 "없음"으로 처리된다. */
+export const existingRowsSchema = z
+  .array(z.object({ companyName: z.string().max(200), appliedAt: z.string().max(10) }))
+  .max(MAX_IMPORT_ROWS);

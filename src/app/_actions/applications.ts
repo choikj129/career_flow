@@ -8,11 +8,12 @@ import {
   updateApplication,
   updateNotes,
 } from '@/lib/applications/repo';
+import { validDate } from '@/lib/domain/dates';
 import { APPLICATION_STATUSES, SITE_IDS, type ApplicationStatus, type SiteId } from '@/lib/domain/types';
 import { run } from './run';
 import type { ActionResult } from './types';
 
-const date = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, '날짜 형식이 올바르지 않습니다');
+const date = z.string().refine(validDate, '날짜 형식이 올바르지 않습니다');
 const status = z.enum(APPLICATION_STATUSES as [ApplicationStatus, ...ApplicationStatus[]]);
 const site = z.enum(SITE_IDS as [SiteId, ...SiteId[]]);
 
