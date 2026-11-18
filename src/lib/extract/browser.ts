@@ -6,7 +6,17 @@ import type { SiteId } from '@/lib/domain/types';
 let locked = false;
 const waiters: Array<() => void> = [];
 
-export function acquireBrowserLock(): Promise<() => void> {
+export const BROWSER_LOCK_TIMEOUT_MS = 60_000;
+
+export class BrowserLockTimeoutError extends Error {
+  constructor() {
+    super('브라우저를 사용 중이어서 잠금을 얻지 못했습니다');
+    this.name = 'BrowserLockTimeoutError';
+  }
+}
+
+/** timeoutMs 안에 잠금을 얻지 못하면 BrowserLockTimeoutError 로 거부한다(생략하면 무한 대기). */
+export function acquireBrowserLock(timeoutMs?: number): Promise<() => void> {
   const release = () => {
     const next = waiters.shift();
     if (next) next(); // 잠금을 다음 대기자에게 넘긴다(locked 유지)
@@ -16,7 +26,21 @@ export function acquireBrowserLock(): Promise<() => void> {
     locked = true;
     return Promise.resolve(release);
   }
-  return new Promise((resolve) => waiters.push(() => resolve(release)));
+  return new Promise((resolve, reject) => {
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const grant = () => {
+      if (timer) clearTimeout(timer);
+      resolve(release);
+    };
+    waiters.push(grant);
+    if (timeoutMs !== undefined) {
+      timer = setTimeout(() => {
+        const i = waiters.indexOf(grant);
+        if (i >= 0) waiters.splice(i, 1);
+        reject(new BrowserLockTimeoutError());
+      }, timeoutMs);
+    }
+  });
 }
 
 export function isBrowserBusy(): boolean {
@@ -25,9 +49,9 @@ export function isBrowserBusy(): boolean {
 
 export async function withBrowser<T>(
   fn: (ctx: BrowserContext) => Promise<T>,
-  opts: { headless?: boolean; profileDir?: string } = {},
+  opts: { headless?: boolean; profileDir?: string; lockTimeoutMs?: number } = {},
 ): Promise<T> {
-  const release = await acquireBrowserLock();
+  const release = await acquireBrowserLock(opts.lockTimeoutMs);
   let ctx: BrowserContext | undefined;
   try {
     ctx = await chromium.launchPersistentContext(opts.profileDir ?? config.browserProfileDir, {

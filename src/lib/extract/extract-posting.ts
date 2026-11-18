@@ -1,12 +1,14 @@
 import { AiError } from '@/lib/ai/runner';
 import { assertHttpUrl } from '@/lib/domain/normalize';
-import { withBrowser } from './browser';
+import { BROWSER_LOCK_TIMEOUT_MS, BrowserLockTimeoutError, withBrowser } from './browser';
 
 export const MIN_POSTING_TEXT_LENGTH = 300;
 export const MAX_POSTING_TEXT_LENGTH = 50_000;
 
 const FAIL_MESSAGE =
   '공고 본문을 읽지 못했습니다(로그인이 필요하거나 페이지 구조가 다를 수 있음). 공고 내용을 붙여넣어 주세요.';
+
+const LOGIN_WINDOW_MESSAGE = '사이트 로그인 창이 열려 있습니다. 창을 닫고 다시 시도하세요';
 
 const BLOCKED_MESSAGE =
   '사이트가 자동 접속을 막았습니다(오류 페이지가 돌아왔습니다). 공고 내용을 복사해 붙여넣어 주세요.';
@@ -43,7 +45,7 @@ function clean(text: string): string {
 
 export async function extractPostingText(
   url: string,
-  opts: { profileDir?: string; timeoutMs?: number; /** 테스트에서 로컬 fixture(file:)를 열 때만 */ allowFileUrl?: boolean } = {},
+  opts: { profileDir?: string; timeoutMs?: number; /** 테스트에서 로컬 fixture(file:)를 열 때만 */ allowFileUrl?: boolean; lockTimeoutMs?: number } = {},
 ): Promise<{ text: string; title: string }> {
   try {
     if (!(opts.allowFileUrl && url.startsWith('file:'))) assertHttpUrl(url);
@@ -71,10 +73,11 @@ export async function extractPostingText(
         if (best.length < MIN_POSTING_TEXT_LENGTH) throw new AiError('extract_failed', FAIL_MESSAGE);
         return { text: best.slice(0, MAX_POSTING_TEXT_LENGTH), title };
       },
-      { profileDir: opts.profileDir },
+      { profileDir: opts.profileDir, lockTimeoutMs: opts.lockTimeoutMs ?? BROWSER_LOCK_TIMEOUT_MS },
     );
   } catch (e) {
     if (e instanceof AiError) throw e;
+    if (e instanceof BrowserLockTimeoutError) throw new AiError('extract_failed', LOGIN_WINDOW_MESSAGE);
     throw new AiError('extract_failed', FAIL_MESSAGE);
   }
 }

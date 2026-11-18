@@ -50,7 +50,7 @@ describe('withBrowser', () => {
           await new Promise((r) => setTimeout(r, 100));
           spans.push({ start, end: Date.now() });
         },
-        { profileDir: tmpProfile(), allowFileUrl: true },
+        { profileDir: tmpProfile() },
       );
     const p1 = run();
     const p2 = run();
