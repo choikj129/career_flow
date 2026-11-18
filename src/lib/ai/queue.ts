@@ -1,6 +1,6 @@
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
-import { and, asc, desc, eq } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray } from 'drizzle-orm';
 import { config } from '@/lib/config';
 import { getDb, type Db } from '@/lib/db/client';
 import { aiJobs } from '@/lib/db/schema';
@@ -45,6 +45,16 @@ export function latestJobFor(
 ): JobRow | undefined {
   const rows = db.select().from(aiJobs).where(eq(aiJobs.type, type)).orderBy(desc(aiJobs.id)).all();
   return rows.find((r) => match(r.payload));
+}
+
+/** 대기 중이거나 실행 중인 작업. 오래된 순. */
+export function listActiveJobs(db: Db = getDb()): JobRow[] {
+  return db
+    .select()
+    .from(aiJobs)
+    .where(inArray(aiJobs.status, ['queued', 'running']))
+    .orderBy(asc(aiJobs.id))
+    .all();
 }
 
 /** 앱이 꺼지면서 running으로 남은 작업을 실패 처리한다. 처리한 개수를 돌려준다. */

@@ -35,6 +35,7 @@ export function registerPosting(
       site: url ? detectSite(url) : 'other',
       siteNote,
       rawText: pastedText ?? null,
+      rawTextSource: pastedText ? ('pasted' as const) : null,
       fetchedAt: pastedText ? now() : null,
       createdAt: now(),
     })
@@ -44,8 +45,16 @@ export function registerPosting(
   return { postingId: row.id, existing: false, jobId };
 }
 
-export function setPostingText(postingId: number, text: string, db: Db = getDb()): void {
-  db.update(postings).set({ rawText: text, fetchedAt: now() }).where(eq(postings.id, postingId)).run();
+export function setPostingText(
+  postingId: number,
+  text: string,
+  db: Db = getDb(),
+  source: 'extracted' | 'pasted' = 'pasted',
+): void {
+  db.update(postings)
+    .set({ rawText: text, rawTextSource: source, fetchedAt: now() })
+    .where(eq(postings.id, postingId))
+    .run();
 }
 
 export function providePostingText(postingId: number, text: string, db: Db = getDb()): number {
@@ -160,6 +169,43 @@ export function listAnalyzedNotApplied(db: Db = getDb()): AnalyzedPostingRow[] {
     })
     .sort((x, y) => y._aid - x._aid)
     .map(({ _aid, ...rest }) => rest);
+}
+
+export type PendingPostingRow = {
+  postingId: number;
+  site: SiteId;
+  siteNote: string | null;
+  url: string | null;
+  createdAt: string;
+  jobStatus: 'queued' | 'running' | 'succeeded' | 'failed' | 'canceled' | null;
+};
+
+/** 아직 분석 결과가 없고 지원 기록도 없는 공고(분석 중·실패 포함). 최신 등록순. */
+export function listUnanalyzedPostings(db: Db = getDb()): PendingPostingRow[] {
+  const analyzed = new Set(db.select({ id: analyses.postingId }).from(analyses).all().map((r) => r.id));
+  const applied = new Set(
+    db.select({ id: applications.postingId }).from(applications).where(isNotNull(applications.postingId)).all().map((r) => r.id),
+  );
+  const jobs = db.select().from(aiJobs).where(eq(aiJobs.type, 'analyze_posting')).orderBy(desc(aiJobs.id)).all();
+  const latestJob = new Map<number, (typeof jobs)[number]>();
+  for (const j of jobs) {
+    const pid = (j.payload as { postingId?: number } | null)?.postingId;
+    if (pid != null && !latestJob.has(pid)) latestJob.set(pid, j);
+  }
+  return db
+    .select()
+    .from(postings)
+    .orderBy(desc(postings.id))
+    .all()
+    .filter((p) => !analyzed.has(p.id) && !applied.has(p.id))
+    .map((p) => ({
+      postingId: p.id,
+      site: p.site,
+      siteNote: p.siteNote,
+      url: p.url,
+      createdAt: p.createdAt,
+      jobStatus: latestJob.get(p.id)?.status ?? null,
+    }));
 }
 
 export function setPostingCompany(postingId: number, companyId: number, db: Db = getDb()): void {

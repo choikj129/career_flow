@@ -1,0 +1,1 @@
+ALTER TABLE `postings` ADD `raw_text_source` text;

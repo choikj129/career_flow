@@ -129,6 +129,10 @@ export function getApplicationForPosting(postingId: number, db: Db = getDb()): A
   return db.select().from(applications).where(eq(applications.postingId, postingId)).get();
 }
 
+export function getApplication(id: number, db: Db = getDb()): Application | undefined {
+  return db.select().from(applications).where(eq(applications.id, id)).get();
+}
+
 export function listStatusEvents(applicationId: number, db: Db = getDb()): StatusEvent[] {
   return db
     .select()

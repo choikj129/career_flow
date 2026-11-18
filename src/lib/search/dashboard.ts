@@ -20,6 +20,8 @@ export type DashboardRow = {
   companyName: string;
   positionTitle: string;
   site: SiteId;
+  /** 사이트가 기타일 때의 출처 이름 */
+  siteNote?: string | null;
   appliedAt: string;
   status: ApplicationStatus;
   interviewRound: number | null;
@@ -90,6 +92,7 @@ export function searchApplications(q: SearchQuery, db: Db = getDb()): DashboardR
       companyName,
       positionTitle: a.positionTitle,
       site: a.site,
+      siteNote: a.siteNote,
       appliedAt: a.appliedAt,
       status: a.status,
       interviewRound: a.interviewRound,

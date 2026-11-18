@@ -104,6 +104,16 @@ export function mergeCompanies(keepId: number, removeId: number, db: Db = getDb(
   });
 }
 
+/** 회사에 연결된 공고·지원 기록 수(합치기 확인 문구용) */
+export function getCompanyUsage(
+  companyId: number,
+  db: Db = getDb(),
+): { postings: number; applications: number } {
+  const p = db.select({ n: sql<number>`count(*)` }).from(postings).where(eq(postings.companyId, companyId)).get();
+  const a = db.select({ n: sql<number>`count(*)` }).from(applications).where(eq(applications.companyId, companyId)).get();
+  return { postings: p?.n ?? 0, applications: a?.n ?? 0 };
+}
+
 export function getCompany(id: number, db: Db = getDb()): Company | undefined {
   return db.select().from(companies).where(eq(companies.id, id)).get();
 }

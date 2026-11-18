@@ -1,4 +1,3 @@
-import { z } from 'zod';
 import { JOB_TIMEOUT_MS, type JobHandler } from '@/lib/ai/queue';
 import { renderPrompt } from '@/lib/ai/prompt';
 import { AiError } from '@/lib/ai/runner';
@@ -7,6 +6,7 @@ import { extractPostingText } from '@/lib/extract/extract-posting';
 import { getPosting, saveAnalysis, setPostingText } from '@/lib/postings/repo';
 import { getLatestResume, getPreferences } from '@/lib/resume/repo';
 import { getModelFor } from '@/lib/settings';
+import { toCliJsonSchema } from './json-schema';
 import { runValidated } from './run-validated';
 import { AnalysisResult } from './schemas';
 
@@ -22,7 +22,7 @@ export const analyzePosting: JobHandler = async ({ jobId, payload, runner, workD
   if (!text || !text.trim()) {
     if (!posting.url) throw new AiError('extract_failed', '공고 본문이 없습니다. 본문을 붙여넣어 주세요.');
     text = (await extractPostingText(posting.url)).text;
-    setPostingText(postingId, text, db);
+    setPostingText(postingId, text, db, 'extracted');
   }
 
   const model = getModelFor('analyze_posting', db);
@@ -36,7 +36,7 @@ export const analyzePosting: JobHandler = async ({ jobId, payload, runner, workD
     runner,
     {
       prompt,
-      jsonSchema: z.toJSONSchema(AnalysisResult),
+      jsonSchema: toCliJsonSchema(AnalysisResult),
       model,
       tools: [],
       cwd: workDir,
