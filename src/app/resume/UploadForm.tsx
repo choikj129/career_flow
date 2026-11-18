@@ -22,7 +22,7 @@ export function UploadForm() {
       </p>
 
       <label className="label" htmlFor="files" style={{ marginTop: 20 }}>
-        파일 선택 <span className="muted" style={{ fontWeight: 400 }}>(PDF·DOCX·TXT·MD, 파일당 20MB까지)</span>
+        파일 선택 <span className="muted" style={{ fontWeight: 400 }}>(PDF·DOCX·TXT·MD, 한 번에 10개까지, 파일당 20MB까지)</span>
       </label>
       <input
         id="files"

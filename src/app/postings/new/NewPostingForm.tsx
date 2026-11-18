@@ -64,7 +64,7 @@ export function NewPostingForm({ hasResume, siteNotes }: { hasResume: boolean; s
           name="pastedText"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="공고 페이지에서 본문을 복사해 붙여넣으세요. 링크 없이 본문만 넣어도 됩니다."
+          placeholder="공고 페이지에서 본문을 복사해 붙여넣으세요. 링크 없이 본문만 넣어도 됩니다(최대 5만 자)."
         />
       </details>
 

@@ -46,7 +46,7 @@ export function ImportForm() {
       />
 
       <label className="label" htmlFor="images" style={{ marginTop: 16 }}>
-        캡처 이미지 <span className="muted" style={{ fontWeight: 400 }}>(PNG·JPG, 여러 장, 파일당 20MB까지)</span>
+        캡처 이미지 <span className="muted" style={{ fontWeight: 400 }}>(PNG·JPG, 한 번에 10장까지, 파일당 20MB까지)</span>
       </label>
       <div className="drop">
         <input

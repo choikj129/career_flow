@@ -27,3 +27,12 @@ describe('공고 주소 검사', () => {
     }
   });
 });
+
+test('TC-NEW-TEXT-LIMIT 붙여넣은 본문도 5만 자를 넘으면 안내와 함께 거부한다', async () => {
+  const { providePostingText } = await import('@/lib/postings/repo');
+  const db = makeTestDb();
+  expect(() => registerPosting({ pastedText: '가'.repeat(50_001) }, db)).toThrow('너무 깁니다');
+  expect(registerPosting({ pastedText: '가'.repeat(50_000) }, db).existing).toBe(false);
+  const { postingId } = registerPosting({ url: 'https://example.com/long' }, db);
+  expect(() => providePostingText(postingId, '가'.repeat(50_001), db)).toThrow('너무 깁니다');
+});

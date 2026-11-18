@@ -59,3 +59,14 @@ describe('saveUploads', () => {
     expect(r.rejected).toEqual([{ name: 'a.exe', reason: expect.any(String) }]);
   });
 });
+
+test('TC-UP-LIMIT 한 번에 10개까지만 받는다', async () => {
+  const { saveUploads } = await import('@/lib/uploads/store');
+  const { mkdtempSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const baseDir = mkdtempSync(join(tmpdir(), 'cf-up-'));
+  const mk = (n: number) => Array.from({ length: n }, (_, i) => ({ name: `a${i}.png`, data: Buffer.from('x') }));
+  expect(saveUploads(mk(10), 'image', 'import', { baseDir }).saved).toHaveLength(10);
+  expect(() => saveUploads(mk(11), 'image', 'import', { baseDir })).toThrow('10개까지');
+});

@@ -1,6 +1,7 @@
 import { and, desc, eq, inArray, isNotNull } from 'drizzle-orm';
 import { getDb, type Db } from '@/lib/db/client';
 import { aiJobs, analyses, applications, companies, postings } from '@/lib/db/schema';
+import { MAX_POSTING_TEXT_LENGTH, POSTING_TEXT_TOO_LONG_MESSAGE } from '@/lib/domain/limits';
 import { assertHttpUrl, canonicalizeUrl, detectSite } from '@/lib/domain/normalize';
 import type { SiteId } from '@/lib/domain/types';
 import { enqueueJob } from '@/lib/ai/queue';
@@ -20,6 +21,7 @@ export function registerPosting(
   const pastedText = input.pastedText?.trim() || undefined;
   if (!url && !pastedText) throw new Error('공고 링크나 본문 중 하나는 필요합니다');
   if (url) assertHttpUrl(url);
+  if (pastedText && pastedText.length > MAX_POSTING_TEXT_LENGTH) throw new Error(POSTING_TEXT_TOO_LONG_MESSAGE);
 
   let canonicalUrl: string | null = null;
   if (url) {
@@ -59,6 +61,7 @@ export function setPostingText(
 }
 
 export function providePostingText(postingId: number, text: string, db: Db = getDb()): number {
+  if (text.length > MAX_POSTING_TEXT_LENGTH) throw new Error(POSTING_TEXT_TOO_LONG_MESSAGE);
   setPostingText(postingId, text, db);
   return enqueueJob('analyze_posting', { postingId }, db);
 }

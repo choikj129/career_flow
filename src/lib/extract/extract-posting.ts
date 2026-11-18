@@ -2,8 +2,9 @@ import { AiError } from '@/lib/ai/runner';
 import { assertHttpUrl } from '@/lib/domain/normalize';
 import { BROWSER_LOCK_TIMEOUT_MS, BrowserLockTimeoutError, withBrowser } from './browser';
 
-export const MIN_POSTING_TEXT_LENGTH = 300;
-export const MAX_POSTING_TEXT_LENGTH = 50_000;
+import { MAX_POSTING_TEXT_LENGTH, MIN_POSTING_TEXT_LENGTH } from '@/lib/domain/limits';
+
+export { MAX_POSTING_TEXT_LENGTH, MIN_POSTING_TEXT_LENGTH };
 
 const FAIL_MESSAGE =
   '공고 본문을 읽지 못했습니다(로그인이 필요하거나 페이지 구조가 다를 수 있음). 공고 내용을 붙여넣어 주세요.';

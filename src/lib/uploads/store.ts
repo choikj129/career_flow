@@ -2,6 +2,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import { config } from '@/lib/config';
 
+import { MAX_UPLOAD_FILES, TOO_MANY_FILES_MESSAGE } from '@/lib/domain/limits';
 import { MAX_UPLOAD_BYTES, checkUpload, type UploadKind } from './check';
 
 export { MAX_UPLOAD_BYTES, checkUpload };
@@ -22,6 +23,7 @@ export function saveUploads(
   sub: string,
   opts: { baseDir?: string; now?: number } = {},
 ): { saved: string[]; rejected: { name: string; reason: string }[] } {
+  if (files.length > MAX_UPLOAD_FILES) throw new Error(TOO_MANY_FILES_MESSAGE);
   const dir = join(opts.baseDir ?? config.uploadsDir, sub);
   mkdirSync(dir, { recursive: true });
   const stamp = opts.now ?? Date.now();
