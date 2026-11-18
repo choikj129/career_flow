@@ -75,7 +75,11 @@ export function searchApplications(q: SearchQuery, db: Db = getDb()): DashboardR
   );
 
   const fitByPosting = new Map<number, number>();
-  for (const r of db.select().from(analyses).orderBy(desc(analyses.id)).all()) {
+  for (const r of db
+    .select({ postingId: analyses.postingId, fitScore: analyses.fitScore })
+    .from(analyses)
+    .orderBy(desc(analyses.id))
+    .all()) {
     if (!fitByPosting.has(r.postingId)) fitByPosting.set(r.postingId, r.fitScore);
   }
   const versionNoById = new Map(

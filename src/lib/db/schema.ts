@@ -1,4 +1,4 @@
-import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
 import type { SiteId, ApplicationStatus, JobType, JobStatus, AiErrorKind } from '@/lib/domain/types';
 
 export const resumeVersions = sqliteTable('resume_versions', {
@@ -43,7 +43,7 @@ export const aiJobs = sqliteTable('ai_jobs', {
   createdAt: text('created_at').notNull(),
   startedAt: text('started_at'),
   finishedAt: text('finished_at'),
-});
+}, (t) => [index('ai_jobs_status_idx').on(t.status)]);
 
 export const postings = sqliteTable('postings', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -69,7 +69,7 @@ export const analyses = sqliteTable('analyses', {
   fitScore: integer('fit_score').notNull(),
   jobId: integer('job_id').notNull().references(() => aiJobs.id),
   createdAt: text('created_at').notNull(),
-});
+}, (t) => [index('analyses_posting_id_idx').on(t.postingId)]);
 
 export const applications = sqliteTable('applications', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -86,7 +86,10 @@ export const applications = sqliteTable('applications', {
   interviewRound: integer('interview_round'),
   notes: text('notes'),
   createdAt: text('created_at').notNull(),
-});
+}, (t) => [
+  index('applications_company_id_idx').on(t.companyId),
+  index('applications_posting_id_idx').on(t.postingId),
+]);
 
 export const statusEvents = sqliteTable('status_events', {
   id: integer('id').primaryKey({ autoIncrement: true }),

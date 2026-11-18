@@ -12,7 +12,7 @@ const tmpProfile = () => mkdtempSync(join(tmpdir(), 'cf-profile-'));
 
 describe('extractPostingText', () => {
   test('extracts JS-rendered text from page', async () => {
-    const r = await extractPostingText(pathToFileURL(FULL).href, { profileDir: tmpProfile(), allowFileUrl: true });
+    const r = await extractPostingText(pathToFileURL(FULL).href, { profileDir: tmpProfile(), allowNonHttpUrl: true });
     expect(r.text).toContain('자격요건');
     expect(r.text.length).toBeGreaterThanOrEqual(MIN_POSTING_TEXT_LENGTH);
     expect(r.title).toContain('서버 개발자');
@@ -20,7 +20,7 @@ describe('extractPostingText', () => {
 
   test('fails on too-short text', async () => {
     await expect(
-      extractPostingText(pathToFileURL(EMPTY).href, { profileDir: tmpProfile(), allowFileUrl: true }),
+      extractPostingText(pathToFileURL(EMPTY).href, { profileDir: tmpProfile(), allowNonHttpUrl: true }),
     ).rejects.toMatchObject({ kind: 'extract_failed' });
   }, 60_000);
 

@@ -45,10 +45,10 @@ function clean(text: string): string {
 
 export async function extractPostingText(
   url: string,
-  opts: { profileDir?: string; timeoutMs?: number; /** 테스트에서 로컬 fixture(file:)를 열 때만 */ allowFileUrl?: boolean; lockTimeoutMs?: number } = {},
+  opts: { profileDir?: string; timeoutMs?: number; /** 테스트에서 로컬 fixture(file:, data:)를 열 때만 */ allowNonHttpUrl?: boolean; lockTimeoutMs?: number } = {},
 ): Promise<{ text: string; title: string }> {
   try {
-    if (!(opts.allowFileUrl && url.startsWith('file:'))) assertHttpUrl(url);
+    if (!(opts.allowNonHttpUrl && /^(file|data):/.test(url))) assertHttpUrl(url);
   } catch (e) {
     throw new AiError('extract_failed', e instanceof Error ? e.message : String(e));
   }

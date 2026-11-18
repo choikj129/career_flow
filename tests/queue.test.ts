@@ -86,7 +86,7 @@ describe('job queue', () => {
     enqueueJob('analyze_posting', { postingId: 1 }, db);
     const b = enqueueJob('analyze_posting', { postingId: 1 }, db);
     enqueueJob('analyze_posting', { postingId: 2 }, db);
-    expect(latestJobFor('analyze_posting', (p) => p.postingId === 1, db)?.id).toBe(b);
+    expect(latestJobFor('analyze_posting', (p) => p?.postingId === 1, db)?.id).toBe(b);
     expect(latestJobFor('import_resume', () => true, db)).toBeUndefined();
   });
 

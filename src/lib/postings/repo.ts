@@ -139,14 +139,29 @@ export function listAnalyzedNotApplied(db: Db = getDb()): AnalyzedPostingRow[] {
       .all()
       .map((r) => r.id),
   );
-  const latest = new Map<number, Analysis>();
-  for (const a of db.select().from(analyses).orderBy(desc(analyses.id)).all()) {
+  const latest = new Map<number, { id: number; fitScore: number; createdAt: string }>();
+  for (const a of db
+    .select({ id: analyses.id, postingId: analyses.postingId, fitScore: analyses.fitScore, createdAt: analyses.createdAt })
+    .from(analyses)
+    .orderBy(desc(analyses.id))
+    .all()) {
     if (!latest.has(a.postingId)) latest.set(a.postingId, a);
   }
   const ids = [...latest.keys()].filter((id) => !appliedIds.has(id));
   if (ids.length === 0) return [];
   const ps = db
-    .select({ p: postings, companyName: companies.displayName })
+    .select({
+      p: {
+        id: postings.id,
+        companyId: postings.companyId,
+        positionTitle: postings.positionTitle,
+        site: postings.site,
+        siteNote: postings.siteNote,
+        url: postings.url,
+        deadline: postings.deadline,
+      },
+      companyName: companies.displayName,
+    })
     .from(postings)
     .leftJoin(companies, eq(postings.companyId, companies.id))
     .where(inArray(postings.id, ids))
@@ -169,7 +184,11 @@ export function listAnalyzedNotApplied(db: Db = getDb()): AnalyzedPostingRow[] {
       };
     })
     .sort((x, y) => y._aid - x._aid)
-    .map(({ _aid, ...rest }) => rest);
+    .map((row) => {
+      const { _aid, ...rest } = row;
+      void _aid; // 정렬에만 쓰고 결과에서는 뺀다
+      return rest;
+    });
 }
 
 export type PendingPostingRow = {
@@ -187,14 +206,25 @@ export function listUnanalyzedPostings(db: Db = getDb()): PendingPostingRow[] {
   const applied = new Set(
     db.select({ id: applications.postingId }).from(applications).where(isNotNull(applications.postingId)).all().map((r) => r.id),
   );
-  const jobs = db.select().from(aiJobs).where(eq(aiJobs.type, 'analyze_posting')).orderBy(desc(aiJobs.id)).all();
+  const jobs = db
+    .select({ payload: aiJobs.payload, status: aiJobs.status })
+    .from(aiJobs)
+    .where(eq(aiJobs.type, 'analyze_posting'))
+    .orderBy(desc(aiJobs.id))
+    .all();
   const latestJob = new Map<number, (typeof jobs)[number]>();
   for (const j of jobs) {
     const pid = (j.payload as { postingId?: number } | null)?.postingId;
     if (pid != null && !latestJob.has(pid)) latestJob.set(pid, j);
   }
   return db
-    .select()
+    .select({
+      id: postings.id,
+      site: postings.site,
+      siteNote: postings.siteNote,
+      url: postings.url,
+      createdAt: postings.createdAt,
+    })
     .from(postings)
     .orderBy(desc(postings.id))
     .all()

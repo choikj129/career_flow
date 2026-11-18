@@ -16,7 +16,8 @@ export const importApplications: JobHandler = async ({ payload, runner, workDir,
   if (names.length === 0 && !pastedText) {
     throw new AiError('cli', '가져올 이미지나 텍스트가 없습니다.');
   }
-  const site: SiteId | null = SITE_IDS.includes(payload?.site) ? payload.site : null;
+  const rawSite = payload?.site;
+  const site: SiteId | null = typeof rawSite === 'string' && (SITE_IDS as string[]).includes(rawSite) ? (rawSite as SiteId) : null;
   const model = getModelFor('import_applications', db);
   const prompt = renderPrompt('import-applications', {
     today: todayLocal(),

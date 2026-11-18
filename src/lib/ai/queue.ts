@@ -7,11 +7,14 @@ import { aiJobs } from '@/lib/db/schema';
 import type { AiErrorKind, JobType } from '@/lib/domain/types';
 import { AiError, type AiRunner } from './runner';
 
+/** 작업 종류마다 모양이 다르다. 처리기가 값을 검사해 쓴다. */
+export type JobPayload = Record<string, unknown>;
+
 export type JobRow = typeof aiJobs.$inferSelect;
 
 export type JobHandler = (ctx: {
   jobId: number;
-  payload: any;
+  payload: JobPayload | null;
   runner: AiRunner;
   workDir: string;
   db: Db;
@@ -38,13 +41,33 @@ export function getJob(id: number, db: Db = getDb()): JobRow | undefined {
   return db.select().from(aiJobs).where(eq(aiJobs.id, id)).get();
 }
 
+export type JobSummary = Omit<JobRow, 'result' | 'usage'>;
+
+/** result·usage(큰 JSON)는 읽지 않는다. */
 export function latestJobFor(
   type: JobType,
-  match: (payload: any) => boolean,
+  match: (payload: JobPayload | null) => boolean,
   db: Db = getDb(),
-): JobRow | undefined {
-  const rows = db.select().from(aiJobs).where(eq(aiJobs.type, type)).orderBy(desc(aiJobs.id)).all();
-  return rows.find((r) => match(r.payload));
+): JobSummary | undefined {
+  const rows = db
+    .select({
+      id: aiJobs.id,
+      type: aiJobs.type,
+      payload: aiJobs.payload,
+      status: aiJobs.status,
+      errorKind: aiJobs.errorKind,
+      errorMessage: aiJobs.errorMessage,
+      sessionId: aiJobs.sessionId,
+      model: aiJobs.model,
+      createdAt: aiJobs.createdAt,
+      startedAt: aiJobs.startedAt,
+      finishedAt: aiJobs.finishedAt,
+    })
+    .from(aiJobs)
+    .where(eq(aiJobs.type, type))
+    .orderBy(desc(aiJobs.id))
+    .all();
+  return rows.find((r) => match(r.payload as JobPayload | null));
 }
 
 /** 대기 중이거나 실행 중인 작업. 오래된 순. */
@@ -103,7 +126,7 @@ export async function processNextJob(deps: WorkerDeps): Promise<boolean> {
     if (!handler) throw new AiError('cli', `처리기가 없는 작업 종류입니다: ${next.type}`);
     const workDir = join(deps.workRoot ?? config.aiWorkDir, String(next.id));
     mkdirSync(workDir, { recursive: true });
-    const out = await handler({ jobId: next.id, payload: next.payload, runner: deps.runner, workDir, db });
+    const out = await handler({ jobId: next.id, payload: next.payload as JobPayload | null, runner: deps.runner, workDir, db });
     db.update(aiJobs)
       .set({
         status: 'succeeded',

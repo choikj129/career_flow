@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { eq } from 'drizzle-orm';
+import { eq, sql } from 'drizzle-orm';
 import { makeTestDb } from './helpers/db';
 import { applications, companies, postings, analyses, statusEvents, aiJobs, resumeVersions } from '@/lib/db/schema';
 import { getModelFor, setModelFor } from '@/lib/settings';
@@ -47,4 +47,27 @@ test('analyses cascade on posting delete', () => {
   db.insert(analyses).values({ postingId: p.id, resumeVersionId: rv.id, result: {}, fitScore: 80, jobId: job.id, createdAt: now() }).run();
   db.delete(postings).where(eq(postings.id, p.id)).run();
   expect(db.select().from(analyses).all()).toHaveLength(0);
+});
+
+test('TC-DATA-IDX 조회용 인덱스가 마이그레이션으로 만들어진다', () => {
+  const db = makeTestDb();
+  const names = db.all<{ name: string }>(sql`select name from sqlite_master where type = 'index'`).map((r) => r.name);
+  expect(names).toEqual(
+    expect.arrayContaining([
+      'applications_company_id_idx',
+      'applications_posting_id_idx',
+      'analyses_posting_id_idx',
+      'ai_jobs_status_idx',
+    ]),
+  );
+});
+
+test('TC-DATA-SEL 작업 목록 조회는 result·usage 를 읽지 않는다', async () => {
+  const { enqueueJob, latestJobFor } = await import('@/lib/ai/queue');
+  const db = makeTestDb();
+  enqueueJob('analyze_posting', { postingId: 5 }, db);
+  const job = latestJobFor('analyze_posting', (p) => p?.postingId === 5, db)!;
+  expect(job).toBeDefined();
+  expect(job).not.toHaveProperty('result');
+  expect(job).not.toHaveProperty('usage');
 });
