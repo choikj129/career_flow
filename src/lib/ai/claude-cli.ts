@@ -62,11 +62,11 @@ function resolveWindowsBin(bin: string, env: NodeJS.ProcessEnv): { bin: string; 
   return fallback;
 }
 
-function killTree(pid: number | undefined, child: { kill: () => boolean }): void {
+function killTree(pid: number | undefined, child: { kill: (signal?: NodeJS.Signals) => boolean }): void {
   if (process.platform === 'win32' && pid) {
     spawnSync('taskkill', ['/pid', String(pid), '/T', '/F'], { windowsHide: true });
   } else {
-    child.kill('SIGKILL' as never);
+    child.kill('SIGKILL');
   }
 }
 
