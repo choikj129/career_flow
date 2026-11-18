@@ -19,7 +19,7 @@ test('saveResumeVersion increments versionNo and getLatestResume returns newest'
 });
 
 test('saveResumeVersion rejects invalid content', () => {
-  expect(() => saveResumeVersion({ summary: 1 } as any, undefined, makeTestDb())).toThrow();
+  expect(() => saveResumeVersion({ summary: 1 } as never, undefined, makeTestDb())).toThrow();
 });
 
 test('getLatestResume is null when empty; list is newest first; get by id', () => {
@@ -44,5 +44,5 @@ test('getPreferences returns defaults then saved value', () => {
 });
 
 test('savePreferences rejects invalid workStyle', () => {
-  expect(() => savePreferences({ ...defaultPreferences(), workStyle: 'x' } as any, makeTestDb())).toThrow();
+  expect(() => savePreferences({ ...defaultPreferences(), workStyle: 'x' } as never, makeTestDb())).toThrow();
 });

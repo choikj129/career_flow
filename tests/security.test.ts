@@ -107,14 +107,14 @@ describe('명령 실행 방식', () => {
     const file = script(`process.stdout.write(JSON.stringify({ type: 'result', subtype: 'success', is_error: false, session_id: 's',
       structured_output: { argv: process.argv.slice(2) } }));`);
     const r = await new ClaudeCliRunner({ bin: process.execPath, binArgs: [file] }).run(req({ prompt: marker }));
-    expect(JSON.stringify((r.output as any).argv)).not.toContain('rm -rf');
+    expect(JSON.stringify((r.output as { argv: string[] }).argv)).not.toContain('rm -rf');
   });
 
   test('TC-AI-27 모델 이름 같은 값에 공백·특수문자가 있어도 인자 하나로 전달된다', async () => {
     const file = script(`process.stdout.write(JSON.stringify({ type: 'result', subtype: 'success', is_error: false, session_id: 's',
       structured_output: { argv: process.argv.slice(2) } }));`);
     const r = await new ClaudeCliRunner({ bin: process.execPath, binArgs: [file] }).run(req({ model: 'a b; c' }));
-    const argv = (r.output as any).argv as string[];
+    const argv = (r.output as { argv: string[] }).argv;
     expect(argv[argv.indexOf('--model') + 1]).toBe('a b; c');
   });
 });

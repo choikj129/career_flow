@@ -104,9 +104,7 @@ function analysis(opts: {
   };
 }
 
-let jobSeq = 0;
 function fakeJob(status: 'succeeded' | 'failed', payload: unknown, error?: { kind: 'extract_failed' | 'auth' | 'timeout' | 'schema'; message: string }): number {
-  jobSeq += 1;
   return db
     .insert(aiJobs)
     .values({

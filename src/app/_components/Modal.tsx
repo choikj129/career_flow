@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
+
+const subscribeNothing = () => () => {};
 
 /** 작은 창. 바깥을 누르거나 Esc로 닫는다. 표 안에서도 쓸 수 있게 body에 그린다. */
 export function Modal({
@@ -17,11 +19,15 @@ export function Modal({
   wide?: boolean;
   children: React.ReactNode;
 }) {
-  const [mounted, setMounted] = useState(false);
+  // 서버 렌더링에서는 false, 브라우저에서는 true(포탈은 브라우저에서만 그린다).
+  const mounted = useSyncExternalStore(
+    subscribeNothing,
+    () => true,
+    () => false,
+  );
   const titleId = useId();
 
   useEffect(() => {
-    setMounted(true);
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
     };

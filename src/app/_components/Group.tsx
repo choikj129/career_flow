@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 
 const STORAGE = "cf.dashboard.groups";
 
@@ -13,6 +13,12 @@ function readOpen(key: string): boolean | undefined {
   }
 }
 
+const listeners = new Set<() => void>();
+function subscribe(fn: () => void) {
+  listeners.add(fn);
+  return () => void listeners.delete(fn);
+}
+
 function writeOpen(key: string, open: boolean) {
   try {
     const all = JSON.parse(localStorage.getItem(STORAGE) ?? "{}") as Record<string, boolean>;
@@ -21,6 +27,7 @@ function writeOpen(key: string, open: boolean) {
   } catch {
     /* 저장이 막혀 있어도 화면은 동작한다 */
   }
+  listeners.forEach((fn) => fn());
 }
 
 /** 접고 펴는 묶음. 펼침 상태는 이 브라우저에만 기억한다. 기본은 펼침. */
@@ -37,12 +44,13 @@ export function Group({
   rate: React.ReactNode;
   children: React.ReactNode;
 }) {
-  const [open, setOpen] = useState(true);
-
-  useEffect(() => {
-    const saved = readOpen(storageKey);
-    if (saved !== undefined) setOpen(saved);
-  }, [storageKey]);
+  // 저장된 값은 브라우저에서만 읽는다(서버 렌더링과 첫 화면은 펼침).
+  const saved = useSyncExternalStore(
+    subscribe,
+    () => readOpen(storageKey),
+    () => undefined,
+  );
+  const open = saved ?? true;
 
   return (
     <div className="group" data-open={open}>
@@ -51,7 +59,6 @@ export function Group({
         className="group-head"
         aria-expanded={open}
         onClick={() => {
-          setOpen(!open);
           writeOpen(storageKey, !open);
         }}
       >

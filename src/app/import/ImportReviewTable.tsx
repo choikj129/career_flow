@@ -57,7 +57,15 @@ export function ImportReviewTable({
   const total = rows.length;
 
   function commit() {
-    run(() => commitApplicationImportAction(rows.map(({ key: _k, existing: _e, ...r }) => r)));
+    run(() => commitApplicationImportAction(rows.map((r) => ({
+          companyName: r.companyName,
+          positionTitle: r.positionTitle,
+          site: r.site,
+          siteNote: r.siteNote,
+          appliedAt: r.appliedAt,
+          status: r.status,
+          checked: r.checked,
+        }))));
   }
 
   return (

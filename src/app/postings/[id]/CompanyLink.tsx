@@ -47,20 +47,17 @@ function CompanyLinkModal({
   const [mode, setMode] = useState<Mode>("merge");
   const [text, setText] = useState("");
   const [alias, setAlias] = useState("");
-  const [cands, setCands] = useState<CompanyCandidate[]>([]);
+  const [found, setFound] = useState<CompanyCandidate[]>([]);
   const [picked, setPicked] = useState<CompanyCandidate | null>(null);
   const { pending, error, setError, run } = useAction();
 
   // 입력을 멈추면 회사를 찾는다.
   useEffect(() => {
-    if (mode === "alias" || !text.trim()) {
-      setCands([]);
-      return;
-    }
+    if (mode === "alias" || !text.trim()) return;
     let stale = false;
     const t = setTimeout(async () => {
-      const found = await searchCompaniesAction(text);
-      if (!stale) setCands(found.filter((c) => c.id !== company.id));
+      const result = await searchCompaniesAction(text);
+      if (!stale) setFound(result.filter((c) => c.id !== company.id));
     }, 200);
     return () => {
       stale = true;
@@ -68,11 +65,14 @@ function CompanyLinkModal({
     };
   }, [text, mode, company.id]);
 
+  // 검색어가 없거나 별칭 모드면 후보를 보이지 않는다.
+  const cands = mode === "alias" || !text.trim() ? [] : found;
+
   const switchMode = (m: Mode) => {
     setMode(m);
     setPicked(null);
     setText("");
-    setCands([]);
+    setFound([]);
     setError(null);
   };
 

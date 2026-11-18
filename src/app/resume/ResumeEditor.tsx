@@ -1,10 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { saveResumeAction } from "@/app/_actions/resume";
 import { ConfirmModal } from "@/app/_components/Modal";
 import { useAction } from "@/app/_components/useAction";
+import { isResumeDirty } from "@/lib/resume/compare";
 import type { ResumeContent } from "@/lib/resume/schema";
 
 type Resume = ResumeContent;
@@ -188,9 +189,9 @@ export function ResumeEditor({
   const [r, setR] = useState<Resume>(initial);
   const [note, setNote] = useState("");
   const { pending, error, run } = useAction();
-  const baseline = useRef(JSON.stringify(initial));
+  const [baselineJson] = useState(() => JSON.stringify(initial)); // 처음 내용(렌더 중 ref를 읽지 않는다)
   const [done, setDone] = useState(false);
-  const dirty = !done && (draft || JSON.stringify(r) !== baseline.current);
+  const dirty = isResumeDirty({ draft, done, current: r, baselineJson });
   const guard = useLeaveGuard(dirty);
 
   const edit = (fn: (d: Resume) => void) =>

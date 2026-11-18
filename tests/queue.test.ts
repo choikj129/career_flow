@@ -10,12 +10,15 @@ import {
   enqueueJob,
   getJob,
   latestJobFor,
+  type JobPayload,
+  type WorkerDeps,
   processNextJob,
   recoverInterruptedJobs,
   startWorker,
 } from '@/lib/ai/queue';
 import { makeTestDb } from './helpers/db';
 
+type Handlers = WorkerDeps['handlers'];
 const stubRunner: AiRunner = { run: async () => { throw new Error('not used'); } };
 const workRoot = () => mkdtempSync(join(tmpdir(), 'cf-work-'));
 
@@ -26,11 +29,12 @@ describe('job queue', () => {
     const a = enqueueJob('analyze_posting', { n: 1 }, db);
     enqueueJob('analyze_posting', { n: 2 }, db);
     const handlers = {
-      analyze_posting: async ({ payload }: any) => {
-        order.push(payload.n);
-        return { result: { ok: payload.n }, sessionId: 's' };
+      analyze_posting: async ({ payload }: { payload: JobPayload | null }) => {
+        const n = (payload as { n: number }).n;
+        order.push(n);
+        return { result: { ok: n }, sessionId: 's' };
       },
-    } as any;
+    } as unknown as Handlers;
     const workRootDir = workRoot();
     expect(await processNextJob({ runner: stubRunner, handlers, db, workRoot: workRootDir })).toBe(true);
     expect(await processNextJob({ runner: stubRunner, handlers, db, workRoot: workRootDir })).toBe(true);
@@ -43,7 +47,7 @@ describe('job queue', () => {
   test('stores AiError kind and message on failure', async () => {
     const db = makeTestDb();
     const id = enqueueJob('analyze_posting', {}, db);
-    const handlers = { analyze_posting: async () => { throw new AiError('auth', '로그인 필요'); } } as any;
+    const handlers = { analyze_posting: async () => { throw new AiError('auth', '로그인 필요'); } } as unknown as Handlers;
     await processNextJob({ runner: stubRunner, handlers, db, workRoot: workRoot() });
     expect(getJob(id, db)).toMatchObject({ status: 'failed', errorKind: 'auth', errorMessage: '로그인 필요' });
   });
@@ -51,7 +55,7 @@ describe('job queue', () => {
   test('non-AiError exception is recorded as cli error', async () => {
     const db = makeTestDb();
     const id = enqueueJob('analyze_posting', {}, db);
-    const handlers = { analyze_posting: async () => { throw new Error('boom'); } } as any;
+    const handlers = { analyze_posting: async () => { throw new Error('boom'); } } as unknown as Handlers;
     await processNextJob({ runner: stubRunner, handlers, db, workRoot: workRoot() });
     expect(getJob(id, db)).toMatchObject({ status: 'failed', errorKind: 'cli', errorMessage: 'boom' });
   });
@@ -71,11 +75,11 @@ describe('job queue', () => {
     const id = enqueueJob('analyze_posting', {}, db);
     let seen = '';
     const handlers = {
-      analyze_posting: async ({ workDir }: any) => {
+      analyze_posting: async ({ workDir }: { workDir: string }) => {
         seen = workDir;
         return { result: {} };
       },
-    } as any;
+    } as unknown as Handlers;
     await processNextJob({ runner: stubRunner, handlers, db, workRoot: root });
     expect(seen).toBe(join(root, String(id)));
     expect(existsSync(seen)).toBe(true);
@@ -106,7 +110,7 @@ describe('job queue', () => {
         finished++;
         return { result: {} };
       },
-    } as any;
+    } as unknown as Handlers;
     const stop = startWorker({ runner: stubRunner, handlers, db, pollMs: 10, workRoot: workRoot() });
     for (let i = 0; i < 100 && finished < 2; i++) await new Promise((r) => setTimeout(r, 20));
     stop();

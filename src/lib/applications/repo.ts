@@ -1,4 +1,4 @@
-import { and, desc, eq } from 'drizzle-orm';
+import { desc, eq } from 'drizzle-orm';
 import { getDb, type Db } from '@/lib/db/client';
 import { applications, statusEvents } from '@/lib/db/schema';
 import { todayLocal } from '@/lib/domain/dates';

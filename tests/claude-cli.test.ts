@@ -26,7 +26,7 @@ const req = (o: Partial<AiRunRequest> = {}): AiRunRequest => ({
 describe('ClaudeCliRunner', () => {
   test('passes large prompt via stdin and returns structured_output', async () => {
     const r = await fake('ok').run(req());
-    expect((r.output as any).stdinLength).toBe(40000);
+    expect((r.output as { stdinLength: number }).stdinLength).toBe(40000);
     expect(r.sessionId).toBe('s-1');
   });
 
@@ -49,7 +49,7 @@ describe('ClaudeCliRunner', () => {
   });
 
   test('falls back to parsing result text as JSON', async () => {
-    expect(((await fake('ok_result_text').run(req())).output as any).stdinLength).toBe(40000);
+    expect(((await fake('ok_result_text').run(req())).output as { stdinLength: number }).stdinLength).toBe(40000);
   });
 
   test('classifies auth failure', async () => {
