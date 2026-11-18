@@ -33,12 +33,12 @@ describe('회사명 변형', () => {
     expect(c).not.toBe(a);
   });
 
-  test('TC-DATA-05 [BUG] 영문 접미사 Corporation 은 통째로 지워져 Corp 와 같은 키가 된다', () => {
+  test('TC-DATA-05 영문 접미사 Corporation 은 통째로 지워져 Corp 와 같은 키가 된다', () => {
     expect(normalizeCompanyName('Acme Corporation')).toBe('acme');
     expect(normalizeCompanyName('Acme Corporation')).toBe(normalizeCompanyName('Acme Corp'));
   });
 
-  test('TC-DATA-06 [BUG] Inc/Corp/Ltd 로 시작하는 단어(Incredible, Corpay)는 잘리지 않는다', () => {
+  test('TC-DATA-06 Inc/Corp/Ltd 로 시작하는 단어(Incredible, Corpay)는 잘리지 않는다', () => {
     expect(normalizeCompanyName('Incredible Inc')).toBe('incredible');
     expect(normalizeCompanyName('Corpay')).toBe('corpay');
     expect(normalizeCompanyName('Ltdomain')).toBe('ltdomain');
