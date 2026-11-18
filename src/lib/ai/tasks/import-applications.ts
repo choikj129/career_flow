@@ -1,10 +1,10 @@
-import { z } from 'zod';
 import { JOB_TIMEOUT_MS, type JobHandler } from '@/lib/ai/queue';
 import { renderPrompt } from '@/lib/ai/prompt';
 import { AiError } from '@/lib/ai/runner';
 import { todayLocal } from '@/lib/domain/dates';
 import { SITE_IDS, SITE_LABELS, type SiteId } from '@/lib/domain/types';
 import { getModelFor } from '@/lib/settings';
+import { toCliJsonSchema } from './json-schema';
 import { runValidated } from './run-validated';
 import { ImportedApplications } from './schemas';
 import { copyUploadsToWorkDir } from './uploads';
@@ -28,7 +28,7 @@ export const importApplications: JobHandler = async ({ payload, runner, workDir,
     runner,
     {
       prompt,
-      jsonSchema: z.toJSONSchema(ImportedApplications),
+      jsonSchema: toCliJsonSchema(ImportedApplications),
       model,
       tools: names.length ? ['Read'] : [],
       cwd: workDir,

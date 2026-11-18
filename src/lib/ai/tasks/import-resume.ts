@@ -1,9 +1,9 @@
-import { z } from 'zod';
 import { JOB_TIMEOUT_MS, type JobHandler } from '@/lib/ai/queue';
 import { renderPrompt } from '@/lib/ai/prompt';
 import { AiError } from '@/lib/ai/runner';
 import { ResumeContent } from '@/lib/resume/schema';
 import { getModelFor } from '@/lib/settings';
+import { toCliJsonSchema } from './json-schema';
 import { runValidated } from './run-validated';
 import { copyUploadsToWorkDir } from './uploads';
 
@@ -23,7 +23,7 @@ export const importResume: JobHandler = async ({ payload, runner, workDir, db })
     runner,
     {
       prompt,
-      jsonSchema: z.toJSONSchema(ResumeContent),
+      jsonSchema: toCliJsonSchema(ResumeContent),
       model,
       tools: ['Read'],
       cwd: workDir,

@@ -3,9 +3,9 @@ import { APPLICATION_STATUSES, type ApplicationStatus } from '@/lib/domain/types
 
 export const AnalysisResult = z.object({
   posting: z.object({
-    companyDisplayName: z.string(),
+    companyDisplayName: z.string().trim().min(1),
     companyLegalName: z.string().nullable(),
-    positionTitle: z.string(),
+    positionTitle: z.string().trim().min(1),
     experienceRequirement: z.string().nullable(),
     employmentType: z.string().nullable(),
     location: z.string().nullable(),
