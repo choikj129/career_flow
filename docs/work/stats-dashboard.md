@@ -301,6 +301,7 @@
 
 | 회차 | 개발 커밋 범위 | 검증 결과 | 남은 필수 항목 | 비고 |
 |---|---|---|---|---|
+| 1 | `b0ca0da..9d682e6` (Task 1~4, `feat/stats-dashboard`) | | | `npm test` 356 통과, lint·tsc 통과. build·E2E 안 돌림(`13-stats.spec.ts` 작성만, `01-dashboard` 묶음 머리 기대값 수정). 계획 밖 추가: `tests/stats-charts.test.ts`(SVG 렌더 NaN 방지·표본 문구, 빌드 없이 확인) |
 
 ## 4. 결정 요청
 
