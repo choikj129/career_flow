@@ -1,18 +1,27 @@
-import { mkdtempSync } from 'node:fs';
+import { mkdtempSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
-import { describe, expect, test } from 'vitest';
+import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 import { extractPostingText, looksBlocked, MIN_POSTING_TEXT_LENGTH } from '@/lib/extract/extract-posting';
 import { isBrowserBusy, withBrowser } from '@/lib/extract/browser';
+import { startFixtureServer, type FixtureServer } from './helpers/http-fixture';
 
 const FULL = resolve(__dirname, 'fixtures/posting-full.html');
 const EMPTY = resolve(__dirname, 'fixtures/posting-empty.html');
 const tmpProfile = () => mkdtempSync(join(tmpdir(), 'cf-profile-'));
 
+let fx: FixtureServer;
+beforeAll(async () => {
+  fx = await startFixtureServer({
+    '/full': readFileSync(FULL, 'utf-8'),
+    '/empty': readFileSync(EMPTY, 'utf-8'),
+  });
+});
+afterAll(() => fx.close());
+
 describe('extractPostingText', () => {
   test('extracts JS-rendered text from page', async () => {
-    const r = await extractPostingText(pathToFileURL(FULL).href, { profileDir: tmpProfile(), allowNonHttpUrl: true });
+    const r = await extractPostingText(fx.url('/full'), { profileDir: tmpProfile() });
     expect(r.text).toContain('자격요건');
     expect(r.text.length).toBeGreaterThanOrEqual(MIN_POSTING_TEXT_LENGTH);
     expect(r.title).toContain('서버 개발자');
@@ -20,7 +29,7 @@ describe('extractPostingText', () => {
 
   test('fails on too-short text', async () => {
     await expect(
-      extractPostingText(pathToFileURL(EMPTY).href, { profileDir: tmpProfile(), allowNonHttpUrl: true }),
+      extractPostingText(fx.url('/empty'), { profileDir: tmpProfile() }),
     ).rejects.toMatchObject({ kind: 'extract_failed' });
   }, 60_000);
 
