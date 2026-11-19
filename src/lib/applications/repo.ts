@@ -7,6 +7,7 @@ import { findOrCreateCompany } from '@/lib/companies/repo';
 import { DOC_KINDS, isDocsForKind, type SubmittedDocs } from '@/lib/documents/files';
 import { docFileExists } from '@/lib/documents/folder';
 import { applicationOrder } from './sort';
+import { REACHED_STAGES } from './stages';
 import { getPosting } from '@/lib/postings/repo';
 import { getLatestResume } from '@/lib/resume/repo';
 
@@ -295,4 +296,19 @@ export function listRecordExtras(
     }
   }
   return out;
+}
+
+/** 상태 이력 중 서류합격·과제·코딩테스트·면접·최종합격 행을 지원 기록별로 모은다. */
+export function listReachedHistory(db: Db = getDb()): Map<number, ApplicationStatus[]> {
+  const map = new Map<number, ApplicationStatus[]>();
+  for (const e of db
+    .select({ applicationId: statusEvents.applicationId, status: statusEvents.status })
+    .from(statusEvents)
+    .where(inArray(statusEvents.status, REACHED_STAGES))
+    .all()) {
+    const list = map.get(e.applicationId);
+    if (list) list.push(e.status);
+    else map.set(e.applicationId, [e.status]);
+  }
+  return map;
 }

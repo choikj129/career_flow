@@ -2,9 +2,9 @@ import { and, desc, eq, gte, inArray, like, lte } from 'drizzle-orm';
 import { getDb, type Db } from '@/lib/db/client';
 import { analyses, applications, companies, companyKeys, resumeVersions, statusEvents } from '@/lib/db/schema';
 import { monthLocal } from '@/lib/domain/dates';
-import { listRecordExtras } from '@/lib/applications/repo';
+import { listReachedHistory, listRecordExtras } from '@/lib/applications/repo';
 import { applicationOrder } from '@/lib/applications/sort';
-import { matchesStatusFilter, reachedStages, REACHED_STAGES, type ReachedStage } from '@/lib/applications/stages';
+import { matchesStatusFilter, reachedStages, type ReachedStage } from '@/lib/applications/stages';
 import { docLabel } from '@/lib/documents/files';
 import { normalizeCompanyName } from '@/lib/domain/normalize';
 import {
@@ -46,25 +46,10 @@ export type SearchQuery = {
   to?: string;
 };
 
-/** 서류합격·면접·최종합격이 상태 이력에 있는 지원 기록별 상태 목록. */
-export function readReached(db: Db): Map<number, ApplicationStatus[]> {
-  const map = new Map<number, ApplicationStatus[]>();
-  for (const e of db
-    .select({ applicationId: statusEvents.applicationId, status: statusEvents.status })
-    .from(statusEvents)
-    .where(inArray(statusEvents.status, REACHED_STAGES))
-    .all()) {
-    const list = map.get(e.applicationId);
-    if (list) list.push(e.status);
-    else map.set(e.applicationId, [e.status]);
-  }
-  return map;
-}
-
 export function searchApplications(
   q: SearchQuery,
   db: Db = getDb(),
-  reachedById: Map<number, ApplicationStatus[]> = readReached(db),
+  reachedById: Map<number, ApplicationStatus[]> = listReachedHistory(db),
 ): DashboardRow[] {
   const conds = [];
   if (q.site) conds.push(eq(applications.site, q.site));
@@ -196,7 +181,7 @@ export function groupDashboardRows(rows: DashboardRow[], by: 'site' | 'status' |
 export function getDashboardStats(
   now: Date = new Date(),
   db: Db = getDb(),
-  reachedById: Map<number, ApplicationStatus[]> = readReached(db),
+  reachedById: Map<number, ApplicationStatus[]> = listReachedHistory(db),
 ): {
   appliedThisMonth: number;
   byStatus: Record<ApplicationStatus, number>;
@@ -230,7 +215,7 @@ export function loadDashboard(
   now: Date = new Date(),
   db: Db = getDb(),
 ): { rows: DashboardRow[]; stats: ReturnType<typeof getDashboardStats>; extras: Map<number, RecordExtra> } {
-  const reachedById = readReached(db);
+  const reachedById = listReachedHistory(db);
   const rows = searchApplications(q, db, reachedById);
   const stats = getDashboardStats(now, db, reachedById);
   const extras = listRecordExtras(rows.filter((r) => r.postingId == null).map((r) => r.applicationId), db);

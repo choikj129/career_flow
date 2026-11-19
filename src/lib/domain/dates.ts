@@ -75,3 +75,18 @@ export function syntheticKstIso(appliedAt: string, rank: number): string {
   const total = 12 * 3600 - Math.min(Math.max(Math.floor(rank), 0), 43199);
   return `${appliedAt}T${pad(Math.floor(total / 3600))}:${pad(Math.floor((total % 3600) / 60))}:${pad(total % 60)}.000+09:00`;
 }
+
+function utcDay(date: string): number {
+  const [y, m, d] = date.split('-').map(Number);
+  return Date.UTC(y, m - 1, d);
+}
+
+/** to − from 일수. 둘 다 YYYY-MM-DD. Date.UTC로 계산해 시간대 영향이 없다. */
+export function daysBetween(from: string, to: string): number {
+  return Math.round((utcDay(to) - utcDay(from)) / 86_400_000);
+}
+
+/** YYYY-MM-DD의 요일. 0=월 … 6=일 */
+export function weekdayMon0(date: string): number {
+  return (new Date(utcDay(date)).getUTCDay() + 6) % 7;
+}
