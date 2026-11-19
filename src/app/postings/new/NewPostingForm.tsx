@@ -34,6 +34,8 @@ export function NewPostingForm({ hasResume, siteNotes }: { hasResume: boolean; s
       <p className="hint">
         리멤버, 원티드, 그룹바이, 잡코리아는 주소로 사이트를 알아봅니다. 그 밖의 주소는 &quot;기타&quot;로 등록합니다.
       </p>
+      <p className="hint">일부 사이트는 자동으로 읽지 못해 본문 붙여넣기가 필요할 수 있습니다.</p>
+      <p className="hint">일부 사이트는 자동으로 읽지 못해 본문 붙여넣기가 필요할 수 있습니다.</p>
 
       {showNote && (
         <div style={{ marginTop: 18 }}>

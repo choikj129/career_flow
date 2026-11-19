@@ -170,6 +170,7 @@ async function PostingDetail({
           <AnalysisTab
             postingId={postingId}
             site={posting.site}
+            url={posting.url}
             selectedId={rawA ? Number(rawA) : undefined}
             job={job}
             jobActive={jobActive}
@@ -196,6 +197,7 @@ async function PostingDetail({
 async function AnalysisTab({
   postingId,
   site,
+  url,
   selectedId,
   job,
   jobActive,
@@ -203,6 +205,7 @@ async function AnalysisTab({
 }: {
   postingId: number;
   site: string;
+  url: string | null;
   selectedId: number | undefined;
   job: ReturnType<typeof latestJobFor>;
   jobActive: boolean;
@@ -306,6 +309,7 @@ async function AnalysisTab({
         <div className="fail-card" style={{ marginBottom: shown ? 20 : 0 }} role="alert">
           <h3>분석에 실패했습니다</h3>
           <p style={{ margin: 0 }}>{failure.message}</p>
+          {failure.kind === "extract_failed" && <PasteGuide url={url} />}
           {failure.kind === "extract_failed" && site !== "other" && (
             <p className="small" style={{ margin: "8px 0 0" }}>
               로그인이 필요한 사이트라면 <Link href="/settings">설정 → 사이트 로그인</Link>에서 한 번 로그인하면 다음부터 자동으로 읽습니다.
@@ -333,6 +337,32 @@ async function AnalysisTab({
       )}
       {body}
     </>
+  );
+}
+
+/**
+ * 링크로 본문을 읽지 못했을 때(D-08). 붙여넣기가 기본 흐름이다.
+ * [공고 페이지 열기]는 사용자의 브라우저가 연다. 앱은 그 페이지에 접속하지 않는다.
+ */
+function PasteGuide({ url }: { url: string | null }) {
+  return (
+    <div data-testid="paste-guide" style={{ margin: "14px 0 4px" }}>
+      <p style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>
+        이 사이트는 자동으로 읽을 수 없습니다. 공고 페이지에서 본문을 복사해 붙여넣어 주세요.
+      </p>
+      {url && isHttpUrl(url) && (
+        <p style={{ margin: "12px 0 0" }}>
+          <a className="btn primary" href={url} target="_blank" rel="noopener noreferrer">
+            공고 페이지 열기 ↗
+          </a>
+        </p>
+      )}
+      <ol style={{ margin: "12px 0 0", paddingLeft: 20 }}>
+        <li>공고 페이지를 엽니다.</li>
+        <li>Ctrl+A, Ctrl+C로 본문을 복사합니다.</li>
+        <li>아래에 붙여넣습니다.</li>
+      </ol>
+    </div>
   );
 }
 
