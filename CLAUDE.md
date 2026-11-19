@@ -51,7 +51,7 @@ scripts/         실행·시드          data/            실행 데이터(git �
 | [docs/spec/screens.md](docs/spec/screens.md) | 화면 구성: 화면별 데이터, 버튼, 상황별 표시 |
 | [docs/spec/architecture.md](docs/spec/architecture.md) | 디렉터리·파일 구성, 의존 방향, 이름 규칙 |
 | [docs/plans/phase-1-2-mvp.md](docs/plans/phase-1-2-mvp.md) | 1·2단계: 기반 + 공고 분석·지원 관리·대시보드 |
-| [docs/plans/phase-2-past-records.md](docs/plans/phase-2-past-records.md) | 2단계 추가: 지난 기록 직접 입력·서류 버전(이력서·경력기술서·포트폴리오 파일) |
+| [docs/plans/phase-2-past-records.md](docs/plans/phase-2-past-records.md) | 2단계 추가: 지난 기록 직접 입력·제출 서류 파일(이력서·경력기술서·포트폴리오) 연결과 보기 |
 | [docs/plans/phase-3-tailored-resume.md](docs/plans/phase-3-tailored-resume.md) | 3단계: 맞춤 이력서·PDF |
 | [docs/plans/phase-4-interview-prep.md](docs/plans/phase-4-interview-prep.md) | 4단계: 면접 준비 |
 | [docs/plans/phase-5-site-sync-settings.md](docs/plans/phase-5-site-sync-settings.md) | 5단계: 사이트 반영 체크리스트·설정 |

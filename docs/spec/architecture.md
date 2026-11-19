@@ -53,9 +53,12 @@ src/lib/
 ├─ companies/repo.ts         회사·별칭·매칭·합치기
 ├─ postings/repo.ts          공고 등록·조회·분석 결과 저장
 ├─ applications/repo.ts      지원 기록·상태 이력·중복 조회·일괄 등록·제출 이력서
+├─ applications/sort.ts      지원 기록 기본 정렬(지원일 → 정렬용 일시 → id)
+├─ applications/backfill.ts  정렬용 일시 일회성 채우기
 ├─ documents/
-│  ├─ pick.ts                서류 종류, 파일 이름 규칙, 지원일로 버전 고르기, 메모 "제출 서류" 줄 (순수)
-│  └─ repo.ts                서류 버전 목록·폴더 찾기·삭제·메모 이관
+│  ├─ files.ts               서류 종류, 파일 이름 규칙, 지원일로 파일 고르기, 메모 "제출 서류" 줄 (순수)
+│  ├─ folder.ts              data/documents 폴더 읽기, 안전한 경로 풀기
+│  └─ migrate.ts             메모 "제출 서류" 줄 → 지원 기록 제출 서류 칸
 ├─ search/dashboard.ts       대시보드 검색·필터·요약 지표
 ├─ tailored/repo.ts          맞춤 이력서·리비전
 ├─ interview/
@@ -118,13 +121,14 @@ src/app/
 │  ├─ postings.ts            공고 등록, 본문 붙여넣기, 다시 분석, 회사 연결·별칭
 │  ├─ resume.ts              이력서 가져오기·저장, 희망 조건
 │  ├─ import.ts              지원 내역 추출·일괄 등록·직접 입력 중복 확인
-│  ├─ documents.ts           서류 버전 폴더 찾기·삭제·메모 이관
+│  ├─ documents.ts           메모의 제출 서류 이관
 │  ├─ settings.ts            모델·시간 제한, 로그인 확인, 사이트 로그인 창, 백업, 데이터 폴더 열기
 │  ├─ tailored.ts            맞춤 이력서 생성·다듬기        (3단계)
 │  ├─ interview.ts           면접 준비 생성·추가 요청        (4단계)
 │  └─ sync.ts                사이트 반영 완료·다시 만들기    (5단계)
 ├─ api/
 │  ├─ jobs/[id]/route.ts     작업 상태 조회 (JobStatus가 폴링)
+│  ├─ documents/[name]/route.ts  제출 서류 PDF 보기 (이름 규칙 + 종류 폴더 안만)
 │  └─ pdf/
 │     ├─ tailored/[revisionId]/route.ts   맞춤 이력서 PDF   (3단계)
 │     └─ base/[versionId]/route.ts        기본 이력서 PDF   (3단계)
@@ -142,7 +146,7 @@ src/app/
 │  ├─ page.tsx               기본 이력서
 │  ├─ ResumeEditor.tsx
 │  ├─ PreferencesForm.tsx
-│  └─ DocVersions.tsx        서류 버전 탭
+│  └─ DocFiles.tsx           서류 파일 탭
 ├─ import/
 │  ├─ page.tsx               지원 내역 가져오기
 │  └─ ImportReviewTable.tsx
@@ -220,12 +224,13 @@ tests/
 
 scripts/
 ├─ start-career-flow.cmd    빌드 확인 → 실행 → 브라우저 열기 (바탕화면 바로가기용)
-└─ seed-dev.ts              개발용 데이터 (data-dev/ 에만 씀)
+├─ seed-dev.ts              개발용 데이터 (data-dev/ 에만 씀)
+└─ backfill-applied-datetime.ts  정렬용 일시 일회성 채우기 (data/ 안 파일을 읽음, --dry-run)
 
 data/                       git 제외. 위치는 CAREER_FLOW_DATA_DIR로 바꿀 수 있음
 ├─ career-flow.db           SQLite
 ├─ uploads/                 올린 이력서·캡처 원본 (resume/, import/)
-├─ documents/               서류 버전 PDF 복사본 (resume/, career/, portfolio/ 아래 <종류>_YYYYMMDD.pdf)
+├─ documents/               제출 서류 PDF 복사본 (resume/이력서_YYYYMMDD.pdf, career/경력기술서_…, portfolio/포트폴리오_…)
 ├─ ai-work/<jobId>/         작업별 Claude Code 작업 폴더 (입력 파일)
 ├─ browser-profile/         Playwright 영구 프로필 (사이트 로그인 유지)
 └─ backups/                 DB 백업 (자동 30개, 수동 10개)

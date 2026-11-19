@@ -197,10 +197,10 @@
 - Claude Code가 회사·포지션·지원일·상태를 표로 추출 → 검토 표에서 수정·삭제 → 일괄 등록.
 - 이렇게 들어온 건은 공고 본문 없이 "지원 기록만" 있는 상태로 저장된다(분석 없음).
 - **직접 입력** (2026-11-19 사용자 결정): AI 없이 검토 표를 빈 행으로 열어 지난 기록을 적는다(예: 그룹바이처럼 메일이 없는 사이트).
-  - 필수: 지원 사이트, 지원일, 회사. 회사는 검색·중복 확인의 기준이라 필수로 둔다. 포지션은 선택이고, 비우면 `(포지션 미상)`으로 저장한다(D-16 초안, 결정 전).
-  - 선택: 메모, 이력서·경력기술서·포트폴리오 버전(7.9). 지원일을 넣으면 버전이 자동으로 골라지고, 바꿀 수 있다.
+  - 필수: 지원 사이트, 회사, 포지션, 지원일 [결정 D-16]. 기존 가져오기의 필수 칸과 같다.
+  - 선택: 메모, 이력서·경력기술서·포트폴리오 파일(7.9). 지원일을 넣으면 파일이 자동으로 골라지고, 바꿀 수 있다.
   - 같은 회사·같은 지원일·같은 포지션 기록이 이미 있으면 "이미 있음"으로 체크를 끈다. 포지션만 다르면 "같은 날 기록 있음"만 보인다.
-- 메일(원티드·잡코리아·리멤버)의 지난 기록은 앱 기능이 아니다. 메인 세션이 한 번 DB에 넣고, 그때 쓰던 서류를 메모 한 줄("제출 서류: 이력서 YYYY-MM-DD / 경력기술서 모름 / 포트폴리오 YYYY-MM-DD")로 남긴다. 서류 버전 기능이 생기면 이 줄을 구조화된 연결로 옮긴다(7.9).
+- 메일(원티드·잡코리아·리멤버)의 지난 기록은 앱 기능이 아니다. 메인 세션이 한 번 DB에 넣었고, 메모를 두 줄로 남겼다: 첫 줄 `메일 가져오기(사이트)` 또는 `수기 입력(그룹바이)`, 둘째 줄 `제출 서류: 이력서 YYYY-MM-DD|모름 / 경력기술서 … / 포트폴리오 …`. 둘째 줄은 7.9의 이관으로 제출 서류 칸에 옮긴다.
 
 ### 7.8 기본 이력서 변경 → 사이트 반영 체크리스트 [제안]
 
@@ -208,17 +208,18 @@
 - 모든 사이트에 반영 체크하면 완료 처리. 사이트에 직접 접속해 고치는 것은 사용자가 한다.
 - 지금 "한 곳 고치면 4곳 손으로 맞추기"를 체크리스트로 바꾸는 기능.
 
-### 7.9 서류 버전 (이력서·경력기술서·포트폴리오 파일) (2026-11-19 사용자 결정, 등록 방식은 D-15 초안)
+### 7.9 제출 서류 파일 (이력서·경력기술서·포트폴리오) [결정 D-15]
 
-- 지난 지원에 **어떤 서류 파일을 냈는지** 남기기 위한 기능이다. 앱 안의 기본 이력서(7.1, 내용 구조와 버전)와는 별개다.
+- 지난 지원에 **어떤 서류 파일을 냈는지** 남기고 다시 열어 보기 위한 기능이다. 앱 안의 기본 이력서(7.1, 내용 구조와 버전)와는 별개다.
 - 서류 종류는 이력서 / 경력기술서 / 포트폴리오 세 가지다(자기소개서 없음). 직무별 변형본은 쓰지 않는다.
-- 버전으로 쓰는 파일은 `(이력서|경력기술서|포트폴리오)_YYYYMMDD.pdf` 형식만이다. **버전 날짜 = 파일 이름의 날짜.**
-- 보관: 파일은 앱 데이터 폴더 `data/documents/<resume|career|portfolio>/<종류>_YYYYMMDD.pdf`에 복사본으로 둔다. 앱은 데이터 폴더 밖(예: 사용자의 서류 폴더)을 읽지 않는다. 복사는 사용자가 하거나, 사용자가 승인하면 메인 세션이 한다.
-- 등록: 기본 이력서 화면의 "서류 버전" 탭에서 [폴더에서 찾기]를 누르면 형식에 맞는 파일을 **종류·날짜·파일 경로만** 등록한다. 내용은 읽지 않는다(`claude` 호출 없음).
-- 지원 기록 연결: 지원 기록마다 종류별 버전(이력서·경력기술서·포트폴리오, 각각 선택)을 둔다. 지원일과 **같은 날이거나 앞선** 버전 중 가장 늦은 것이 기본값이다. 종류마다 가장 이른 버전보다 앞선 지원은 그 종류만 "모름"이다.
-  - 예: 2026-08-01 지원 → 이력서 모름, 경력기술서 모름, 포트폴리오 2026-07-22 버전.
-- 이관: 메모에 "제출 서류: …" 한 줄이 있는 기록은 [메모의 제출 서류 옮기기]로 종류별 연결로 옮기고 그 줄을 지운다. 등록되지 않은 날짜가 있으면 그 기록은 건드리지 않는다.
-- 대시보드 "이력서별" 보기: 앱 기본 이력서 버전이 없는 기록은 이력서 파일 버전("이력서 2026-09-05")으로 묶고, 둘 다 없으면 "모름".
+- 쓰는 파일은 `(이력서|경력기술서|포트폴리오)_YYYYMMDD.pdf` 형식만이다. **버전 날짜 = 파일 이름의 날짜.**
+- 보관: 파일은 앱 데이터 폴더 `data/documents/<resume|career|portfolio>/`에 원래 이름(`이력서_YYYYMMDD.pdf` 등)으로 복사해 둔다(2026-11-19 복사 완료). 앱은 데이터 폴더 밖(예: 사용자의 서류 폴더)을 읽지 않는다.
+- **등록 절차는 없다.** 앱은 이 폴더를 읽어 이름 규칙에 맞는 파일을 그대로 목록으로 쓴다. 새 파일은 폴더에 넣기만 하면 된다. 내용은 읽지 않는다(`claude` 호출 없음).
+- 지원 기록 연결: 지원 기록에 종류별 **파일 이름만** 저장한다(각각 선택). 지원일과 **같은 날이거나 앞선** 파일 중 가장 늦은 것이 기본값이다. 종류마다 가장 이른 파일보다 앞선 지원은 그 종류만 "모름"이다.
+  - 예: 2026-08-01 지원 → 이력서 모름, 경력기술서 모름, 포트폴리오 `포트폴리오_20260722.pdf`.
+- 보기: 지원 기록(대시보드의 기록만 행 펼침, 공고 상세 지원 기록 탭)에 종류별 [보기]를 두고, 누르면 앱이 그 폴더의 파일을 브라우저 새 탭에 PDF로 보여 준다. 이름 규칙과 종류 폴더 밖은 열지 않는다. 파일이 없어졌으면 "파일 없음".
+- 이관: 메모에 "제출 서류: …" 줄이 있는 기록은 [메모의 제출 서류 옮기기]로 날짜를 파일 이름으로 바꿔 제출 서류 칸에 넣고 그 줄을 지운다(메모 첫 줄은 남김). 폴더에 없는 파일이 있으면 그 기록은 건드리지 않는다.
+- 대시보드 "이력서별" 보기: 앱 기본 이력서 버전이 없는 기록은 이력서 파일("이력서 2026-09-05")로 묶고, 둘 다 없으면 "모름".
 
 ## 8. 공고 본문 추출 [제안]
 
@@ -279,8 +280,7 @@
 | `companies` | id, display_name, legal_name, aliases(JSON), normalized_keys, created_at |
 | `postings` | id, company_id, url(유일), site, site_note(기타일 때 출처 이름), position_title, raw_text, extracted(JSON: 공고 정보), fetched_at, deadline, status, created_at |
 | `analyses` | id, posting_id, resume_version_id, result(JSON), fit_score, created_at, job_id |
-| `applications` | id, posting_id(없을 수 있음: 가져온 기록), company_id, position_title, site, site_note, applied_at, submitted_resume(종류+id), submitted_docs(JSON: 종류별 서류 버전 id, 7.9), status, notes |
-| `document_versions` | id, kind(resume/career/portfolio), version_date, file_path(`data/documents/` 기준), created_at — (kind, version_date) 유일 (7.9, D-15 초안) |
+| `applications` | id, posting_id(없을 수 있음: 가져온 기록), company_id, position_title, site, site_note, applied_at, submitted_resume(종류+id), submitted_docs(JSON: 종류별 서류 파일 이름, 7.9), applied_datetime(정렬 전용 한국 시간 일시, 화면에 안 보임, D-17), status, notes |
 | `status_events` | id, application_id, status, at, note |
 | `tailored_resumes` | id, posting_id, base_resume_version_id, created_at |
 | `tailored_revisions` | id, tailored_resume_id, rev_no, content(JSON), changes(JSON), site_guide(JSON), portfolio_tips(JSON), user_request, created_at |
@@ -289,6 +289,8 @@
 | `site_sync_tasks` | id, from_version_id, to_version_id, site, instructions(JSON), done_at |
 | `ai_jobs` | id, type, target_id, status, model, input_path, output(JSON/text), error, session_id, started_at, finished_at, usage(JSON) |
 
+- 지원 기록 목록의 기본 정렬은 지원일 ↓ → `applied_datetime` ↓(없으면 같은 날 맨 뒤) → id ↓. `applied_datetime`은 [지원 완료]면 저장 시각, 직접 입력·가져오기면 표 순서를 지키도록 만든 값(위 행이 더 최근), 지난 메일 기록은 메일 수신 시각이다. 실제 지원 시각이 아닐 수 있어 화면에 보이지 않는다(D-17).
+- 서류 파일(7.9) 목록은 테이블이 아니라 `data/documents/` 폴더를 읽어 얻는다. 지원 기록은 파일 이름만 가진다.
 - 공고 상태(`postings.status`)는 지원 전 단계(분석함 등), 지원 이후는 `applications.status`로 관리. 세부 분리 방식은 구현자 재량.
 - 회사 매칭: 분석 결과의 회사명으로 기존 `companies`를 정규화 키로 찾아 연결, 없으면 생성. 사용자가 공고 화면에서 회사 연결을 바꾸거나 별칭을 추가할 수 있다. [제안]
 - 중복 경고: 공고 등록·분석 후 연결된 회사에 `applications`가 있으면 경고 배너 표시.
@@ -344,7 +346,7 @@
 - 3단계: `docs/plans/phase-3-tailored-resume.md`
 - 4단계: `docs/plans/phase-4-interview-prep.md`
 - 5단계: `docs/plans/phase-5-site-sync-settings.md`
-- 2단계 추가(지난 기록 직접 입력·서류 버전): `docs/plans/phase-2-past-records.md`
+- 2단계 추가(지난 기록 직접 입력·제출 서류 파일): `docs/plans/phase-2-past-records.md`
 
 ## 15. 구현자 재량으로 남긴 것
 
