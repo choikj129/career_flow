@@ -3,7 +3,7 @@
 > **For agentic workers:** 테스트를 먼저 쓰고(실패 확인) → 구현 → 통과 확인 → 커밋. Task 순서대로 한다. 작업 기록: [docs/work/stats-dashboard.md](../work/stats-dashboard.md)
 
 - 작성: 2026-11-19 (D-18·D-19·D-20·D-21 결정 반영)
-- 선행: `docs/plans/phase-2-past-records.md`(완료). `applications.submitted_docs`, `src/lib/applications/stages.ts`(`reachedStages`), `src/lib/documents/files.ts`(`docLabel`, `parseDocFileName`)를 쓴다.
+- 선행: `docs/plans/phase-2-past-records.md`(완료, Task 7 "과제·코딩테스트" 상태 포함). `applications.submitted_docs`, `src/lib/applications/stages.ts`(`reachedStages`), `src/lib/documents/files.ts`(`docLabel`, `parseDocFileName`)를 쓴다.
 
 **Goal:** 지원 기록만으로 서류 통과율을 기간(월·년), 서류 버전, 사이트, 요일별로 보고, 단계별 흐름을 본다. 새 화면 `/stats`를 만들고, 대시보드 묶음의 통과율도 같은 정의로 맞춘다. (기획서 7.10, 화면 문서 10장)
 
@@ -84,7 +84,7 @@ export function daysBetween(from: string, to: string): number;
 export function weekdayMon0(date: string): number;
 
 // src/lib/applications/repo.ts
-/** 상태 이력 중 서류합격·면접·최종합격 행을 지원 기록별로 모은다. (dashboard.ts readReached를 옮김) */
+/** 상태 이력 중 REACHED_STAGES(서류합격·과제·코딩테스트·면접·최종합격) 행을 지원 기록별로 모은다. (dashboard.ts readReached를 옮김) */
 export function listReachedHistory(db?: Db): Map<number, ApplicationStatus[]>;
 
 // src/lib/stats/outcome.ts (순수)
@@ -96,7 +96,7 @@ export const OUTCOME_LABELS: Record<Outcome, string>; // 서류 통과 / 불합�
  * 위에서부터 처음 맞는 것:
  * reached에 document_passed → passed, status withdrawn → withdrawn, rejected → rejected,
  * applied이고 daysBetween(appliedAt, today) < noResponseDays → pending, 그 밖 applied → no_response.
- * status가 document_passed·interview·final_passed면 reachedStages 규칙상 reached에 document_passed가 있다.
+ * status가 document_passed·assignment·interview·final_passed면 reachedStages 규칙상 reached에 document_passed가 있다.
  */
 export function classifyOutcome(
   a: { status: ApplicationStatus; appliedAt: string; reached: readonly ReachedStage[] },
@@ -161,7 +161,7 @@ export type StatsData = {
   isEmptyAll: boolean;                  // 필터와 관계없이 지원 기록 0건
   firstMonth: string | null;            // 필터 결과 중 가장 이른 지원월 YYYY-MM
   lastMonth: string | null;
-  summary: Tally & { interview: number; final: number }; // 면접·최종합격을 거친 수
+  summary: Tally & { assignment: number; interview: number; final: number }; // 과제·코딩테스트·면접·최종합격을 거친 수
   periods: PeriodBucket[];
   docs: DocBucket[];
   sites: SiteBucket[];
@@ -183,8 +183,17 @@ export type DocBucket = { key: string; label: string; unknown: boolean; firstApp
 export function byDocVersion(items: StatItem[], kind: DocKind): DocBucket[];
 export type SiteBucket = { site: SiteId; tally: Tally };
 export function bySite(items: StatItem[]): SiteBucket[]; // SITE_IDS 순서, 0건 제외
-export type FunnelStep = { stage: 'applied' | 'document_passed' | 'interview' | 'final_passed'; count: number; ofPrev: number | null };
-/** applied = 전체 − outcome withdrawn. 나머지는 reached에 그 단계가 있는 수 */
+export type FunnelStep = {
+  stage: 'applied' | 'document_passed' | 'assignment' | 'interview' | 'final_passed';
+  count: number;
+  ofPrev: number | null;
+  optional: boolean; // assignment만 true(거치지 않을 수 있는 곁가지)
+};
+/**
+ * 순서: applied, document_passed, assignment, interview, final_passed (항상 5개).
+ * applied = 전체 − outcome withdrawn. 나머지는 reached에 그 단계가 있는 수.
+ * ofPrev의 "앞 단계"는 optional이 아닌 바로 앞 단계다: assignment·interview 모두 document_passed 대비.
+ */
 export function funnel(items: StatItem[]): FunnelStep[];
 export type WeekdayBucket = { weekday: number; label: string; tally: Tally };
 export function byWeekday(items: StatItem[]): WeekdayBucket[]; // 월~일 7칸 항상
@@ -213,14 +222,14 @@ export function ticks(max: number, count?: number): number[];
   - TC-STATS-05 `byPeriod` 년: 2024·2026 기록, today 2026-..이면 2024·2025·2026이고 2026만 partial.
   - TC-STATS-06 `byDocVersion`: 기본 v1·v2, 이력서 파일 2개, 모름이 섞여 있으면 순서는 v2, v1, 이력서 2026-11-02, 이력서 2026-09-05, 모름. first/lastApplied가 맞고, `career`는 기본 버전을 무시한다.
   - TC-STATS-07 `bySite`: 순서와 0건 제외, 기타 포함.
-  - TC-STATS-08 `funnel`: 통과 못 한 지원취소는 지원에서 뺀다. 단계 수는 줄어들기만 한다. 앞 단계 0이면 ofPrev null.
+  - TC-STATS-08 `funnel`: 통과 못 한 지원취소는 지원에서 뺀다. optional이 아닌 단계(지원·서류 통과·면접·최종합격) 수는 줄어들기만 한다. 앞 단계 0이면 ofPrev null. 과제 단계: 서류합격 3(그중 과제 1, 과제 없이 면접 2)이면 assignment count 1·ofPrev 1/3, interview count 2·ofPrev 2/3(서류 통과 대비), assignment만 optional true.
   - TC-STATS-09 `byWeekday`: 기록이 없어도 7칸이고, 라벨은 "월"~"일".
   - TC-STATS-10 `loadStatItems`(임시 DB, `makeTestDb`):
     - 사이트·기간 필터가 지원일 양끝을 포함한다.
     - `docs`를 읽는다.
     - 서류합격 → 지원취소 기록은 passed다.
     - 서류합격 → 지원(되돌림)은 통과가 아니다. 지원일에 따라 pending 또는 no_response다.
-  - TC-STATS-11 `getStats`: 빈 DB면 isEmptyAll true. 기록이 있고 필터 결과가 0이면 false이고 summary.total 0. summary.interview는 면접을 거친 수다.
+  - TC-STATS-11 `getStats`: 빈 DB면 isEmptyAll true. 기록이 있고 필터 결과가 0이면 false이고 summary.total 0. summary.interview는 면접을 거친 수, summary.assignment는 과제·코딩테스트를 거친 수다. 지금 상태가 과제·코딩테스트인 기록은 passed다.
   - TC-STATS-12 params: 잘못된 unit·mode·doc·site는 기본값이 된다. `period=month`는 all이 된다. custom이 아니면 from/to를 무시한다. statsHref에서 기본값은 생략된다. toStatsQuery('3m')는 dashboard `periodRange`와 같다.
   - TC-STATS-13 chart-scale: niceMax 0→1, 7→10, 13→20, 46→50, 329→500. ticks(20)은 [0,5,10,15,20].
 - [ ] **Step 2:** FAIL 확인. **Step 3:** 구현. **Step 4:** PASS, 그리고 전체 PASS.
@@ -250,6 +259,7 @@ export function ticks(max: number, count?: number): number[];
 
 **화면**: 배치는 와이어프레임 S-1~S-4를 따르고, 문구·상황별 표시는 화면 문서 10장을 따른다.
 - `Nav.tsx`의 `LINKS`에서 대시보드 다음에 `{ href: "/stats", label: "통계" }`를 넣는다.
+- 단계별 흐름(S5): `optional` 단계(과제·코딩테스트)는 줄을 들여 쓰고 이름 옆에 보조 글자 "(거치지 않을 수 있음)"을 단다. 막대 색은 design.md 7장(청람 `#1F5FAD`). 0건이어도 줄은 보인다.
 
 - [ ] **Step 1: E2E 먼저** `tests/e2e/13-stats.spec.ts`
   - 시드의 지원일은 오늘 기준 상대 날짜로 만든다.

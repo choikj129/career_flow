@@ -11,6 +11,7 @@
   - 앱은 `D:\`를 읽지 않는다. 파일은 프로젝트 데이터 폴더에 복사해 두고(완료, 7개), 지원 기록은 **파일 이름만** 참조한다. [보기]를 누르면 그 파일을 브라우저에서 PDF로 보여 준다(D-15).
   - 지원 기록에 **정렬 전용 일시** 칸을 더한다. 화면에는 보이지 않는다. 같은 지원일 안에서 순서를 정하는 데만 쓴다(D-17, Task 5).
   - 상태 필터 "서류합격"은 서류합격을 **거친** 기록을 모두 보여 준다(지금 상태와 관계없이). 면접·최종합격도 같다(Task 6).
+  - 서류합격과 면접 사이에 **과제·코딩테스트** 상태를 하나 더한다(2026-11-20 요청, Task 7).
 
 **Goal:** (1) 지난 지원 기록을 AI 없이 표에 직접 입력해 등록한다. (2) 지원 기록마다 낸 이력서·경력기술서·포트폴리오 **파일 이름**을 저장하고, 화면에서 그 파일을 열어 본다. 지원일로 파일을 자동으로 고르고, 종류마다 가장 이른 파일보다 앞선 지원은 그 종류만 "모름"이다. (3) 메인 세션이 넣은 기록의 메모 "제출 서류" 줄을 이 칸으로 옮긴다. (기획서 7.7·7.9, 화면 문서 1장·3.9·5.5·6장)
 
@@ -83,7 +84,7 @@ src/app/
 src/lib/ (Task 5)
   domain/dates.ts                (수정) toKstIso, syntheticKstIso
   applications/sort.ts           (새) applicationOrder
-  applications/stages.ts         (새, Task 6) reachedStages, matchesStatusFilter
+  applications/stages.ts         (새, Task 6) reachedStages, matchesStatusFilter (Task 7: isReachedStage, assignment)
   applications/backfill.ts       (새) 정렬용 일시 일회성 채우기
 scripts/backfill-applied-datetime.ts  (새, Task 5) 일회성 실행 스크립트
 drizzle/0003_submitted_docs.sql  (npx drizzle-kit generate --name submitted_docs)
@@ -376,6 +377,80 @@ Task 2 다음에 해도 되고 Task 4와 나란히 해도 된다(파일이 겹�
 
 ---
 
+### Task 7: "과제·코딩테스트" 상태 추가
+
+사용자 요청(2026-11-20): "상태 변경 시 면접, 코딩테스트 등등 일자 등록도 되는지?" → "코딩테스트/과제 단계는 합쳐서(통합어로)". 지금은 면접만 차수·날짜가 있고 코딩테스트·과제 상태가 없다(`src/lib/domain/types.ts:11-19`). 그래서 과제 단계까지 간 기록은 메모로만 남는다.
+
+**규칙**
+
+- 새 상태 ID `assignment`, 표시명 **과제·코딩테스트**. 과제, 코딩테스트, 과제 전형, 사전 테스트를 모두 이 하나로 기록한다.
+- 순서: 지원 → 서류합격 → **과제·코딩테스트** → 면접 → 최종합격 / 불합격 / 지원취소.
+- 입력은 다른 상태와 같다: 날짜(기본 오늘) + 메모(선택). **차수 칸은 없다**. 코딩테스트 뒤 과제처럼 두 번이면 같은 상태로 한 번 더 저장한다(이력에 두 줄, 메모로 구분).
+- 거친 단계(Task 6): 과제·코딩테스트를 거친 기록은 **서류합격도 거친 것**으로 본다. 면접·최종합격은 과제를 **거친 것으로 보지 않는다**(과제 없이 면접으로 가는 회사가 많다).
+
+  | 지금 상태 또는 이력에 있는 것 | 거친 단계 |
+  |---|---|
+  | 서류합격 | 서류합격 |
+  | 과제·코딩테스트 | 서류합격, 과제·코딩테스트 |
+  | 면접 | 서류합격, 면접 |
+  | 최종합격 | 서류합격, 면접, 최종합격 |
+
+  지금 상태가 지원이면 이력과 관계없이 빈 집합(Task 6 규칙 그대로).
+- 서류 통과율: 과제·코딩테스트를 거친 기록은 서류 통과다(위 표로 자동). 계산식은 바뀌지 않는다.
+
+**DB**: 스키마·마이그레이션 변경 없음. `applications.status`와 `status_events.status`는 `text NOT NULL`이고 CHECK 제약이 없다(`drizzle/0000_huge_chamber.sql:39`·`:103`, `src/lib/db/schema.ts:95`·`:109`). 타입(`ApplicationStatus`)에 값만 더한다. `interview_round`는 과제일 때 null이다(`changeStatus`가 이미 면접 외에는 null로 저장, `src/lib/applications/repo.ts:63`).
+
+**Files:**
+- Modify: `src/lib/domain/types.ts`, `src/lib/applications/stages.ts`, `src/lib/search/dashboard.ts`, `src/app/page.tsx`, `src/app/_components/DashboardFilters.tsx`, `src/app/_components/DashboardViews.tsx`, `src/app/_components/StatusBoard.tsx`, `src/app/_components/StatusBadge.tsx`, `src/app/_components/StatusForm.tsx`, `src/app/globals.css`, `prompts/import-applications.md`
+- Modify (테스트): `tests/stages.test.ts`, `tests/search.test.ts`, `tests/repos.test.ts`, `tests/import-review.test.ts`, `tests/e2e/01-dashboard.spec.ts`(보드 5열 → 6열), `tests/e2e/12-past-records.spec.ts`(E2E-07)
+- 자동으로 따라오는 곳(고칠 것 없음, 확인만): `_actions/applications.ts`의 zod enum, `ai/tasks/schemas.ts`·`import-rows.ts`의 enum, `dashboard-params.ts`의 `?status=` 파싱, `ImportReviewTable`·`StatusForm`의 상태 select, `readReached`(`REACHED_STAGES`로 거름)
+
+**Interfaces:**
+- `types.ts`
+  - `ApplicationStatus`에 `'assignment'` 추가
+  - `APPLICATION_STATUSES = ['applied', 'document_passed', 'assignment', 'interview', 'final_passed', 'rejected', 'withdrawn']` (이 순서가 상태 select·필터 순서다)
+  - `STATUS_LABELS.assignment = '과제·코딩테스트'`
+- `stages.ts`
+  - `type ReachedStage = 'document_passed' | 'assignment' | 'interview' | 'final_passed'`
+  - `REACHED_STAGES = ['document_passed', 'assignment', 'interview', 'final_passed']`
+  - `IMPLIES.assignment = ['document_passed', 'assignment']`. 나머지는 그대로(면접·최종합격에 `assignment`를 넣지 않는다)
+  - `isReachedStage(s: ApplicationStatus): s is ReachedStage` 추가. `matchesStatusFilter`와 `DashboardFilters`의 하드코딩된 세 값 비교를 이것으로 바꾼다
+- `dashboard.ts`
+  - `getDashboardStats().reachedCounts`에 `assignment` 키(초기값 0)
+  - `groupDashboardRows('status')` 칸: 지원 / 서류합격 / **과제·코딩테스트**(key `assignment`, match `['assignment']`) / 면접 / 최종합격 / 종료 — 6칸
+- 화면
+  - `page.tsx` 요약 줄: 서류합격 다음, 면접 앞에 `과제·코딩테스트 {n}`(0이면 숨김, 다른 단계와 같음)
+  - `DashboardFilters.tsx`: 안내 문구 조건을 `isReachedStage(params.status)`로. 과제·코딩테스트를 골라도 "이 단계를 거친 기록을 모두 보여 줍니다(지금 상태와 관계없이)"
+  - `DashboardViews.tsx` `STATUS_COLUMN_COLORS.assignment = '#1F5FAD'`
+  - `StatusBoard.tsx` `DROP_STATUS.assignment = 'assignment'`. 카드 아래 안내 문구 "(날짜·면접 차수 확인 후 저장)"은 그대로
+  - `StatusBadge.tsx` `CLASS.assignment = 'asg'`
+  - `globals.css`: `.st.asg { background: #E8EEF7; color: #1F5FAD; }`. 보드가 6칸이 되므로 `.board`의 `grid-auto-columns`를 `minmax(180px, 1fr)`로(1240px 화면에서 가로 스크롤 없이 들어감: 6×180 + 5×12 = 1140)
+  - `StatusForm.tsx`: 새 상태가 과제·코딩테스트이면 메모 placeholder를 `선택 (예: 코딩테스트, 과제 제출)`로. 그 밖에는 `선택` 그대로. 차수 칸은 면접일 때만(그대로)
+- `prompts/import-applications.md`: 상태 목록 줄에 `assignment(과제·코딩테스트)`를 서류합격 다음에 넣는다. "코딩테스트·과제·사전 테스트 안내는 assignment" 한 줄 추가. 출력 스키마는 enum이 자동으로 늘어난다
+
+**기존 데이터 이관 (앱 코드 아님, 메인 세션이 처리)** — D-22 답이 "바꾼다"일 때만
+1. 앱을 끄고 `data/backups/before-assignment-status.db`로 DB를 백업한다(이미 있으면 멈춤).
+2. 대상 찾기: `applications.status = 'document_passed'`이고 `notes`에 `코딩테스트 단계까지 진행`이 들어 있는 기록. **1건이 아니면 멈추고 사용자에게 알린다**.
+3. 대상의 회사·포지션·지원일을 사용자에게 보여 주고 확인을 받는다.
+4. 한 트랜잭션에서:
+   - `applications.status = 'assignment'`, `interview_round = null`
+   - `status_events`에 한 줄: `status = 'assignment'`, `at` = 그 기록의 가장 늦은 상태 이력 날짜(없으면 지원일), `note = '메모에서 옮김(날짜 모름)'`
+   - 메모(`notes`)는 그대로 둔다
+5. 대시보드에서 확인: 상태 배지 "과제·코딩테스트", 서류합격 필터·과제 필터 모두에 나옴, 요약 줄 서류합격 수 그대로(9). 결과를 작업 기록 7절에 적는다.
+
+- [ ] **Step 1: 실패하는 테스트**
+  - `tests/stages.test.ts` (TC-PAST-60·61): `APPLICATION_STATUSES` 순서와 `STATUS_LABELS.assignment`. (과제, []) → {서류합격, 과제}. (불합격, [과제]) → {서류합격, 과제}. (면접, []) → {서류합격, 면접}(과제 없음). (지원, [과제]) → 빈 집합. `matchesStatusFilter('assignment', 'rejected', {서류합격, 과제})` true. `isReachedStage`: 지원·불합격·지원취소 false, 나머지 true
+  - `tests/search.test.ts` (TC-PAST-62·63·64): Task 6 시나리오에 E(서류합격 → 과제 → 불합격), F(과제, 지금 상태)를 더한다. 필터 과제 → E, F. 필터 서류합격 → A, B, E, F. 필터 면접 → B. 보드 6칸, 칸 순서 `applied, document_passed, assignment, interview, final_passed, closed`, F는 과제 칸, E는 종료 칸. `reachedCounts.assignment === 2`, `reachedCounts.document_passed === 4`. 사이트 묶음 통과율 passed에 E·F 포함
+  - `tests/repos.test.ts` (TC-PAST-65): `changeStatus(id, 'assignment', { interviewRound: 2, note: '코딩테스트' })` → 지원 기록 `interviewRound` null, 이력 한 줄(상태 assignment, 차수 null, 메모 저장). 같은 상태로 한 번 더 저장하면 이력 두 줄
+  - `tests/import-review.test.ts` (TC-PAST-66): 검토 행 스키마가 `status: 'assignment'`를 받는다. `prompts/import-applications.md`에 `APPLICATION_STATUSES`의 모든 ID가 들어 있다(파일을 읽어 확인)
+  - `tests/e2e/01-dashboard.spec.ts`: TC-DASH-12 기대값을 6열로
+  - `tests/e2e/12-past-records.spec.ts` (TC-PAST-E2E-07): 공고 상세에서 [상태 변경] → 과제·코딩테스트 고름 → 차수 칸 없음, 메모 placeholder 확인 → 저장 → 배지·이력 한 줄. 대시보드 상태별 보드에 과제·코딩테스트 칸, 카드를 그 칸으로 끌면 창의 새 상태가 과제·코딩테스트로 골라져 있음. 상태 필터 과제·코딩테스트 → 안내 문구
+- [ ] **Step 2:** FAIL. **Step 3:** 구현. **Step 4:** `npm test`, `npm run test:e2e`, `npm run lint`, `npx next typegen && npx tsc --noEmit`, `npm run build` 모두 실패 0.
+- [ ] **Step 5:** 커밋 `feat: assignment and coding test status`.
+- [ ] **Step 6:** `docs/test/test-cases.md`에 TC-PAST-60~66·E2E-07·M2 대응표, TC-DASH-12·38 "5열" → "6열". 커밋 `docs: assignment status test cases`.
+
+---
+
 ## 테스트 케이스
 
 | ID | 대상 | 기대 결과 | 종류 | 위치 |
@@ -400,6 +475,15 @@ Task 2 다음에 해도 되고 Task 4와 나란히 해도 된다(파일이 겹�
 | TC-PAST-52 | 상태별 보드 | 칸은 지금 상태 기준 그대로 | 통합 | search |
 | TC-PAST-53 | 요약 줄 | 서류합격·면접·최종합격 수 = 그 필터 결과 수, 전체 합계는 지금 상태 기준 | 통합 | search |
 | TC-PAST-54 | 서류 통과율 | 서류합격 뒤 불합격·지원취소도 통과로 셈 | 통합 | search |
+| TC-PAST-60 | 상태 목록 | `assignment`가 서류합격과 면접 사이, 표시명 "과제·코딩테스트" | 단위 | stages |
+| TC-PAST-61 | `reachedStages`(과제) | 과제를 거치면 서류합격도 거침. 면접·최종합격은 과제를 포함하지 않음. 지금 지원이면 빈 집합. `isReachedStage` | 단위 | stages |
+| TC-PAST-62 | 상태 필터(과제) | 과제 필터에 과제 뒤 불합격 포함, 서류합격 필터에 과제 기록 포함 | 통합 | search |
+| TC-PAST-63 | 상태별 보드 6칸 | 지원 / 서류합격 / 과제·코딩테스트 / 면접 / 최종합격 / 종료, 칸은 지금 상태 | 통합 | search |
+| TC-PAST-64 | 요약 줄·통과율(과제) | `reachedCounts.assignment` = 과제 필터 결과 수, 과제 거친 기록은 서류 통과로 셈 | 통합 | search |
+| TC-PAST-65 | `changeStatus`(과제) | 차수는 무시하고 null, 메모·날짜 저장, 같은 상태 두 번이면 이력 두 줄 | 통합 | repos |
+| TC-PAST-66 | 가져오기(과제) | 검토 행이 `assignment`를 받음, 가져오기 프롬프트에 모든 상태 ID가 있음 | 단위 | import-review |
+| TC-PAST-E2E-07 | 과제 상태 변경·보드 | 차수 칸 없음·placeholder, 저장 후 배지·이력, 보드 과제 칸으로 끌기, 필터 안내 문구 | E2E | 12-past-records |
+| TC-PAST-M2 | 기존 기록 이관(D-22) | "코딩테스트 단계까지 진행" 메모 기록 1건이 과제·코딩테스트로 바뀌고 서류합격 수는 그대로 | 수동 | 실제 개인 데이터 |
 | TC-PAST-M1 | 실제 데이터 채우기 | dry-run에서 메일 452·그룹바이 17건 모두 맞음, 실행 뒤 대시보드 같은 날 순서 확인 | 수동 | 실제 개인 데이터라 자동 불가 |
 | TC-PAST-E2E-01 | 직접 입력 열기 | 사이트 미선택·"모름"이면 비활성, 그룹바이 → 빈 행 1개(사이트 그룹바이) | E2E | 12-past-records |
 | TC-PAST-E2E-02 | 직접 입력 등록 | 회사·포지션·지원일을 채워야 등록 가능, 하나라도 비면 "… 필요"로 막힘, 등록 후 대시보드에 나옴 | E2E | 12-past-records |
@@ -416,6 +500,7 @@ Task 2 다음에 해도 되고 Task 4와 나란히 해도 된다(파일이 겹�
 | 7.9 제출 서류 파일 | Task 1·3·4 |
 | 10장 `applied_datetime`(정렬 전용) | Task 5 |
 | 7.2 상태 필터 = 거친 단계 | Task 6 |
+| 7.4 과제·코딩테스트 상태 | Task 7 |
 | 메일 지난 기록 | **범위 밖**. 메인 세션이 한 번 DB에 넣음(0.2) |
 | 앱에서 서류 PDF 올리기 | **범위 밖**. 폴더에 넣으면 바로 목록에 나온다 |
 | 지원 기록 수정 창(3.10)에서 제출 서류 고치기 | **범위 밖**. 3단계 Task 4(제출 이력서 수정)와 함께 다룬다 |

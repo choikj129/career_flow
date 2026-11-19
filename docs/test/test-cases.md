@@ -559,10 +559,10 @@ AI 작업이 끝나면 `data/ai-work/<번호>/`를 바로 지운다. 올린 이�
 | TC-STATS-05 | `byPeriod` 년 | 2024·2026 기록 → 2024·2025·2026, 올해만 진행 중 | `tests/stats.test.ts` |
 | TC-STATS-06 | `byDocVersion` | 이력서: 기본 v2 → v1 → 이력서 2026-11-02 → 2026-09-05 → 모름. 첫·마지막 지원일. 경력기술서는 기본 버전 무시 | `tests/stats.test.ts` |
 | TC-STATS-07 | `bySite` | 사이트 순서 고정, 0건 사이트 없음, 기타 포함 | `tests/stats.test.ts` |
-| TC-STATS-08 | `funnel` | 지원 = 전체 − 통과 못 한 지원취소. 지원 ≥ 서류 ≥ 면접 ≥ 최종. 앞 단계 0이면 비율 null | `tests/stats.test.ts` |
+| TC-STATS-08 | `funnel` | 지원 = 전체 − 통과 못 한 지원취소. 지원 ≥ 서류 ≥ 면접 ≥ 최종. 앞 단계 0이면 비율 null. 과제·코딩테스트는 곁가지(optional): 과제·면접 비율은 둘 다 서류 통과 대비, 면접 수가 과제 수보다 클 수 있음 | `tests/stats.test.ts` |
 | TC-STATS-09 | `byWeekday` | 기록이 없어도 월~일 7칸 | `tests/stats.test.ts` |
 | TC-STATS-10 | `loadStatItems` | 사이트·기간(지원일 양끝 포함) 적용, 제출 서류 파일 읽기, 서류합격 → 지원취소는 통과, 서류합격 → 지원(되돌림)은 통과 아님 | `tests/stats.test.ts` |
-| TC-STATS-11 | `getStats` | 빈 DB → 빈 상태. 필터 결과만 0건 → 빈 상태 아님, 전체 0. 면접 거친 수 | `tests/stats.test.ts` |
+| TC-STATS-11 | `getStats` | 빈 DB → 빈 상태. 필터 결과만 0건 → 빈 상태 아님, 전체 0. 과제·코딩테스트·면접 거친 수, 지금 과제인 기록은 통과 | `tests/stats.test.ts` |
 | TC-STATS-12 | 주소 파라미터 | 잘못된 값 → 기본값, 기본값은 주소에서 생략, `period=month` → 전체, custom이 아니면 시작·종료일 무시 | `tests/stats.test.ts` |
 | TC-STATS-13 | 축 눈금 | niceMax 0→1, 7→10, 13→20, 46→50, 329→500. ticks(20) = 0,5,10,15,20 | `tests/stats.test.ts` |
 | TC-STATS-14 | 대시보드 묶음 통과율 | A 서류합격→불합격, B 서류합격→면접, C 지원, D 불합격. C 지원 후 10일이면 통과 2 / 분모 3, 대기 1. 40일이면 통과 2 / 분모 4, 무응답 1. TC-PAST-54 기대값을 이것으로 바꿈 | `tests/search.test.ts` |
