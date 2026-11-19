@@ -1,6 +1,6 @@
-import { and, desc, eq, gte, inArray, like, lte } from 'drizzle-orm';
+import { and, desc, eq, gte, like, lte } from 'drizzle-orm';
 import { getDb, type Db } from '@/lib/db/client';
-import { analyses, applications, companies, companyKeys, resumeVersions, statusEvents } from '@/lib/db/schema';
+import { analyses, applications, companies, companyKeys, resumeVersions } from '@/lib/db/schema';
 import { monthLocal } from '@/lib/domain/dates';
 import { listReachedHistory, listRecordExtras } from '@/lib/applications/repo';
 import { applicationOrder } from '@/lib/applications/sort';
