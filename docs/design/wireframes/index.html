@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Career Flow 와이어프레임</title><style>
+/* 와이어프레임 공용 스타일 — 디자인이 아니라 배치·문구 확인용. 색은 회색만 쓴다. */
+:root {
+  --bg: #F2F2F2; --box: #FFFFFF; --line: #9A9A9A; --soft: #D6D6D6; --text: #222; --sub: #6B6B6B; --note: #5A5A5A;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 system-ui, "Malgun Gothic", sans-serif; }
+a { color: inherit; }
+.page-title { max-width: 1240px; margin: 28px auto 6px; padding: 0 20px; font-size: 20px; font-weight: 700; }
+.page-desc { max-width: 1240px; margin: 0 auto 8px; padding: 0 20px; color: var(--sub); }
+.toc { max-width: 1240px; margin: 0 auto 8px; padding: 0 20px; display: flex; gap: 6px 14px; flex-wrap: wrap; }
+
+/* 프레임 = 화면 하나 */
+.frame { max-width: 1240px; margin: 26px auto 0; padding: 0 20px; }
+.frame-name { font-weight: 700; margin: 0 0 6px; }
+.frame-name small { font-weight: 400; color: var(--sub); margin-left: 6px; }
+.screen { background: var(--box); border: 1px solid var(--line); min-height: 200px; }
+.notes { margin: 8px 0 0; padding-left: 18px; color: var(--note); font-size: 13px; }
+
+/* 상단 내비게이션 */
+.nav { display: flex; align-items: center; gap: 18px; height: 52px; padding: 0 20px; border-bottom: 1px solid var(--line); }
+.nav .logo { font-weight: 700; margin-right: 12px; }
+.nav .cur { font-weight: 700; text-decoration: underline; text-underline-offset: 6px; }
+.nav .right { margin-left: auto; color: var(--sub); }
+.cnt { display: inline-block; min-width: 18px; padding: 0 5px; border: 1px solid var(--line); border-radius: 9px; font-size: 11px; text-align: center; margin-left: 3px; }
+
+.body { padding: 20px; }
+.row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.row.between { justify-content: space-between; }
+.grow { flex: 1; }
+.gap { height: 14px; }
+.h1 { font-size: 20px; font-weight: 700; }
+.h2 { font-size: 16px; font-weight: 700; margin: 0 0 8px; }
+.sub { color: var(--sub); }
+.small { font-size: 12px; }
+
+/* 입력 요소 */
+.btn { display: inline-flex; align-items: center; justify-content: center; height: 32px; padding: 0 12px; border: 1px solid var(--line); background: #fff; white-space: nowrap; }
+.btn.primary { border-width: 2px; border-color: #333; font-weight: 700; }
+.btn.off { color: #AAA; border-style: dashed; }
+.btn.sm { height: 26px; font-size: 12px; padding: 0 8px; }
+.input { display: flex; align-items: center; height: 34px; padding: 0 10px; border: 1px solid var(--line); color: var(--sub); background: #fff; }
+.input.big { height: 42px; font-size: 16px; }
+.area { border: 1px solid var(--line); color: var(--sub); padding: 8px 10px; min-height: 80px; background: #fff; }
+.select::after { content: " ▾"; }
+.check::before { content: "☐ "; }
+.check.on::before { content: "☑ "; }
+.radio::before { content: "○ "; }
+.radio.on::before { content: "● "; }
+
+/* 묶음 */
+.box { border: 1px solid var(--line); padding: 12px; }
+.box.dash { border-style: dashed; }
+.banner { border: 2px solid #555; padding: 10px 12px; }
+.banner.soft { border: 1px dashed var(--line); }
+.placeholder { display: grid; place-items: center; background: repeating-linear-gradient(45deg, #F4F4F4, #F4F4F4 8px, #EAEAEA 8px, #EAEAEA 16px); border: 1px solid var(--soft); color: var(--sub); }
+.cols { display: grid; gap: 16px; }
+.c2 { grid-template-columns: 1fr 1fr; }
+.c-main-side { grid-template-columns: 1fr 300px; }
+.c-side-main { grid-template-columns: 200px 1fr; }
+.c4 { grid-template-columns: repeat(4, 1fr); }
+.tabs { display: flex; gap: 0; border-bottom: 1px solid var(--line); }
+.tabs span { padding: 8px 14px; border: 1px solid transparent; border-bottom: 0; margin-bottom: -1px; color: var(--sub); }
+.tabs span.cur { border-color: var(--line); background: #fff; color: var(--text); font-weight: 700; }
+.chip { display: inline-block; padding: 2px 10px; border: 1px solid var(--line); border-radius: 12px; }
+.chip.cur { border-width: 2px; border-color: #333; font-weight: 700; }
+.badge { display: inline-block; padding: 0 6px; border: 1px solid var(--line); font-size: 12px; }
+
+/* 표 */
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; font-weight: 600; color: var(--sub); border-bottom: 1px solid var(--line); padding: 7px 8px; }
+td { border-bottom: 1px solid var(--soft); padding: 8px; vertical-align: top; }
+td.r, th.r { text-align: right; }
+tr.open td { background: #F7F7F7; }
+ul.plain { margin: 0; padding-left: 18px; }
+
+/* 미정(사용자 결정 필요) 표시 */
+.tbd { outline: 2px dashed #999; outline-offset: 2px; position: relative; }
+.tbd::after { content: "미정"; position: absolute; top: -10px; right: -6px; background: #fff; border: 1px solid #999; font-size: 10px; padding: 0 4px; color: #555; }
+
+/* 모달 */
+.overlay { background: rgba(0,0,0,.18); padding: 40px 20px; display: grid; place-items: center; }
+.modal { background: #fff; border: 1px solid #555; width: 440px; max-width: 100%; padding: 16px; }
+.field { display: grid; grid-template-columns: 110px 1fr; gap: 8px; align-items: center; margin-bottom: 10px; }
+
+@media (max-width: 860px) {
+  .c2, .c-main-side, .c-side-main, .c4 { grid-template-columns: 1fr; }
+  .nav { overflow-x: auto; }
+}
+</style></head>
+<body>
+<div class="page-title">Career Flow 화면 와이어프레임</div>
+<div class="page-desc">디자인이 아니라 화면마다 무엇이 어디에 있고 어떤 문구가 보이는지를 정한 것이다. 색과 글꼴은 의미가 없다. 동작과 상황별 문구의 상세는 <code>docs/spec/screens.md</code>를 따른다.</div>
+
+<section class="frame">
+  <div class="screen"><div class="body">
+    <div class="h2">화면 목록</div>
+    <table>
+      <thead><tr><th>파일</th><th>화면</th><th>프레임</th></tr></thead>
+      <tbody>
+        <tr><td><a href="dashboard.html">dashboard.html</a></td><td>1. 대시보드</td><td>기본(전체 보기), 사이트별·이력서별·상태별 보기, 검색 + 기록만 행 펼침, 비어 있음</td></tr>
+        <tr><td><a href="postings.html">postings.html</a></td><td>2. 공고 등록, 4. 분석한 공고</td><td>등록 입력, 분석한 공고 목록</td></tr>
+        <tr><td><a href="posting-detail.html">posting-detail.html</a></td><td>3. 공고 상세</td><td>분석 결과, 진행·실패, 지원 완료 창, 상태 변경 창, 맞춤 이력서, 면접 준비, 공고 원문, 지원 기록</td></tr>
+        <tr><td><a href="resume.html">resume.html</a></td><td>5. 기본 이력서</td><td>처음 등록, 편집, 버전 기록, 희망 조건</td></tr>
+        <tr><td><a href="import-sync-settings.html">import-sync-settings.html</a></td><td>6. 가져오기, 7. 사이트 반영, 8. 설정, 9. 인쇄용</td><td>입력, 검토, 체크리스트, 설정, 인쇄용</td></tr>
+      </tbody>
+    </table>
+  </div></div>
+</section>
+
+<section class="frame">
+  <div class="screen"><div class="body">
+    <div class="h2">모든 화면에 공통인 배치</div>
+    <ul class="plain">
+      <li>맨 위 가로 내비게이션: 왼쪽 앱 이름, 메뉴 7개(사이트 반영에 미완료 수), 오른쪽 끝에 진행 중 AI 작업 표시.</li>
+      <li>본문은 왼쪽 정렬, 최대 폭 약 1200px. 화면 제목은 본문 왼쪽 위, 그 화면의 주 버튼은 제목 줄 오른쪽 끝.</li>
+      <li>한 화면에 주 버튼(굵은 테두리)은 하나만 둔다.</li>
+      <li>AI 작업 진행·실패 표시는 결과가 나올 자리에 같은 모양으로 뜬다(3-2).</li>
+      <li>저장·등록 결과는 화면 위쪽 가운데에 잠깐 뜨는 한 줄 알림으로 알린다.</li>
+      <li>입력 창(지원 완료, 상태 변경, 변경 메모)은 화면 가운데 작은 창으로 띄운다.</li>
+      <li>사이트가 "기타"이면 출처 이름(예: 지인 추천)을 함께 적는다. 정할 것과 결정 기록은 <code>docs/decisions.md</code>.</li>
+    </ul>
+  </div></div>
+</section>
+<div style="height:40px"></div>
+</body></html>

@@ -1,0 +1,1030 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Career Flow 목업</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<style>
+/* ───────── 디자인 토큰 (B 코발트) ───────── */
+:root {
+  --bg: #F6F7FA; --surface: #FFFFFF; --ink: #16213A; --sub: #5B6475; --faint: #98A0AE;
+  --line: #E1E4EB; --line-strong: #C9CEDA;
+  --accent: #2342C8; --accent-ink: #FFFFFF; --accent-tint: #EEF1FD;
+  --mark: #C2410C; --mark-tint: #FFF3EC; --mark-ink: #7C2D12;
+  --hidden: #2342C8; --hidden-tint: #EEF1FD; --missing: #C2410C; --missing-tint: #FFF3EC; --good: #15803D; --good-tint: #EAF6EE;
+  --nav-bg: #FFFFFF; --nav-ink: #5B6475; --nav-cur: #16213A; --nav-line: #E1E4EB;
+  --font: "Pretendard Variable", Pretendard, system-ui, sans-serif; --font-head: var(--font);
+  --head-weight: 800; --head-track: -0.03em;
+  --r: 10px; --r-sm: 7px; --pad: 20px; --row: 13px;
+  --shadow: 0 1px 2px rgba(22,33,58,.06), 0 4px 16px rgba(22,33,58,.06);
+  /* 사이트 색: 상태 색(코발트·초록·주황)과 겹치지 않는 색, 흰 바탕 대비 4.5:1 이상 */
+  --site-remember: #0E7C86; --site-wanted: #6741D9; --site-groupby: #A15C00; --site-jobkorea: #B5179E; --site-other: #5B6475;
+}
+/* 사이트 표시: 색 점 + 이름(상태 배지는 채운 알약이라 모양으로도 구분된다) */
+.site { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 13.5px; color: var(--c, var(--site-other)); white-space: nowrap; }
+.site::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex: none; }
+.site.remember { --c: var(--site-remember); } .site.wanted { --c: var(--site-wanted); } .site.groupby { --c: var(--site-groupby); } .site.jobkorea { --c: var(--site-jobkorea); } .site.other { --c: var(--site-other); }
+.site.lg { font-size: 15px; }
+.site.lg::before { width: 10px; height: 10px; }
+
+* { box-sizing: border-box; }
+html { background: var(--bg); }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); font-feature-settings: "tnum"; -webkit-font-smoothing: antialiased; }
+
+a { color: var(--accent); text-decoration: none; }
+
+a:hover { text-decoration: underline; }
+button { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+h1, h2, h3 { font-family: var(--font-head); font-weight: var(--head-weight); letter-spacing: var(--head-track); margin: 0; }
+
+/* ───────── 내비게이션 ───────── */
+.nav { background: var(--nav-bg); border-bottom: 1px solid var(--nav-line); position: sticky; top: 0; z-index: 10; }
+.nav-inner { max-width: 1240px; margin: 0 auto; padding: 0 24px; height: 58px; display: flex; align-items: center; gap: 4px; }
+.logo { font-family: var(--font-head); font-weight: var(--head-weight); font-size: 18px; color: var(--nav-cur); margin-right: 22px; letter-spacing: var(--head-track); white-space: nowrap; }
+.nav a { color: var(--nav-ink); padding: 8px 11px; border-radius: var(--r-sm); font-size: 14px; white-space: nowrap; }
+.nav a:hover { text-decoration: none; color: var(--nav-cur); }
+.nav a[aria-current="page"] { color: var(--nav-cur); font-weight: 700; }
+.nav a[aria-current="page"] { box-shadow: inset 0 -2px 0 var(--ink); border-radius: 0; }
+
+.count { display: inline-block; min-width: 19px; height: 19px; line-height: 19px; padding: 0 5px; margin-left: 5px; border-radius: 10px; background: var(--mark); color: #fff; font-size: 11px; font-weight: 700; text-align: center; }
+.job-ind { margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--nav-ink); white-space: nowrap; }
+.job-ind .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); animation: pulse 1.6s ease-in-out infinite; }
+
+@keyframes pulse { 50% { opacity: .3; } }
+
+/* ───────── 공통 ───────── */
+.page { max-width: 1240px; margin: 0 auto; padding: 28px 24px 80px; }
+.title-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.title-row h1 { font-size: 26px; }
+.desc { color: var(--sub); margin: 4px 0 0; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 38px; padding: 0 16px; border-radius: var(--r-sm); border: 1px solid var(--line-strong); background: var(--surface); color: var(--ink); font-weight: 600; font-size: 14px; cursor: pointer; white-space: nowrap; }
+.btn { border-color: var(--line); }
+.btn:hover { background: var(--bg); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn.primary:hover { filter: brightness(1.1); background: var(--accent); }
+.btn.sm { height: 30px; padding: 0 10px; font-size: 13px; }
+.btn.quiet { border-color: transparent; background: transparent; color: var(--accent); padding: 0 6px; }
+
+.btn[disabled] { opacity: .45; cursor: not-allowed; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow); }
+
+.muted { color: var(--sub); }
+.faint { color: var(--faint); }
+.small { font-size: 13px; }
+.screen { display: none; }
+.screen.on { display: block; }
+
+/* 상태 배지 */
+.st { display: inline-flex; align-items: center; height: 24px; padding: 0 9px; border-radius: 12px; font-size: 12.5px; font-weight: 700; white-space: nowrap; background: var(--bg); color: var(--sub); }
+.st.go { background: var(--accent-tint); color: var(--accent); }
+.st.ok { background: var(--good-tint); color: var(--good); }
+.st.pass { background: #E6F2F8; color: #0369A1; }
+.st.no { background: transparent; color: var(--faint); font-weight: 500; padding: 0; }
+.st.warn { background: var(--mark-tint); color: var(--mark); }
+
+/* ───────── 대시보드 ───────── */
+.search-row { display: flex; gap: 8px; margin-top: 22px; flex-wrap: wrap; }
+.search { flex: 1 1 360px; display: flex; align-items: center; gap: 10px; height: 50px; padding: 0 16px; background: var(--surface); border: 1px solid var(--line-strong); border-radius: var(--r); }
+.search { border: 2px solid var(--ink); }
+
+.search svg { flex: none; color: var(--sub); }
+.search input { flex: 1; border: 0; outline: 0; font: inherit; font-size: 17px; background: transparent; color: var(--ink); min-width: 0; }
+.select { height: 50px; padding: 0 34px 0 14px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23667' stroke-width='1.5'/%3E%3C/svg%3E") no-repeat right 13px center; font: inherit; font-size: 14px; color: var(--ink); appearance: none; cursor: pointer; }
+.summary { display: flex; align-items: center; gap: 22px; flex-wrap: wrap; margin: 18px 0 12px; font-size: 14px; color: var(--sub); }
+.summary b { color: var(--ink); font-size: 17px; margin-left: 5px; }
+.summary .sites { color: var(--faint); }
+.summary a { margin-left: auto; font-weight: 600; }
+.table-card { overflow: hidden; }
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; font-weight: 600; font-size: 12.5px; color: var(--sub); padding: 11px 16px; border-bottom: 1px solid var(--line); background: var(--surface); white-space: nowrap; }
+
+td { padding: var(--row) 16px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+tbody tr:last-child td { border-bottom: 0; }
+tbody tr.link { cursor: pointer; }
+tbody tr.link:hover td { background: var(--bg); }
+td.co { font-weight: 700; }
+td.num, th.num { text-align: right; }
+.fit { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; }
+.fit i { display: block; width: 44px; height: 5px; border-radius: 3px; background: var(--line); overflow: hidden; position: relative; }
+.fit i::after { content: ""; position: absolute; inset: 0 auto 0 0; width: var(--v); background: var(--ink); }
+
+.tag-rec { font-size: 11.5px; font-weight: 500; color: var(--sub); border: 1px solid var(--line-strong); border-radius: 4px; padding: 0 5px; margin-left: 6px; }
+.table-foot { padding: 12px 16px; font-size: 13px; color: var(--sub); border-top: 1px solid var(--line); }
+.empty-hint { padding: 48px 16px; text-align: center; }
+.empty-hint h3 { font-size: 18px; margin-bottom: 4px; }
+
+/* ───────── 공고 등록 ───────── */
+.narrow { max-width: 720px; margin: 24px auto 0; }
+.narrow .card { padding: 32px; }
+.label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; }
+.field-input { width: 100%; height: 48px; padding: 0 14px; border: 1px solid var(--line-strong); border-radius: var(--r-sm); font: inherit; font-size: 16px; background: var(--surface); color: var(--ink); }
+.field-area { width: 100%; min-height: 150px; padding: 12px 14px; border: 1px solid var(--line-strong); border-radius: var(--r-sm); font: inherit; background: var(--surface); color: var(--ink); resize: vertical; }
+details summary { cursor: pointer; font-weight: 600; margin: 22px 0 10px; }
+.hint { font-size: 13px; color: var(--sub); margin: 6px 0 0; }
+
+/* ───────── 공고 상세 ───────── */
+.crumb { font-size: 13px; color: var(--sub); }
+.crumb a { color: var(--sub); }
+.p-head { display: flex; justify-content: space-between; gap: 20px; align-items: flex-start; margin-top: 10px; flex-wrap: wrap; }
+.p-co { display: flex; gap: 10px; align-items: baseline; font-weight: 600; color: var(--sub); }
+.p-co .btn.quiet { height: auto; font-size: 13px; font-weight: 500; }
+.p-head h1 { font-size: 30px; line-height: 1.25; margin: 2px 0 6px; }
+.p-meta { display: flex; gap: 16px; flex-wrap: wrap; font-size: 14px; color: var(--sub); }
+.p-actions { display: flex; gap: 8px; align-items: center; }
+.p-state { display: flex; align-items: center; gap: 10px; }
+.dup { margin-top: 20px; padding: 14px 18px; border-radius: var(--r); background: var(--mark-tint); color: var(--mark-ink); display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; }
+
+.dup svg { color: var(--mark); margin-top: 2px; }
+.dup b { color: var(--mark); }
+.dup ul { margin: 2px 0 0; padding: 0; list-style: none; grid-column: 2; }
+.dup li a { color: inherit; text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 35%, transparent); text-underline-offset: 3px; }
+.tabs { display: flex; gap: 26px; margin-top: 26px; border-bottom: 1px solid var(--line); overflow-x: auto; }
+
+.tabs button { background: none; border: 0; padding: 10px 0; color: var(--sub); font-weight: 600; cursor: pointer; white-space: nowrap; position: relative; }
+.tabs button[aria-selected="true"] { color: var(--ink); }
+.tabs button[aria-selected="true"]{ box-shadow: inset 0 -2px 0 var(--ink); }
+
+.tabpanel { display: none; padding-top: 24px; }
+.tabpanel.on { display: block; }
+.two { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 24px; align-items: start; }
+.sec { margin-top: 28px; }
+.sec h2 { font-size: 18px; margin-bottom: 10px; }
+
+.score-card { padding: 22px 24px; }
+.score-top { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+.score { font-family: var(--font-head); font-size: 64px; line-height: .9; font-weight: var(--head-weight); letter-spacing: -0.04em; }
+.score small { font-size: 18px; color: var(--faint); font-weight: 500; letter-spacing: 0; font-family: var(--font); }
+.score-basis { color: var(--sub); font-size: 13px; padding-bottom: 4px; }
+.breakdown { margin-top: 18px; display: grid; gap: 0; }
+.bd { display: grid; grid-template-columns: 82px 1fr 34px minmax(0, 1.4fr); gap: 14px; align-items: center; padding: 9px 0; border-top: 1px solid var(--line); font-size: 14px; }
+.bd .bar { height: 7px; background: var(--line); border-radius: 4px; overflow: hidden; }
+.bd .bar i { display: block; height: 100%; width: var(--v); background: var(--ink); border-radius: 4px; }
+
+.bd b { text-align: right; }
+.bd span:last-child { color: var(--sub); font-size: 13px; }
+
+.points { list-style: none; margin: 0; padding: 0; }
+.points li { padding: 12px 0 12px 16px; border-left: 3px solid var(--line); margin-bottom: 4px; }
+.points li.good { border-color: var(--good); }
+.points li.hidden { border-color: var(--hidden); }
+.points li.missing { border-color: var(--missing); }
+.points .ev { display: block; color: var(--sub); font-size: 14px; }
+.gap-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.gap-cols h3 { font-size: 15px; margin-bottom: 6px; }
+.gap-cols h3 .pill { margin-left: 6px; }
+.pill { display: inline-block; font-size: 12px; font-weight: 700; padding: 1px 8px; border-radius: 10px; font-family: var(--font); letter-spacing: 0; }
+.pill.h { background: var(--hidden-tint); color: var(--hidden); }
+.pill.x { background: var(--missing-tint); color: var(--missing); }
+.advice { margin-top: 26px; padding: 16px 18px; display: flex; gap: 16px; align-items: center; justify-content: space-between; flex-wrap: wrap; border: 1px dashed var(--line-strong); border-radius: var(--r); }
+
+.side .card { padding: 18px 20px; }
+.side .card + .card { margin-top: 14px; }
+.side h3 { font-size: 15px; margin-bottom: 10px; }
+.kv { display: grid; grid-template-columns: 64px 1fr; gap: 4px 10px; font-size: 13.5px; }
+.kv dt { color: var(--sub); }
+.kv dd { margin: 0; }
+.mini-h { font-size: 12.5px; color: var(--sub); margin: 12px 0 2px; font-weight: 600; }
+.mini-list { margin: 0; padding-left: 16px; font-size: 13.5px; }
+.chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { font-size: 12.5px; padding: 2px 9px; border-radius: 10px; background: var(--bg); border: 1px solid var(--line); }
+.history { list-style: none; margin: 0; padding: 0; font-size: 13.5px; }
+.history li { display: flex; justify-content: space-between; padding: 6px 0; border-top: 1px solid var(--line); }
+.history li:first-child { border-top: 0; }
+
+/* 맞춤 이력서 */
+.toolbar { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; align-items: center; }
+.notice { margin-top: 14px; padding: 14px 18px; border-radius: var(--r); }
+.notice.warn { background: var(--mark-tint); color: var(--mark-ink); }
+
+.notice.warn b { color: var(--mark); }
+.notice.info { border: 1px solid var(--line-strong); display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; background: var(--surface); }
+.notice ul { margin: 6px 0 0; padding-left: 18px; }
+.change { padding: 14px 16px; border-top: 1px solid var(--line); }
+.change:first-child { border-top: 0; }
+.change .path { font-size: 12.5px; color: var(--sub); font-weight: 600; }
+.change del { color: var(--faint); }
+.change ins { text-decoration: none; background: var(--accent-tint); color: var(--ink); padding: 0 2px; border-radius: 3px; }
+
+.change .why { font-size: 13px; color: var(--sub); margin-top: 4px; }
+.guide td { font-size: 14px; vertical-align: top; }
+.copy { margin-left: 6px; }
+.a4 { aspect-ratio: 210 / 297; background: #fff; border: 1px solid var(--line-strong); box-shadow: 0 8px 30px rgba(0,0,0,.08); padding: 7% 8%; font-family: "Pretendard Variable", Pretendard, sans-serif; color: #111; font-size: 7.4px; line-height: 1.5; overflow: hidden; position: sticky; top: 80px; }
+.a4 .nm { font-size: 15px; font-weight: 800; }
+.a4 .ct { color: #666; margin-bottom: 8px; }
+.a4 h4 { font-size: 8.5px; margin: 9px 0 3px; padding-bottom: 2px; border-bottom: 1px solid #222; }
+.a4 p { margin: 0 0 3px; }
+.a4 .hl { background: #FFF3B0; }
+.refine { margin-top: 24px; padding: 16px 18px; }
+.refine-row { display: flex; gap: 10px; align-items: stretch; margin-top: 8px; }
+.refine textarea { flex: 1; min-height: 58px; padding: 10px 12px; border: 1px solid var(--line-strong); border-radius: var(--r-sm); font: inherit; resize: vertical; background: var(--surface); color: var(--ink); }
+.refine .btn { height: auto; }
+
+/* 면접 준비 */
+.round { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.round button.r { height: 32px; padding: 0 14px; border-radius: 16px; border: 1px solid var(--line-strong); background: var(--surface); cursor: pointer; font-weight: 600; font-size: 14px; }
+.round button.r[aria-pressed="true"] { background: var(--ink); color: #fff; border-color: var(--ink); }
+.iv-grid { display: grid; grid-template-columns: 180px minmax(0,1fr); gap: 28px; margin-top: 18px; }
+.iv-index { position: sticky; top: 80px; align-self: start; font-size: 14px; display: grid; gap: 2px; }
+.iv-index a { color: var(--sub); padding: 5px 10px; border-radius: var(--r-sm); }
+.iv-index a.cur { color: var(--ink); font-weight: 700; background: var(--surface); }
+.qtabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+.qtabs button { border: 1px solid var(--line); background: var(--surface); border-radius: 16px; padding: 4px 12px; cursor: pointer; font-size: 13.5px; }
+.qtabs button[aria-pressed="true"] { border-color: var(--ink); font-weight: 700; }
+.q { border-top: 1px solid var(--line); }
+.q summary { list-style: none; padding: 12px 0; font-weight: 600; margin: 0; display: flex; gap: 10px; }
+.q summary::before { content: "+"; color: var(--sub); width: 12px; flex: none; }
+.q[open] summary::before { content: "–"; }
+.q .qa { padding: 0 0 14px 22px; font-size: 14px; display: grid; grid-template-columns: 90px 1fr; gap: 4px 10px; }
+.q .qa dt { color: var(--sub); }
+.q .qa dd { margin: 0; }
+.checklist label { display: flex; gap: 8px; padding: 4px 0; cursor: pointer; }
+.news { list-style: none; padding: 0; margin: 6px 0 0; font-size: 14px; }
+.news li { padding: 6px 0; border-top: 1px solid var(--line); }
+.news time { color: var(--sub); margin-right: 8px; }
+
+/* 원문·지원 기록 */
+.rawtext { padding: 22px 24px; white-space: pre-line; font-size: 14.5px; max-height: 480px; overflow: auto; }
+
+/* 사이트 반영 */
+.sync-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 22px; }
+.sync-card { padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; }
+.sync-card header { display: flex; justify-content: space-between; align-items: baseline; }
+.sync-card h2 { font-size: 18px; }
+.sync-card .range { font-size: 13px; color: var(--sub); }
+.sync-card table td { padding: 9px 0; font-size: 14px; vertical-align: top; }
+.sync-card table td:first-child { width: 110px; color: var(--sub); }
+.sync-card .act { font-weight: 700; font-size: 12px; margin-right: 6px; }
+.sync-card footer { display: flex; justify-content: flex-end; margin-top: auto; }
+.sync-card.done { opacity: .7; }
+.state-line { color: var(--sub); padding: 18px 0; }
+.spinner { display: inline-block; width: 12px; height: 12px; border: 2px solid var(--line-strong); border-top-color: var(--ink); border-radius: 50%; animation: spin 1s linear infinite; vertical-align: -1px; margin-right: 6px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* 창·알림 */
+.overlay { position: fixed; inset: 0; background: rgba(15,20,30,.35); display: none; place-items: center; z-index: 30; padding: 20px; }
+.overlay.on { display: grid; }
+.modal { width: 460px; max-width: 100%; background: var(--surface); border-radius: var(--r); padding: 24px; box-shadow: 0 20px 60px rgba(0,0,0,.2); }
+
+.modal h2 { font-size: 20px; }
+.modal .row { display: grid; grid-template-columns: 100px 1fr; gap: 10px; align-items: center; margin-top: 14px; }
+.modal .row label { font-size: 14px; color: var(--sub); }
+.modal input, .modal select { height: 40px; padding: 0 10px; border: 1px solid var(--line-strong); border-radius: var(--r-sm); font: inherit; font-size: 14px; background: var(--surface); color: var(--ink); width: 100%; }
+.modal footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 22px; }
+.toast { position: fixed; top: 72px; left: 50%; transform: translate(-50%, -12px); background: var(--ink); color: #fff; padding: 10px 18px; border-radius: var(--r); font-size: 14px; opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s; z-index: 40; }
+.toast.on { opacity: 1; transform: translate(-50%, 0); }
+
+/* 대시보드 보기 전환 */
+.views { display: flex; gap: 4px; margin-top: 16px; flex-wrap: wrap; }
+.views button { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border: 0; border-radius: 17px; background: transparent; color: var(--sub); font-weight: 600; font-size: 14px; cursor: pointer; }
+.views button:hover { background: var(--line); }
+.views button[aria-selected="true"] { background: var(--surface); color: var(--ink); box-shadow: 0 0 0 1px var(--line), var(--shadow); }
+/* 묶음 보기 (사이트별·이력서별) */
+.group { margin-bottom: 6px; }
+.group-head { display: flex; align-items: center; gap: 10px; width: 100%; padding: 10px 6px; border: 0; background: none; cursor: pointer; text-align: left; border-radius: var(--r-sm); }
+.group-head:hover { background: var(--line); }
+.group-head .tri { width: 0; height: 0; border-left: 6px solid var(--sub); border-top: 4.5px solid transparent; border-bottom: 4.5px solid transparent; transition: transform .15s; }
+.group[open-g] .group-head .tri { transform: rotate(90deg); }
+.group-head .n { color: var(--sub); font-weight: 600; }
+.group-head .rate { margin-left: auto; font-size: 13px; color: var(--sub); }
+.group-head .rate b { color: var(--ink); }
+.label-chip { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 6px; font-weight: 700; font-size: 14px; color: var(--c, var(--ink)); background: color-mix(in srgb, var(--c, var(--ink)) 11%, white); }
+.label-chip.remember { --c: var(--site-remember); } .label-chip.wanted { --c: var(--site-wanted); } .label-chip.groupby { --c: var(--site-groupby); } .label-chip.jobkorea { --c: var(--site-jobkorea); } .label-chip.other { --c: var(--site-other); }
+.group-body { display: none; margin: 2px 0 10px 22px; }
+.group[open-g] .group-body { display: block; }
+.res-tag { font-size: 12.5px; font-weight: 600; color: var(--sub); border: 1px solid var(--line-strong); border-radius: 5px; padding: 1px 6px; white-space: nowrap; }
+.res-tag.tailored { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 35%, white); }
+/* 상태별 보드 */
+.board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(200px, 1fr); gap: 12px; overflow-x: auto; padding-bottom: 8px; }
+.col { border-radius: var(--r); padding: 10px; background: color-mix(in srgb, var(--cc) 6%, var(--bg)); min-height: 220px; }
+.col-head { display: flex; align-items: center; gap: 8px; padding: 2px 4px 10px; }
+.col-head .label-chip { --c: var(--cc); }
+.col-head .label-chip::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.col-head .n { color: var(--sub); font-weight: 600; font-size: 13px; }
+.kcard { display: block; width: 100%; text-align: left; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 11px 12px; margin-bottom: 8px; cursor: pointer; box-shadow: 0 1px 2px rgba(22,33,58,.05); }
+.kcard:hover { border-color: var(--line-strong); }
+.kcard .t { font-weight: 700; }
+.kcard .p { font-size: 13.5px; color: var(--sub); margin-bottom: 8px; }
+.kcard .m { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 12.5px; color: var(--sub); }
+.kcard .m .fitn { margin-left: auto; font-weight: 700; color: var(--ink); }
+.kcard .round-tag { font-size: 12px; font-weight: 700; color: var(--accent); }
+
+/* 하위 탭 (기본 이력서) */
+.subtabs { display: flex; gap: 24px; margin-top: 18px; border-bottom: 1px solid var(--line); }
+.subtabs button { background: none; border: 0; padding: 10px 0; color: var(--sub); font-weight: 600; cursor: pointer; }
+.subtabs button[aria-selected="true"] { color: var(--ink); box-shadow: inset 0 -2px 0 var(--ink); }
+.subpanel { display: none; padding-top: 22px; }
+.subpanel.on { display: block; }
+
+/* 기본 이력서 편집 */
+.editor { display: grid; grid-template-columns: 190px minmax(0, 1fr); gap: 28px; }
+.sec-index { position: sticky; top: 80px; align-self: start; display: grid; gap: 2px; font-size: 14px; }
+.sec-index a { color: var(--sub); padding: 6px 10px; border-radius: var(--r-sm); display: flex; justify-content: space-between; }
+.sec-index a.cur { background: var(--surface); color: var(--ink); font-weight: 700; box-shadow: var(--shadow); }
+.form-card { padding: 22px 24px; }
+.form-card + .form-card { margin-top: 16px; }
+.form-card h2 { font-size: 17px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 14px; }
+.in { width: 100%; height: 40px; padding: 0 12px; border: 1px solid var(--line-strong); border-radius: var(--r-sm); font: inherit; font-size: 14px; background: var(--surface); color: var(--ink); }
+textarea.in { height: auto; min-height: 70px; padding: 10px 12px; resize: vertical; }
+.fl { display: block; font-size: 12.5px; color: var(--sub); font-weight: 600; margin-bottom: 4px; }
+.item { border: 1px solid var(--line); border-radius: var(--r); padding: 16px; margin-top: 12px; }
+.item-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.icon-btn { width: 30px; height: 30px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); cursor: pointer; color: var(--sub); }
+.bullet { display: flex; gap: 6px; margin-top: 6px; }
+.bullet .in { flex: 1; }
+.saved-bar { display: flex; align-items: center; gap: 10px; }
+.ver { font-size: 14px; color: var(--sub); }
+.ver b { color: var(--ink); }
+.vlist { padding: 6px 0; }
+.vlist button { display: block; width: 100%; text-align: left; background: none; border: 0; border-left: 3px solid transparent; padding: 10px 16px; cursor: pointer; }
+.vlist button[aria-pressed="true"] { border-left-color: var(--accent); background: var(--accent-tint); }
+.vlist small { display: block; color: var(--sub); }
+.tagin { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; min-height: 40px; padding: 4px 8px; border: 1px solid var(--line-strong); border-radius: var(--r-sm); background: var(--surface); }
+.tagin .chip button { border: 0; background: none; padding: 0 0 0 4px; cursor: pointer; color: var(--sub); }
+.tagin input { border: 0; outline: 0; font: inherit; font-size: 14px; flex: 1; min-width: 120px; background: transparent; }
+.opts { display: flex; gap: 8px; flex-wrap: wrap; }
+.opts label { display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 12px; border: 1px solid var(--line); border-radius: 18px; cursor: pointer; font-size: 14px; }
+.opts input { accent-color: var(--accent); }
+.prefs .row2 { display: grid; grid-template-columns: 120px 1fr; gap: 14px; align-items: center; padding: 14px 0; border-top: 1px solid var(--line); }
+.prefs .row2:first-child { border-top: 0; }
+
+/* 가져오기 */
+.steps { display: flex; gap: 10px; align-items: center; margin: 18px 0 0; font-size: 14px; color: var(--sub); }
+.steps .on { color: var(--ink); font-weight: 700; }
+.steps i { width: 24px; height: 1px; background: var(--line-strong); }
+.drop { border: 1.5px dashed var(--line-strong); border-radius: var(--r); padding: 22px; text-align: center; color: var(--sub); background: var(--bg); }
+.review td { padding: 8px 10px; }
+.review .in { height: 34px; }
+.review select.in { padding-right: 24px; }
+.review tr.dupe td { background: #FAFBFC; color: var(--faint); }
+.review .in.need { border: 2px solid var(--mark); }
+.flag { font-size: 12px; font-weight: 700; color: var(--sub); white-space: nowrap; }
+.flag.need { color: var(--mark); }
+
+/* 설정 */
+.settings { max-width: 900px; }
+.settings .form-card h2 { margin-bottom: 6px; }
+.status-line { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+.ok-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--good); }
+.cols4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 12px; }
+.login-site { border: 1px solid var(--line); border-radius: var(--r); padding: 14px; display: grid; gap: 10px; }
+.mono-path { font-family: ui-monospace, Consolas, monospace; font-size: 13px; background: var(--bg); padding: 2px 8px; border-radius: 4px; }
+
+@media (max-width: 960px) {
+  .two, .iv-grid, .gap-cols, .sync-grid, .editor, .grid2, .cols4, .prefs .row2 { grid-template-columns: 1fr; }
+  .sec-index { display: none; }
+  .review { display: block; overflow-x: auto; }
+  .a4 { position: static; max-width: 420px; }
+  .iv-index { display: none; }
+  .nav-inner { overflow-x: auto; }
+  .job-ind { display: none; }
+  .bd { grid-template-columns: 72px 1fr 30px; }
+  .bd span:last-child { grid-column: 1 / -1; margin-top: -6px; }
+  .col-site, .col-fit { display: none; }
+  .page { padding: 20px 16px 120px; }
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+
+<nav class="nav" aria-label="주 메뉴"><div class="nav-inner">
+  <span class="logo">Career Flow</span>
+  <a href="#dashboard" data-nav="dashboard">대시보드</a>
+  <a href="#new" data-nav="new">공고 등록</a>
+  <a href="#analyzed" data-nav="analyzed">분석한 공고</a>
+  <a href="#resume" data-nav="resume">기본 이력서</a>
+  <a href="#import" data-nav="import">가져오기</a>
+  <a href="#sync" data-nav="sync">사이트 반영<span class="count" id="syncCount">3</span></a>
+  <a href="#settings" data-nav="settings">설정</a>
+  <a class="job-ind" href="#posting"><span class="dot"></span>분석 진행 중 1건</a>
+</div></nav>
+
+<!-- ═════════ 1. 대시보드 ═════════ -->
+<main class="screen page" id="s-dashboard">
+  <div class="title-row"><h1>지원 기록</h1><a class="btn primary" href="#new">+ 공고 등록</a></div>
+  <div class="views" role="tablist" aria-label="보기">
+    <button role="tab" aria-selected="true" data-view="all"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.5" y="2.5" width="13" height="11" rx="1.5"/><path d="M1.5 6.5h13M6 6.5v7"/></svg>전체</button>
+    <button role="tab" aria-selected="false" data-view="site"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4h10M3 8h10M3 12h10"/><circle cx="1.5" cy="4" r=".5"/></svg>사이트별</button>
+    <button role="tab" aria-selected="false" data-view="status"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1.5" y="2.5" width="3.5" height="11" rx="1"/><rect x="6.25" y="2.5" width="3.5" height="8" rx="1"/><rect x="11" y="2.5" width="3.5" height="5" rx="1"/></svg>상태별</button>
+    <button role="tab" aria-selected="false" data-view="resume"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 1.5h5.5L12.5 4.5v10h-8.5z"/><path d="M6 8h4.5M6 10.5h4.5"/></svg>이력서별</button>
+  </div>
+  <div class="search-row">
+    <label class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="q" placeholder="회사나 포지션으로 찾기" aria-label="회사·포지션 검색"></label>
+    <select class="select" aria-label="상태"><option>상태: 전체</option><option>진행 중</option><option>서류합격</option><option>면접</option><option>최종합격</option><option>불합격</option><option>지원취소</option></select>
+    <select class="select" aria-label="사이트"><option>사이트: 전체</option><option>리멤버</option><option>원티드</option><option>그룹바이</option><option>잡코리아</option><option>기타</option></select>
+    <select class="select" aria-label="기간"><option>기간: 전체</option><option>이번 달</option><option>최근 3개월</option><option>최근 1년</option></select>
+  </div>
+  <div class="summary" id="summary">
+    <span>이번 달 지원<b>3</b></span><span>서류합격<b>2</b></span><span>면접<b>2</b></span>
+    <span class="sites"><span class="site wanted">원티드 3</span>　<span class="site jobkorea">잡코리아 3</span>　<span class="site remember">리멤버 2</span>　<span class="site groupby">그룹바이 1</span>　<span class="site other">기타 1</span></span>
+    <a href="#analyzed">분석만 한 공고 5건 보기</a>
+  </div>
+  <div id="viewArea"></div>
+  <div class="card empty-hint" id="empty" hidden><h3></h3><p class="muted">회사명, 법인명, 별칭에서 모두 찾았습니다.</p></div>
+</main>
+
+<!-- ═════════ 2. 공고 등록 ═════════ -->
+<main class="screen page" id="s-new">
+  <div class="narrow">
+    <h1 style="font-size:26px">공고 등록</h1>
+    <p class="desc">공고 링크를 넣으면 바로 분석을 시작합니다. 보통 1~2분 걸립니다.</p>
+    <div class="card" style="margin-top:20px">
+      <label class="label" for="url">공고 링크</label>
+      <input class="field-input" id="url" placeholder="https://www.wanted.co.kr/wd/12345">
+      <p class="hint">리멤버, 원티드, 그룹바이, 잡코리아는 주소로 사이트를 알아봅니다. 그 밖의 주소는 "기타"로 등록합니다.</p>
+      <div id="noteWrap" hidden style="margin-top:18px"><label class="label" for="note">출처 이름 <span class="muted" style="font-weight:400">(선택)</span></label><input class="field-input" id="note" list="notes" placeholder="예: 회사 채용 페이지, 지인 추천"><datalist id="notes"><option value="지인 추천"><option value="회사 채용 페이지"></datalist></div>
+      <details>
+        <summary>링크로 안 열리면 공고 본문 붙여넣기</summary>
+        <textarea class="field-area" placeholder="공고 페이지에서 본문을 복사해 붙여넣으세요. 링크 없이 본문만 넣어도 됩니다."></textarea>
+      </details>
+      <div style="display:flex;justify-content:flex-end;margin-top:22px"><a class="btn primary" href="#posting">등록하고 분석</a></div>
+    </div>
+  </div>
+</main>
+
+<!-- ═════════ 3. 공고 상세 ═════════ -->
+<main class="screen page" id="s-posting">
+  <div class="crumb"><a href="#dashboard">지원 기록</a> / 모빌페이</div>
+  <div class="p-head">
+    <div>
+      <div class="p-co">모빌페이 <button class="btn quiet" id="coBtn">회사 연결 변경</button></div>
+      <h1>서버 개발자 (정산)</h1>
+      <div class="p-meta"><span class="site lg wanted">원티드</span><span>마감 2026년 12월 1일</span><span>11월 16일 등록</span><a href="#posting">원본 공고 열기 ↗</a></div>
+    </div>
+    <div class="p-actions" id="pActions">
+      <button class="btn quiet" id="delPosting" style="color:var(--sub)">공고 삭제</button>
+      <button class="btn primary" id="applyBtn">지원 완료</button>
+    </div>
+  </div>
+  <div class="dup" role="note">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3 2 21h20L12 3z"/><path d="M12 10v5M12 18h.01"/></svg>
+    <b>이 회사에 지원한 기록이 2건 있습니다.</b>
+    <ul><li><a href="#posting">2026-11-10 <span class="site wanted">원티드</span> ‘서버 개발자 (결제)’ — 서류합격</a></li><li><a href="#posting">2026-03-02 <span class="site jobkorea">잡코리아</span> ‘플랫폼 엔지니어’ — 불합격</a></li></ul>
+  </div>
+  <div class="tabs" role="tablist">
+    <button role="tab" aria-selected="true" data-tab="an">분석</button>
+    <button role="tab" aria-selected="false" data-tab="tr">맞춤 이력서</button>
+    <button role="tab" aria-selected="false" data-tab="iv">면접 준비</button>
+    <button role="tab" aria-selected="false" data-tab="raw">공고 원문</button>
+    <button role="tab" aria-selected="false" data-tab="rec">지원 기록</button>
+  </div>
+
+  <!-- 분석 -->
+  <section class="tabpanel on" id="t-an" role="tabpanel">
+    <div class="two">
+      <div>
+        <div class="card score-card">
+          <div class="score-top"><div class="score">82<small> / 100</small></div><div class="score-basis">기본 이력서 v3 기준<br>11월 16일 14:02 분석</div></div>
+          <div class="breakdown">
+            <div class="bd"><span>필수 요건</span><span class="bar"><i style="--v:88%"></i></span><b>88</b><span>필수 4개 모두 이력서에 근거가 있습니다</span></div>
+            <div class="bd"><span>우대 사항</span><span class="bar"><i style="--v:70%"></i></span><b>70</b><span>Kafka 운영, Kotlin 실무가 약합니다</span></div>
+            <div class="bd"><span>경력 연차</span><span class="bar"><i style="--v:90%"></i></span><b>90</b><span>요구 3년 이상, 보유 5년</span></div>
+            <div class="bd"><span>기술 스택</span><span class="bar"><i style="--v:80%"></i></span><b>80</b><span>Java, Spring, MySQL 일치. Kotlin 없음</span></div>
+            <div class="bd"><span>도메인</span><span class="bar"><i style="--v:76%"></i></span><b>76</b><span>정산 시스템 2년</span></div>
+            <div class="bd"><span>희망 조건</span><span class="bar"><i style="--v:85%"></i></span><b>85</b><span>근무지만 다릅니다</span></div>
+          </div>
+        </div>
+        <div class="sec">
+          <h2>잘 맞는 점</h2>
+          <ul class="points">
+            <li class="good">대용량 결제 트랜잭션 처리<span class="ev">A사에서 결제 승인 API 처리량을 3배 높였습니다.</span></li>
+            <li class="good">RDBMS 설계와 쿼리 튜닝<span class="ev">B사 정산 배치를 40분에서 6분으로 줄였습니다.</span></li>
+            <li class="good">정산 도메인 경험 (우대)<span class="ev">B사 정산 시스템을 2년 담당했습니다.</span></li>
+          </ul>
+        </div>
+        <div class="sec gap-cols">
+          <div><h3>이력서에서 보완 가능 <span class="pill h">맞춤 이력서로</span></h3>
+            <ul class="points"><li class="hidden">Kafka 운영 경험<span class="ev">‘주문 이벤트 파이프라인’ 프로젝트에 있지만 경력란에 드러나지 않습니다.</span></li></ul></div>
+          <div><h3>실제로 부족 <span class="pill x">면접 대비</span></h3>
+            <ul class="points"><li class="missing">Kotlin 실무 경험 (우대)<span class="ev">학습 계획과 Java 경험을 연결해 답할 준비를 하세요.</span></li></ul></div>
+        </div>
+        <div class="sec"><h2>희망 조건과 다른 점</h2><p style="margin:0">근무지가 판교입니다. 희망 근무지는 서울입니다.</p></div>
+        <div class="advice"><span><b>맞춤 이력서를 권합니다.</b> Kafka 경험을 경력 성과로 올리면 우대 사항이 보강됩니다.</span><button class="btn" data-goto="tr">맞춤 이력서 만들기</button></div>
+      </div>
+      <aside class="side">
+        <div class="card">
+          <h3>공고 요약</h3>
+          <dl class="kv"><dt>경력</dt><dd>3년 이상</dd><dt>고용</dt><dd>정규직</dd><dt>근무지</dt><dd>성남시 판교</dd><dt>연봉</dt><dd class="muted">공개 안 함</dd></dl>
+          <div class="mini-h">주요 업무</div><ul class="mini-list"><li>정산 시스템 설계와 운영</li><li>가맹점 정산 배치 고도화</li></ul>
+          <div class="mini-h">필수 요건</div><ul class="mini-list"><li>Java, Spring 3년 이상</li><li>대용량 트랜잭션 처리</li><li>RDBMS 설계·튜닝</li><li>장애 대응 경험</li></ul>
+          <div class="mini-h">우대 사항</div><ul class="mini-list"><li>Kafka 등 메시지 큐 운영</li><li>Kotlin 실무</li><li>정산 도메인</li></ul>
+          <div class="mini-h">기술 스택</div><div class="chips"><span class="chip">Java</span><span class="chip">Spring</span><span class="chip">MySQL</span><span class="chip">Kafka</span><span class="chip">Kotlin</span></div>
+        </div>
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><h3 style="margin:0">분석 기록</h3><button class="btn sm">다시 분석</button></div>
+          <ul class="history"><li><b>11월 16일, v3</b><b>82점</b></li><li><a href="#posting">11월 10일, v2</a><span class="muted">76점</span></li></ul>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- 맞춤 이력서 -->
+  <section class="tabpanel" id="t-tr" role="tabpanel">
+    <div class="toolbar">
+      <select class="select" style="height:40px" aria-label="리비전"><option>r3, 11월 16일 14:20, "요약을 3줄로"</option><option>r2, 11월 16일 14:11, "A사 성과 순서 바꿔줘"</option><option>r1, 11월 16일 14:05, 처음 생성</option></select>
+      <select class="select" style="height:40px" aria-label="PDF 받기"><option>PDF 받기</option><option>이력서 + 경력기술서</option><option>이력서만</option><option>경력기술서만</option></select>
+    </div>
+    <div class="notice warn"><b>확인 필요 2건.</b> 기본 이력서에 없는 내용일 수 있습니다. 사실과 다르면 아래 다듬기로 고치세요.
+      <ul><li>새 수치: “응답 시간 40% 개선” (경력 &gt; A사 &gt; 성과)</li><li>새 기술: Kotlin (기술 스택)</li></ul></div>
+    <div class="notice info"><span>이 맞춤본은 기본 이력서 v2 기준입니다. 지금 기본 이력서는 v3입니다.</span><button class="btn sm">최신 기준으로 다시 만들기</button></div>
+    <div class="two" style="grid-template-columns:minmax(0,1fr) 360px;margin-top:24px">
+      <div>
+        <h2 style="font-size:18px;margin-bottom:10px">변경 내역 <span class="muted" style="font-size:15px;font-weight:500">5곳</span></h2>
+        <div class="card">
+          <div class="change"><div class="path">한 줄 소개</div><div><del>백엔드 개발자로서 안정적인 서비스를 만듭니다.</del></div><div><ins>결제와 정산 도메인에서 대용량 트랜잭션을 다뤄 온 백엔드 개발자입니다.</ins></div><div class="why">공고의 정산 도메인과 트랜잭션 요건을 앞에 세웠습니다.</div></div>
+          <div class="change"><div class="path">경력 &gt; A사 &gt; 성과</div><div><ins>Kafka 기반 주문 이벤트 파이프라인 설계, 일 1,200만 건 처리</ins></div><div class="why">프로젝트에만 있던 내용을 경력 성과로 옮겼습니다(우대 사항).</div></div>
+          <div class="change"><div class="path">프로젝트 순서</div><div>주문 이벤트 파이프라인 ↑　사내 어드민 개편 ↓</div></div>
+        </div>
+        <h2 style="font-size:18px;margin:28px 0 10px">원티드 이력서 수정 안내</h2>
+        <div class="card" style="padding:4px 18px">
+          <table class="guide"><thead><tr><th style="padding-left:0">항목</th><th>할 일</th><th>제안 문구</th></tr></thead><tbody>
+            <tr><td style="padding-left:0">한 줄 소개</td><td>수정</td><td>결제와 정산 도메인에서 대용량 트랜잭션을 다뤄 온 백엔드 개발자입니다. <button class="btn sm copy">복사</button><div class="muted small">정산 도메인 강조</div></td></tr>
+            <tr><td style="padding-left:0">경력 &gt; 주요 성과</td><td>추가</td><td>Kafka 기반 주문 이벤트 파이프라인 설계, 일 1,200만 건 처리 <button class="btn sm copy">복사</button><div class="muted small">우대 사항 보강</div></td></tr>
+          </tbody></table>
+        </div>
+        <h2 style="font-size:18px;margin:28px 0 10px">포트폴리오 활용</h2>
+        <ul class="points"><li class="hidden">‘주문 이벤트 파이프라인’을 첫 장에<span class="ev">파티션 설계 그림과 처리량 그래프를 앞세우세요.</span></li><li>‘정산 배치 개선’을 둘째 장에<span class="ev">40분에서 6분으로 줄인 과정을 단계별로.</span></li></ul>
+      </div>
+      <div>
+        <div class="muted small" style="margin-bottom:8px">미리보기 (PDF와 같은 모양)</div>
+        <div class="a4" aria-label="맞춤 이력서 미리보기">
+          <div class="nm">김하늘</div><div class="ct">backend.haneul@example.com　010-0000-0000　github.com/haneul</div>
+          <p class="hl">결제와 정산 도메인에서 대용량 트랜잭션을 다뤄 온 백엔드 개발자입니다.</p>
+          <h4>경력</h4>
+          <p><b>A사</b> 결제플랫폼팀, 선임　2021.03 – 현재</p>
+          <p>· 결제 승인 API 처리량 3배 개선</p><p class="hl">· Kafka 기반 주문 이벤트 파이프라인 설계, 일 1,200만 건 처리</p><p>· 온콜 운영과 알림 체계 개편</p>
+          <p style="margin-top:5px"><b>B사</b> 정산개발팀　2019.01 – 2021.02</p>
+          <p>· 정산 배치 40분 → 6분 단축</p><p>· 가맹점 정산 시스템 운영 2년</p>
+          <h4>프로젝트</h4><p><b>주문 이벤트 파이프라인</b>　Kafka, Spring Boot</p><p><b>정산 배치 개선</b>　MySQL, Spring Batch</p>
+          <h4>기술</h4><p>Java, Spring, MySQL, Kafka, Redis</p>
+          <h4>학력</h4><p>한국대학교 컴퓨터공학과</p>
+        </div>
+      </div>
+    </div>
+    <div class="card refine">
+      <b>다듬기</b><span class="muted small">　요청할 때마다 새 리비전이 생깁니다.</span>
+      <div class="refine-row"><textarea placeholder="예: A사 경력의 두 번째 성과는 빼줘"></textarea><button class="btn primary">수정 요청</button></div>
+    </div>
+  </section>
+
+  <!-- 면접 준비 -->
+  <section class="tabpanel" id="t-iv" role="tabpanel">
+    <div class="toolbar">
+      <div class="round"><button class="r" aria-pressed="true">1차</button><button class="r" aria-pressed="false">2차 임원</button><button class="btn sm">+ 새 차수</button></div>
+      <div class="round"><select class="select" style="height:36px" aria-label="리비전"><option>r2, "Kafka 질문 더"</option><option>r1, 처음 생성</option></select><button class="btn sm">인쇄용 보기 ↗</button></div>
+    </div>
+    <p class="muted small" style="margin:10px 0 0">기준 이력서: 맞춤 이력서 r3. 지원하면 실제로 제출한 이력서로 바뀝니다.</p>
+    <div class="iv-grid">
+      <nav class="iv-index" aria-label="면접 준비 목차"><a class="cur" href="#t-iv">회사 개요</a><a href="#t-iv">팀의 과제</a><a href="#t-iv">예상 질문 18</a><a href="#t-iv">부족한 점 대응</a><a href="#t-iv">역질문</a><a href="#t-iv">체크리스트</a><a href="#t-iv">출처 9</a></nav>
+      <div>
+        <h2 style="font-size:20px">회사 개요</h2>
+        <p style="margin:8px 0">모빌페이는 온라인 가맹점용 결제 대행과 정산 서비스를 운영합니다. 최근 정산 자동화 제품을 내며 중견 가맹점으로 고객을 넓히고 있습니다.</p>
+        <dl class="kv" style="grid-template-columns:80px 1fr;font-size:14px"><dt>규모</dt><dd>직원 약 300명, 시리즈 C</dd><dt>기술 스택</dt><dd>Java, Kotlin, Spring, Kafka, MySQL, AWS</dd><dt>기술 블로그</dt><dd><a href="#t-iv">정산 배치 개선기 ↗</a>　<a href="#t-iv">Kafka 도입 회고 ↗</a></dd></dl>
+        <ul class="news"><li><time>2026-10-21</time>정산 자동화 서비스 출시, 중견 가맹점 대상 <a href="#t-iv">기사 ↗</a></li><li><time>2026-08-04</time>시리즈 C 투자 유치 <a href="#t-iv">기사 ↗</a></li></ul>
+        <h2 style="font-size:20px;margin-top:30px">팀의 과제와 내가 기여할 점</h2>
+        <div class="gap-cols" style="margin-top:8px"><ul class="mini-list" style="font-size:14px"><li>가맹점 증가에 따른 정산 배치 처리 시간</li><li>정산 데이터 정합성 검증 자동화</li></ul><ul class="mini-list" style="font-size:14px"><li>B사 정산 배치 단축 경험을 그대로 적용</li><li>이벤트 기반 정합성 검증 설계 경험</li></ul></div>
+        <h2 style="font-size:20px;margin-top:30px">예상 질문</h2>
+        <div class="qtabs" style="margin-top:10px"><button aria-pressed="true">기술 7</button><button aria-pressed="false">경력·프로젝트 5</button><button aria-pressed="false">인성·협업 3</button><button aria-pressed="false">회사·지원동기 3</button></div>
+        <details class="q" open><summary>Kafka 파티션 수는 어떻게 정했나요?</summary>
+          <dl class="qa"><dt>나올 이유</dt><dd>우대 사항이고, 맞춤 이력서에서 앞세운 경험입니다.</dd><dt>답변 소재</dt><dd>목표 처리량, 소비자 인스턴스 수, 순서 보장이 필요한 키 설계</dd><dt>관련 항목</dt><dd>프로젝트 ‘주문 이벤트 파이프라인’</dd></dl></details>
+        <details class="q"><summary>정산 배치를 40분에서 6분으로 줄인 방법은 무엇인가요?</summary><dl class="qa"><dt>답변 소재</dt><dd>쿼리 분할, 인덱스 재설계, 병렬 처리</dd></dl></details>
+        <details class="q"><summary>정산 금액이 맞지 않을 때 어떻게 추적하나요?</summary><dl class="qa"><dt>답변 소재</dt><dd>원장 대사, 이벤트 재처리</dd></dl></details>
+        <h2 style="font-size:20px;margin-top:30px">체크리스트</h2>
+        <div class="checklist" style="margin-top:6px"><label><input type="checkbox"> 시리즈 C 투자 기사 읽기</label><label><input type="checkbox" checked> 기술 블로그 정산 글 2편 읽기</label><label><input type="checkbox"> Kotlin 학습 계획 한 문장으로 정리</label></div>
+      </div>
+    </div>
+    <div class="card refine"><b>추가 요청</b><div class="refine-row"><textarea placeholder="예: 기술 질문을 Kafka 중심으로 더"></textarea><button class="btn primary">요청</button></div></div>
+  </section>
+
+  <!-- 공고 원문 -->
+  <section class="tabpanel" id="t-raw" role="tabpanel">
+    <div class="toolbar"><span class="muted small">wanted.co.kr/wd/12345　11월 16일 14:01 자동으로 읽음</span><button class="btn sm">본문 다시 붙여넣기</button></div>
+    <div class="card rawtext" style="margin-top:14px">[모빌페이] 서버 개발자 (정산)
+
+주요 업무
+- 정산 시스템 설계와 운영
+- 가맹점 정산 배치 고도화
+
+자격 요건
+- Java, Spring 기반 서버 개발 3년 이상
+- 대용량 트랜잭션 처리 경험
+- RDBMS 설계와 튜닝 경험
+- 장애 대응과 모니터링 경험
+
+우대 사항
+- Kafka 등 메시지 큐 운영 경험
+- Kotlin 실무 경험
+- 정산 도메인 경험
+
+근무지: 경기 성남시 분당구 판교역로
+마감일: 2026-12-01</div>
+  </section>
+
+  <!-- 지원 기록 -->
+  <section class="tabpanel" id="t-rec" role="tabpanel">
+    <div class="card" style="padding:40px;text-align:center" id="recEmpty"><h3 style="font-size:18px">아직 지원하지 않은 공고입니다.</h3><p class="muted">실제 사이트에서 지원한 뒤 기록하세요.</p><button class="btn primary" data-open-apply>지원 완료</button></div>
+    <div id="recFilled" hidden>
+      <div class="card" style="padding:18px 22px;display:flex;gap:32px;flex-wrap:wrap"><span><span class="muted small">지원일</span><br><b>2026-11-16</b></span><span><span class="muted small">사이트</span><br><span class="site lg wanted">원티드</span></span><span><span class="muted small">제출한 이력서</span><br><b><a href="#posting" data-goto="tr">맞춤 이력서 r3</a></b></span><span style="margin-left:auto;display:flex;gap:6px;align-items:center"><button class="btn sm" data-toast="(기록 수정 창: 회사·포지션·사이트·출처·지원일·제출한 이력서)">기록 수정</button><button class="btn sm" data-confirm="지원 기록과 상태 이력을 삭제합니다. 공고는 분석한 공고로 돌아갑니다.">기록 삭제</button></span></div>
+      <h2 style="font-size:18px;margin:24px 0 10px">진행 기록</h2>
+      <div class="card" style="padding:4px 18px"><ul class="history"><li><span>2026-11-16</span><span class="st go">지원</span></li></ul></div>
+    </div>
+  </section>
+</main>
+
+<!-- ═════════ 7. 사이트 반영 ═════════ -->
+<main class="screen page" id="s-sync">
+  <div class="title-row"><div><h1>사이트 반영</h1><p class="desc">기본 이력서에서 바뀐 내용을 각 사이트 이력서에 옮겨 적으세요. 옮긴 사이트는 반영 완료를 누릅니다.</p></div></div>
+  <div class="sync-grid">
+    <article class="card sync-card" data-site="리멤버">
+      <header><h2 class="site lg remember">리멤버</h2><span class="range">기본 이력서 v1 → v3</span></header>
+      <table><tbody>
+        <tr><td>한 줄 소개</td><td><span class="act">수정</span>결제와 정산 도메인에서 대용량 트랜잭션을 다뤄 온 백엔드 개발자입니다. <button class="btn sm copy">복사</button></td></tr>
+        <tr><td>경력 &gt; A사</td><td><span class="act">추가</span>Kafka 기반 주문 이벤트 파이프라인 설계, 일 1,200만 건 처리 <button class="btn sm copy">복사</button></td></tr>
+      </tbody></table>
+      <footer><button class="btn primary done-btn">리멤버 반영 완료</button></footer>
+    </article>
+    <article class="card sync-card done"><header><h2 class="site lg wanted">원티드</h2><span class="range">최신 상태</span></header><p class="state-line">반영할 내용이 없습니다. 11월 16일 15:10에 v3까지 반영했습니다.</p></article>
+    <article class="card sync-card"><header><h2 class="site lg groupby">그룹바이</h2><span class="range">기본 이력서 v1 → v3</span></header><p class="state-line"><span class="spinner"></span>반영할 내용을 정리하고 있습니다.</p></article>
+    <article class="card sync-card" data-site="잡코리아">
+      <header><h2 class="site lg jobkorea">잡코리아</h2><span class="range">기본 이력서 v1 → v3</span></header>
+      <table><tbody>
+        <tr><td>경력기술서</td><td><span class="act">수정</span>A사 항목 둘째 문단에 파이프라인 설계 내용을 덧붙입니다. <button class="btn sm copy">복사</button></td></tr>
+      </tbody></table>
+      <footer><button class="btn primary done-btn">잡코리아 반영 완료</button></footer>
+    </article>
+  </div>
+</main>
+
+<!-- ═════════ 4. 분석한 공고 ═════════ -->
+<main class="screen page" id="s-analyzed">
+  <div class="title-row"><div><h1>분석한 공고</h1><p class="desc">분석만 하고 아직 지원하지 않은 공고입니다. 지원하면 지원 기록으로 옮겨집니다.</p></div><a class="btn primary" href="#new">+ 공고 등록</a></div>
+  <div class="card table-card" style="margin-top:22px">
+    <table>
+      <thead><tr><th>회사</th><th>포지션</th><th class="col-site">사이트</th><th class="num">적합도</th><th>마감일</th><th>등록일</th></tr></thead>
+      <tbody>
+        <tr class="link" onclick="show('posting')"><td class="co">모빌페이</td><td>서버 개발자 (정산)</td><td class="col-site"><span class="site wanted">원티드</span></td><td class="num"><span class="fit"><i style="--v:82%"></i>82</span></td><td>2026-12-01</td><td>2026-11-16</td></tr>
+        <tr><td class="co faint">분석 중</td><td class="faint">—</td><td class="col-site"><span class="site remember">리멤버</span></td><td class="num"><span class="muted small"><span class="spinner"></span>분석 중</span></td><td class="faint">—</td><td>2026-11-16</td></tr>
+        <tr class="link"><td class="co">코어뱅크</td><td>시니어 백엔드</td><td class="col-site"><span class="site jobkorea">잡코리아</span></td><td class="num"><span class="st warn">실패</span></td><td class="faint">—</td><td>2026-11-15</td></tr>
+        <tr class="link"><td class="co">브릿지소프트</td><td>서버 엔지니어</td><td class="col-site"><span class="site groupby">그룹바이</span></td><td class="num"><span class="fit"><i style="--v:74%"></i>74</span></td><td>상시</td><td>2026-11-12</td></tr>
+        <tr class="link" style="opacity:.5"><td class="co">루미에듀</td><td>API 개발자</td><td class="col-site"><span class="site other">기타</span></td><td class="num"><span class="fit"><i style="--v:69%"></i>69</span></td><td>2026-11-10 마감</td><td>2026-11-02</td></tr>
+      </tbody>
+    </table>
+  </div>
+</main>
+
+<!-- ═════════ 5. 기본 이력서 ═════════ -->
+<main class="screen page" id="s-resume">
+  <div class="title-row">
+    <div><h1>기본 이력서</h1><p class="ver" style="margin:4px 0 0"><b>v3</b>　11월 16일 저장, "B 프로젝트 성과 추가"</p></div>
+    <div class="saved-bar"><select class="select" style="height:40px" aria-label="PDF 받기"><option>PDF 받기</option><option>이력서 + 경력기술서</option><option>이력서만</option><option>경력기술서만</option></select><button class="btn primary" id="saveResume">저장</button></div>
+  </div>
+  <div class="subtabs" role="tablist">
+    <button role="tab" aria-selected="true" data-sub="edit">이력서</button>
+    <button role="tab" aria-selected="false" data-sub="ver">버전 기록</button>
+    <button role="tab" aria-selected="false" data-sub="pref">희망 조건</button>
+  </div>
+
+  <section class="subpanel on" id="u-edit">
+    <div class="editor">
+      <nav class="sec-index" aria-label="이력서 섹션">
+        <a class="cur" href="#resume">기본 정보</a><a href="#resume">한 줄 소개</a><a href="#resume">경력 <span class="faint">2</span></a><a href="#resume">프로젝트 <span class="faint">4</span></a><a href="#resume">기술 스택</a><a href="#resume">학력</a><a href="#resume">자격증·수상·교육</a><a href="#resume">경력기술서</a><a href="#resume">포트폴리오 <span class="faint">2</span></a>
+      </nav>
+      <div>
+        <div class="card form-card">
+          <h2>기본 정보</h2>
+          <div class="grid2">
+            <div><label class="fl">이름</label><input class="in" value="김하늘"></div>
+            <div><label class="fl">이메일</label><input class="in" value="backend.haneul@example.com"></div>
+            <div><label class="fl">전화</label><input class="in" value="010-0000-0000"></div>
+            <div><label class="fl">링크</label><div style="display:flex;gap:6px"><input class="in" style="width:110px" value="GitHub"><input class="in" value="github.com/haneul"></div></div>
+          </div>
+          <button class="btn sm" style="margin-top:10px">+ 링크 추가</button>
+        </div>
+        <div class="card form-card">
+          <h2>한 줄 소개</h2>
+          <textarea class="in">결제 시스템을 안정적으로 운영해 온 5년 차 백엔드 개발자입니다.</textarea>
+        </div>
+        <div class="card form-card">
+          <h2>경력 <button class="btn sm">+ 경력 추가</button></h2>
+          <div class="item">
+            <div class="item-head"><b>A사　<span class="muted" style="font-weight:500">결제플랫폼팀, 선임</span></b><span><button class="icon-btn" aria-label="위로">↑</button> <button class="icon-btn" aria-label="아래로">↓</button> <button class="icon-btn" aria-label="삭제">✕</button></span></div>
+            <div class="grid2" style="margin-top:12px">
+              <div><label class="fl">회사</label><input class="in" value="A사"></div>
+              <div><label class="fl">직무 / 직급</label><input class="in" value="결제플랫폼팀, 선임"></div>
+              <div><label class="fl">시작</label><input class="in" value="2021-03"></div>
+              <div><label class="fl">종료</label><div style="display:flex;gap:10px;align-items:center"><input class="in" value="" placeholder="YYYY-MM" disabled><label class="small" style="white-space:nowrap"><input type="checkbox" checked> 재직 중</label></div></div>
+            </div>
+            <label class="fl" style="margin-top:12px">담당 업무</label><textarea class="in">결제 승인 API와 온콜 운영을 담당합니다.</textarea>
+            <label class="fl" style="margin-top:12px">성과</label>
+            <div class="bullet"><input class="in" value="결제 승인 API 처리량 3배 개선"><button class="icon-btn">↑</button><button class="icon-btn">↓</button><button class="icon-btn">✕</button></div>
+            <div class="bullet"><input class="in" value="온콜 운영과 알림 체계 개편"><button class="icon-btn">↑</button><button class="icon-btn">↓</button><button class="icon-btn">✕</button></div>
+            <button class="btn sm" style="margin-top:8px">+ 성과 추가</button>
+          </div>
+          <div class="item"><div class="item-head"><b>B사　<span class="muted" style="font-weight:500">정산개발팀</span></b><button class="btn sm">펼치기</button></div></div>
+        </div>
+        <p class="muted small" style="margin-top:14px">프로젝트, 기술 스택, 학력, 자격증, 경력기술서, 포트폴리오도 같은 방식으로 편집합니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="subpanel" id="u-ver">
+    <div class="two" style="grid-template-columns:280px minmax(0,1fr)">
+      <div class="card vlist" role="list">
+        <button aria-pressed="false"><b>v3</b> 현재<small>11월 16일, B 프로젝트 성과 추가</small></button>
+        <button aria-pressed="true"><b>v2</b><small>11월 10일, 요약 수정</small></button>
+        <button aria-pressed="false"><b>v1</b><small>11월 2일, 처음 등록</small></button>
+      </div>
+      <div>
+        <div class="toolbar"><h2 style="font-size:18px">v2 <span class="muted" style="font-weight:500;font-size:14px">읽기 전용</span></h2><div class="round"><button class="r" aria-pressed="false">내용</button><button class="r" aria-pressed="true">v1과 비교</button></div></div>
+        <div class="card" style="margin-top:12px">
+          <div class="change"><div class="path">한 줄 소개</div><div><del>백엔드 개발자로서 안정적인 서비스를 만듭니다.</del></div><div><ins>결제 시스템을 안정적으로 운영해 온 5년 차 백엔드 개발자입니다.</ins></div></div>
+          <div class="change"><div class="path">경력 &gt; A사 &gt; 성과</div><div><ins>온콜 운영과 알림 체계 개편</ins></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="subpanel" id="u-pref">
+    <div class="card form-card prefs" style="max-width:820px">
+      <p class="muted small" style="margin:0 0 6px">모두 선택 입력입니다. 비워 두면 분석에서 "희망 조건" 항목이 빠집니다.</p>
+      <div class="row2"><span class="fl" style="margin:0">희망 연봉</span><div style="display:flex;gap:8px;align-items:center"><input class="in" style="width:120px" value="6000"> ~ <input class="in" style="width:120px" value="7500"> 만원</div></div>
+      <div class="row2"><span class="fl" style="margin:0">근무 지역</span><div class="tagin"><span class="chip">서울<button aria-label="삭제">✕</button></span><input placeholder="입력 후 Enter"></div></div>
+      <div class="row2"><span class="fl" style="margin:0">근무 방식</span><div class="opts"><label><input type="radio" name="ws" checked> 상관없음</label><label><input type="radio" name="ws"> 원격</label><label><input type="radio" name="ws"> 하이브리드</label><label><input type="radio" name="ws"> 출근</label></div></div>
+      <div class="row2"><span class="fl" style="margin:0">회사 규모</span><div class="opts"><label><input type="checkbox"> 스타트업</label><label><input type="checkbox" checked> 중견</label><label><input type="checkbox" checked> 대기업</label></div></div>
+      <div class="row2"><span class="fl" style="margin:0">선호 산업</span><div class="tagin"><span class="chip">핀테크<button aria-label="삭제">✕</button></span><span class="chip">커머스<button aria-label="삭제">✕</button></span><input placeholder="입력 후 Enter"></div></div>
+      <div class="row2"><span class="fl" style="margin:0">기피 산업</span><div class="tagin"><input placeholder="입력 후 Enter"></div></div>
+      <div class="row2"><span class="fl" style="margin:0">기타 메모</span><textarea class="in" placeholder="예: 주 4일 근무면 연봉 조건 완화 가능"></textarea></div>
+      <div style="display:flex;justify-content:flex-end;margin-top:12px"><button class="btn primary" data-toast="희망 조건을 저장했습니다">희망 조건 저장</button></div>
+    </div>
+  </section>
+</main>
+
+<!-- ═════════ 6. 가져오기 ═════════ -->
+<main class="screen page" id="s-import">
+  <div class="title-row"><div><h1>이미 지원한 내역 가져오기</h1><p class="desc">각 사이트의 "지원 현황" 화면을 복사하거나 캡처해서 넣으면 표로 정리합니다. 등록하기 전에 확인하고 고칠 수 있습니다.</p></div></div>
+  <div class="steps"><span>1. 입력</span><i></i><span class="on">2. 검토</span></div>
+  <div class="card" style="margin-top:16px;padding:18px 20px">
+    <div class="toolbar"><span><b>6건을 찾았습니다.</b> <span class="muted">틀린 값을 고치고 등록할 행을 고르세요. 이미 있는 기록은 빠져 있습니다.</span></span><button class="btn quiet">처음부터</button></div>
+    <table class="review" style="margin-top:12px">
+      <thead><tr><th></th><th>회사</th><th>포지션</th><th>사이트</th><th>지원일</th><th>상태</th><th></th><th></th></tr></thead>
+      <tbody id="reviewRows">
+        <tr><td><input type="checkbox" checked></td><td><input class="in" value="스텔라랩스"></td><td><input class="in" value="Backend Engineer"></td><td><select class="in"><option>원티드</option></select></td><td><input class="in" value="2026-10-28"></td><td><select class="in"><option>지원</option></select></td><td></td><td><button class="icon-btn" aria-label="행 삭제">✕</button></td></tr>
+        <tr><td><input type="checkbox" checked></td><td><input class="in" value="브릿지소프트"></td><td><input class="in" value="서버 엔지니어"></td><td><select class="in"><option>원티드</option></select></td><td><input class="in" value="2026-10-20"></td><td><select class="in"><option>서류합격</option></select></td><td></td><td><button class="icon-btn" aria-label="행 삭제">✕</button></td></tr>
+        <tr class="dupe"><td><input type="checkbox"></td><td><input class="in" value="노을헬스"></td><td><input class="in" value="서버 개발자"></td><td><select class="in"><option>원티드</option></select></td><td><input class="in" value="2026-10-15"></td><td><select class="in"><option>최종합격</option></select></td><td><span class="flag">이미 있음</span></td><td><button class="icon-btn" aria-label="행 삭제">✕</button></td></tr>
+        <tr><td><input type="checkbox" checked></td><td><input class="in need" value="" placeholder="회사명"></td><td><input class="in" value="Frontend"></td><td><select class="in"><option>원티드</option></select></td><td><input class="in" value="2026-08-20"></td><td><select class="in"><option>지원</option></select></td><td><span class="flag need">회사명 필요</span></td><td><button class="icon-btn" aria-label="행 삭제">✕</button></td></tr>
+      </tbody>
+    </table>
+    <div class="toolbar" style="margin-top:14px"><button class="btn sm">+ 행 추가</button><span style="display:flex;gap:10px;align-items:center"><span class="muted small">빈 칸을 채워야 등록할 수 있습니다</span><button class="btn primary" disabled>3건 등록</button></span></div>
+  </div>
+  <details style="margin-top:18px"><summary class="muted">입력 단계 화면 보기</summary>
+    <div class="card" style="padding:22px 24px;max-width:820px">
+      <label class="fl">사이트</label>
+      <div class="opts"><label><input type="radio" name="isite"> <span class="site remember">리멤버</span></label><label><input type="radio" name="isite" checked> <span class="site wanted">원티드</span></label><label><input type="radio" name="isite"> <span class="site groupby">그룹바이</span></label><label><input type="radio" name="isite"> <span class="site jobkorea">잡코리아</span></label><label><input type="radio" name="isite"> <span class="site other">기타</span></label><label><input type="radio" name="isite"> 모름</label></div>
+      <label class="fl" style="margin-top:16px">텍스트</label><textarea class="in" style="min-height:120px" placeholder="지원 현황 화면을 전체 선택(Ctrl+A)해 복사한 내용"></textarea>
+      <label class="fl" style="margin-top:16px">캡처 이미지</label><div class="drop">이미지를 끌어다 놓거나 <a href="#import">파일 선택</a>. 여러 장 올릴 수 있습니다.</div>
+      <div style="display:flex;justify-content:flex-end;margin-top:16px"><button class="btn primary">추출하기</button></div>
+    </div>
+  </details>
+</main>
+
+<!-- ═════════ 8. 설정 ═════════ -->
+<main class="screen page" id="s-settings">
+  <div class="settings">
+    <h1 style="font-size:26px">설정</h1>
+    <div class="card form-card" style="margin-top:20px">
+      <h2>Claude Code</h2>
+      <div class="toolbar"><span class="status-line"><span class="ok-dot"></span>설치됨, 버전 2.1.284. 로그인은 11월 16일 13:40에 확인했습니다.</span><button class="btn sm" data-toast="로그인되어 있습니다">로그인 확인</button></div>
+      <p class="muted small" style="margin:8px 0 0">확인할 때 짧은 요청을 한 번 보내므로 사용량이 조금 듭니다. 로그인이 안 되어 있으면 터미널에서 <code>claude</code>를 실행해 로그인하세요.</p>
+    </div>
+    <div class="card form-card">
+      <h2>작업별 모델과 시간 제한</h2>
+      <p class="muted small" style="margin:0 0 8px">바꾸면 바로 저장됩니다. 시간 제한은 60~1800초입니다.</p>
+      <table>
+        <thead><tr><th style="padding-left:0">작업</th><th>모델</th><th>시간 제한(초)</th></tr></thead>
+        <tbody>
+          <tr><td style="padding-left:0">공고 분석</td><td><select class="in" style="width:130px"><option>opus</option><option>sonnet</option><option>haiku</option></select></td><td><input class="in" style="width:100px" value="300"></td></tr>
+          <tr><td style="padding-left:0">이력서 가져오기</td><td><select class="in" style="width:130px"><option>sonnet</option></select></td><td><input class="in" style="width:100px" value="300"></td></tr>
+          <tr><td style="padding-left:0">지원 내역 가져오기</td><td><select class="in" style="width:130px"><option>sonnet</option></select></td><td><input class="in" style="width:100px" value="300"></td></tr>
+          <tr><td style="padding-left:0">맞춤 이력서</td><td><select class="in" style="width:130px"><option>opus</option></select></td><td><input class="in" style="width:100px" value="300"></td></tr>
+          <tr><td style="padding-left:0">맞춤 이력서 다듬기</td><td><select class="in" style="width:130px"><option>opus</option></select></td><td><input class="in" style="width:100px" value="300"></td></tr>
+          <tr><td style="padding-left:0">면접 준비</td><td><select class="in" style="width:130px"><option>opus</option></select></td><td><input class="in" style="width:100px" value="600"></td></tr>
+          <tr><td style="padding-left:0">면접 준비 추가 요청</td><td><select class="in" style="width:130px"><option>opus</option></select></td><td><input class="in" style="width:100px" value="600"></td></tr>
+          <tr><td style="padding-left:0">사이트 반영</td><td><select class="in" style="width:130px"><option>sonnet</option></select></td><td><input class="in" style="width:100px" value="300"></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="card form-card">
+      <h2>사이트 로그인</h2>
+      <p class="muted small" style="margin:0">로그인이 필요한 공고를 읽을 때 쓰는 브라우저입니다. 열린 창에서 직접 로그인한 뒤 창을 닫으세요. 앱은 비밀번호를 저장하지 않습니다.</p>
+      <div class="cols4">
+        <div class="login-site"><span class="site lg remember">리멤버</span><button class="btn sm">로그인 창 열기</button></div>
+        <div class="login-site"><span class="site lg wanted">원티드</span><button class="btn sm">로그인 창 열기</button></div>
+        <div class="login-site"><span class="site lg groupby">그룹바이</span><button class="btn sm">로그인 창 열기</button></div>
+        <div class="login-site"><span class="site lg jobkorea">잡코리아</span><button class="btn sm">로그인 창 열기</button></div>
+      </div>
+    </div>
+    <div class="card form-card">
+      <h2>데이터와 백업</h2>
+      <div class="toolbar"><span>데이터 폴더 <span class="mono-path">C:\project\career_flow\data</span></span><button class="btn sm">데이터 폴더 열기</button></div>
+      <div class="toolbar" style="margin-top:14px"><span class="muted small">자동 백업은 하루 한 번(최근 30개), 수동 백업은 최근 10개를 보관합니다.</span><button class="btn sm" data-toast="백업을 만들었습니다">지금 백업</button></div>
+      <table style="margin-top:8px"><thead><tr><th style="padding-left:0">파일</th><th>종류</th><th class="num">크기</th><th>시각</th></tr></thead><tbody>
+        <tr><td style="padding-left:0" class="small">career-flow-20261116-151200-manual.db</td><td>수동</td><td class="num">2.1MB</td><td>11월 16일 15:12</td></tr>
+        <tr><td style="padding-left:0" class="small">career-flow-20261116.db</td><td>자동</td><td class="num">2.1MB</td><td>11월 16일 09:00</td></tr>
+      </tbody></table>
+    </div>
+  </div>
+</main>
+
+<!-- 지원 완료 창 -->
+<div class="overlay" id="applyModal" role="dialog" aria-modal="true" aria-labelledby="applyTitle">
+  <form class="modal" id="applyForm">
+    <h2 id="applyTitle">지원 완료로 기록</h2>
+    <p class="muted small" style="margin:4px 0 0">실제 사이트에서 지원한 뒤 기록하세요.</p>
+    <div class="row"><label for="ad">지원일</label><input id="ad" type="date" value="2026-11-16"></div>
+    <div class="row"><label for="as">지원 사이트</label><select id="as"><option>원티드</option><option>리멤버</option><option>그룹바이</option><option>잡코리아</option><option>기타</option></select></div>
+    <div class="row" id="asNoteRow" hidden><label for="asNote">출처 이름</label><input id="asNote" list="notes" placeholder="예: 지인 추천"></div>
+    <div class="row"><label for="ar">제출한 이력서</label><select id="ar"><option>맞춤 이력서 r3 (11월 16일 14:20)</option><option>맞춤 이력서 r2</option><option>맞춤 이력서 r1</option><option>기본 이력서 v3</option></select></div>
+    <div class="row"><label for="am">메모</label><input id="am" placeholder="선택"></div>
+    <footer><button type="button" class="btn" data-close>취소</button><button type="submit" class="btn primary">저장</button></footer>
+  </form>
+</div>
+<div class="overlay" id="coModal" role="dialog" aria-modal="true" aria-labelledby="coTitle">
+  <div class="modal" style="width:520px">
+    <h2 id="coTitle">회사 연결 변경</h2>
+    <p class="muted small" style="margin:4px 0 0">지금 연결: <b style="color:var(--ink)">모빌페이</b> (법인명 ㈜모빌리티페이먼츠, 별칭 없음)</p>
+    <div class="round" style="margin-top:16px" role="tablist"><button class="r" aria-pressed="false" data-co="link">다른 회사로 연결</button><button class="r" aria-pressed="false" data-co="alias">별칭 추가</button><button class="r" aria-pressed="true" data-co="merge">다른 회사와 합치기</button></div>
+    <div data-co-panel="link" hidden><input class="in" style="margin-top:14px" placeholder="회사 이름으로 찾기"></div>
+    <div data-co-panel="alias" hidden><input class="in" style="margin-top:14px" placeholder="예: MobilPay"><p class="muted small">이 이름으로 검색해도 모빌페이가 나옵니다.</p></div>
+    <div data-co-panel="merge">
+      <input class="in" style="margin-top:14px" value="모빌리티페이" aria-label="합칠 회사 찾기">
+      <div class="card" style="margin-top:8px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center"><span><b>모빌리티페이</b> <span class="muted small">공고 1건, 지원 기록 1건</span></span><span class="st go">선택됨</span></div>
+      <p class="small" style="margin:12px 0 0">모빌페이와 모빌리티페이를 합칩니다. 공고 1건과 지원 기록 1건이 <b>모빌페이</b>로 모이고, "모빌리티페이"는 별칭으로 남습니다.</p>
+    </div>
+    <footer style="display:flex;justify-content:flex-end;gap:8px;margin-top:20px"><button class="btn" data-close-co>취소</button><button class="btn primary" data-close-co data-done="회사를 합쳤습니다">합치기</button></footer>
+  </div>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+
+
+<script>
+// 예시 데이터 (지어낸 회사·수치). stage: applied | passed | interview | final | closed
+const rows = [
+  { co: "모빌페이", alias: "모빌리티페이먼츠", pos: "서버 개발자 (결제)", site: "원티드", date: "2026-11-10", st: "서류합격", stage: "passed", fit: 84, res: "맞춤 r2", base: 3 },
+  { co: "오렌지핀", pos: "서버 개발자", site: "기타", siteNote: "지인 추천", date: "2026-11-12", st: "지원", stage: "applied", fit: 77, res: "기본 v3", base: 3 },
+  { co: "한빛커머스", pos: "백엔드 개발자", site: "리멤버", date: "2026-11-04", st: "면접 2차", stage: "interview", fit: 78, res: "맞춤 r1", base: 3 },
+  { co: "스텔라랩스", pos: "Backend Engineer", site: "그룹바이", date: "2026-10-28", st: "지원", stage: "applied", fit: 71, res: "기본 v3", base: 3 },
+  { co: "브릿지소프트", pos: "서버 엔지니어", site: "원티드", date: "2026-10-20", st: "서류합격", stage: "passed", fit: 74, res: "기본 v2", base: 2 },
+  { co: "노을헬스", pos: "서버 개발자", site: "원티드", date: "2026-10-15", st: "최종합격", stage: "final", fit: 88, res: "맞춤 r3", base: 2 },
+  { co: "코드웨이브", pos: "플랫폼 개발자", site: "잡코리아", date: "2026-10-08", st: "불합격", stage: "closed", fit: 66, res: "기본 v2", base: 2 },
+  { co: "그린로지스", pos: "Java 백엔드", site: "잡코리아", date: "2026-09-30", st: "지원취소", stage: "closed", fit: null, rec: true, res: null, base: null },
+  { co: "하이퍼셀", pos: "Java 개발자", site: "리멤버", date: "2026-09-21", st: "면접 1차", stage: "interview", fit: 80, res: "맞춤 r1", base: 2 },
+  { co: "모빌페이", alias: "모빌리티페이먼츠", pos: "플랫폼 엔지니어", site: "잡코리아", date: "2026-03-02", st: "불합격", stage: "closed", fit: null, rec: true, res: null, base: null },
+];
+const SITE_KEY = { "리멤버": "remember", "원티드": "wanted", "그룹바이": "groupby", "잡코리아": "jobkorea", "기타": "other" };
+const SITES = ["리멤버", "원티드", "그룹바이", "잡코리아", "기타"];
+const STAGES = [
+  { k: "applied", name: "지원", c: "#5B6475" }, { k: "passed", name: "서류합격", c: "#0369A1" },
+  { k: "interview", name: "면접", c: "#2342C8" }, { k: "final", name: "최종합격", c: "#15803D" }, { k: "closed", name: "불합격·지원취소", c: "#98A0AE" },
+];
+const ST_CLS = { applied: "plain", passed: "pass", interview: "go", final: "ok", closed: "no" };
+const norm = s => s.replace(/\(주\)|㈜|주식회사|\s/g, "").toLowerCase();
+let view = "all";
+const openGroups = new Set(["원티드", "v3"]);
+
+const siteCell = r => `<span class="site ${SITE_KEY[r.site]}">${r.site}${r.siteNote ? ` <span class="muted" style="font-weight:500">${r.siteNote}</span>` : ""}</span>`;
+const fitCell = r => r.fit == null ? '<span class="faint">–</span>' : `<span class="fit"><i style="--v:${r.fit}%"></i>${r.fit}</span>`;
+const resCell = r => r.res ? `<span class="res-tag ${r.res.startsWith("맞춤") ? "tailored" : ""}">${r.res}</span>` : '<span class="faint">모름</span>';
+const rowHtml = (r, cols) => `<tr class="link" tabindex="0" onclick="show('posting')" onkeydown="if(event.key==='Enter')show('posting')">
+  <td class="co">${r.co}${r.rec ? '<span class="tag-rec">기록만</span>' : ""}</td><td>${r.pos}</td>
+  ${cols.site ? `<td class="col-site">${siteCell(r)}</td>` : ""}<td>${r.date}</td><td><span class="st ${ST_CLS[r.stage]}">${r.st}</span></td>
+  ${cols.res ? `<td>${resCell(r)}</td>` : ""}<td class="num col-fit">${fitCell(r)}</td></tr>`;
+const tableHtml = (list, cols) => `<table><thead><tr><th>회사</th><th>포지션</th>${cols.site ? '<th class="col-site">사이트</th>' : ""}<th>지원일</th><th>상태</th>${cols.res ? "<th>제출한 이력서</th>" : ""}<th class="num col-fit">적합도</th></tr></thead><tbody>${list.map(r => rowHtml(r, cols)).join("")}</tbody></table>`;
+// 서류 통과율: 결과가 나온 지원(지원 단계·지원취소 제외) 중 서류합격 이상
+const rate = list => { const done = list.filter(r => r.stage !== "applied" && r.st !== "지원취소"); const pass = done.filter(r => ["passed", "interview", "final"].includes(r.stage)); return done.length ? `서류 통과 <b>${pass.length}</b> / ${done.length}` : "결과 대기"; };
+function groupHtml(key, chip, list, cols) {
+  return `<div class="group" ${openGroups.has(key) ? "open-g" : ""} data-g="${key}">
+    <button class="group-head" aria-expanded="${openGroups.has(key)}"><span class="tri"></span>${chip}<span class="n">${list.length}</span><span class="rate">${rate(list)}</span></button>
+    <div class="group-body card table-card">${tableHtml(list, cols)}</div></div>`;
+}
+function render() {
+  const raw = document.getElementById("q").value, q = norm(raw);
+  const list = rows.filter(r => !q || [r.co, r.alias || "", r.pos].some(v => norm(v).includes(q)));
+  const area = document.getElementById("viewArea"), empty = document.getElementById("empty");
+  empty.hidden = list.length > 0;
+  if (!list.length) { empty.querySelector("h3").textContent = `'${raw}'에 지원한 기록이 없습니다.`; area.innerHTML = ""; return; }
+  document.getElementById("summary").style.display = q ? "none" : "";
+  if (view === "all") {
+    area.innerHTML = `<div class="card table-card">${tableHtml(list, { site: true, res: true })}<div class="table-foot">${q ? `'${raw}' 검색 결과 ${list.length}건` : `총 ${list.length}건`}</div></div>`;
+  } else if (view === "site") {
+    area.innerHTML = SITES.map(s => [s, list.filter(r => r.site === s)]).filter(([, l]) => l.length)
+      .map(([s, l]) => groupHtml(s, `<span class="label-chip ${SITE_KEY[s]}">${s}</span>`, l, { res: true })).join("");
+  } else if (view === "resume") {
+    const keys = [...new Set(list.map(r => r.base))].sort((a, b) => (b ?? -1) - (a ?? -1));
+    area.innerHTML = keys.map(k => [k, list.filter(r => r.base === k)]).map(([k, l]) => {
+      const key = k == null ? "none" : "v" + k;
+      const label = k == null ? '<span class="label-chip">제출 이력서 모름</span><span class="muted small">가져온 기록</span>'
+        : `<span class="label-chip" style="--c:var(--accent)">기본 이력서 v${k} 기준</span><span class="muted small">기본 ${l.filter(r => r.res.startsWith("기본")).length}, 맞춤 ${l.filter(r => r.res.startsWith("맞춤")).length}</span>`;
+      return groupHtml(key, label, l, { site: true, res: true });
+    }).join("");
+  } else {
+    area.innerHTML = `<div class="board">${STAGES.map(s => { const l = list.filter(r => r.stage === s.k); return `
+      <section class="col" style="--cc:${s.c}"><div class="col-head"><span class="label-chip">${s.name}</span><span class="n">${l.length}</span></div>
+      ${l.map(r => `<button class="kcard" onclick="show('posting')"><div class="t">${r.co}</div><div class="p">${r.pos}</div>
+        <div class="m">${siteCell(r)}${r.stage === "interview" ? `<span class="round-tag">${r.st.replace("면접 ", "")}</span>` : ""}${r.st === "지원취소" ? "<span>지원취소</span>" : ""}<span>${r.date.slice(5).replace("-", "/")}</span><span class="fitn">${r.fit ?? ""}</span></div></button>`).join("") || '<p class="faint small" style="padding:6px 4px">없음</p>'}
+      </section>`; }).join("")}</div>
+      <p class="muted small" style="margin-top:6px">카드를 다른 열로 끌어 놓으면 상태 변경 창이 열립니다(날짜·면접 차수 확인 후 저장).</p>`;
+  }
+  area.querySelectorAll(".group-head").forEach(h => h.onclick = () => { const g = h.parentElement, k = g.dataset.g; if (openGroups.has(k)) openGroups.delete(k); else openGroups.add(k); render(); });
+}
+document.getElementById("q").addEventListener("input", render);
+document.querySelectorAll("[data-view]").forEach(b => b.onclick = () => {
+  view = b.dataset.view;
+  document.querySelectorAll("[data-view]").forEach(x => x.setAttribute("aria-selected", x === b));
+  render();
+});
+render();
+
+function show(screen) {
+  document.querySelectorAll(".screen").forEach(s => s.classList.toggle("on", s.id === "s-" + screen));
+  document.querySelectorAll("[data-nav]").forEach(a => { if (a.dataset.nav === screen) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
+  window.scrollTo(0, 0);
+}
+const SCREENS = ["dashboard", "new", "analyzed", "posting", "resume", "import", "sync", "settings"];
+const route = () => show(SCREENS.includes(location.hash.slice(1)) ? location.hash.slice(1) : "dashboard");
+window.addEventListener("hashchange", route); route();
+// 해시 이동이 안 되는 환경(미리보기 등)에서도 화면 전환이 되도록 직접 처리
+document.addEventListener("click", e => {
+  const a = e.target.closest('a[href^="#"]');
+  if (!a || a.hasAttribute("data-goto")) return;
+  const id = a.getAttribute("href").slice(1);
+  if (SCREENS.includes(id)) { e.preventDefault(); show(id); try { history.replaceState(null, "", "#" + id); } catch (err) {} }
+});
+
+
+
+function tab(id) {
+  document.querySelectorAll(".tabs [data-tab]").forEach(b => b.setAttribute("aria-selected", b.dataset.tab === id));
+  document.querySelectorAll(".tabpanel").forEach(p => p.classList.toggle("on", p.id === "t-" + id));
+}
+document.querySelectorAll(".tabs [data-tab]").forEach(b => b.onclick = () => tab(b.dataset.tab));
+document.querySelectorAll("[data-goto]").forEach(b => b.addEventListener("click", e => { e.preventDefault(); show("posting"); tab(b.dataset.goto); }));
+
+const toast = msg => { const t = document.getElementById("toast"); t.textContent = msg; t.classList.add("on"); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("on"), 2200); };
+document.querySelectorAll(".copy").forEach(b => b.onclick = () => { const o = b.textContent; b.textContent = "복사됨"; setTimeout(() => b.textContent = o, 1400); });
+
+const modal = document.getElementById("applyModal");
+const openApply = () => { modal.classList.add("on"); document.getElementById("ad").focus(); };
+document.getElementById("applyBtn").onclick = openApply;
+document.querySelectorAll("[data-open-apply]").forEach(b => b.onclick = openApply);
+modal.querySelector("[data-close]").onclick = () => modal.classList.remove("on");
+modal.addEventListener("click", e => { if (e.target === modal) modal.classList.remove("on"); });
+document.addEventListener("keydown", e => { if (e.key === "Escape") modal.classList.remove("on"); });
+document.getElementById("as").onchange = e => { document.getElementById("asNoteRow").hidden = e.target.value !== "기타"; };
+document.getElementById("url").addEventListener("input", e => { const v = e.target.value.trim(); document.getElementById("noteWrap").hidden = !v || /remember|wanted|groupby|jobkorea/.test(v); });
+document.getElementById("delPosting").onclick = () => { if (confirm("이 공고와 분석 결과, 맞춤 이력서, 면접 준비를 삭제합니다.")) { show("dashboard"); toast("공고를 삭제했습니다"); } };
+document.querySelectorAll("[data-confirm]").forEach(b => b.onclick = () => { if (confirm(b.dataset.confirm)) toast("지원 기록을 삭제했습니다"); });
+const co = document.getElementById("coModal");
+document.getElementById("coBtn").onclick = () => co.classList.add("on");
+co.querySelectorAll("[data-co]").forEach(b => b.onclick = () => {
+  co.querySelectorAll("[data-co]").forEach(x => x.setAttribute("aria-pressed", x === b));
+  co.querySelectorAll("[data-co-panel]").forEach(pn => pn.hidden = pn.dataset.coPanel !== b.dataset.co);
+  const ok = co.querySelector("[data-done]"); ok.textContent = { link: "연결 바꾸기", alias: "별칭 추가", merge: "합치기" }[b.dataset.co];
+});
+co.querySelectorAll("[data-close-co]").forEach(b => b.onclick = () => { co.classList.remove("on"); if (b.dataset.done) toast(b.textContent === "합치기" ? "회사를 합쳤습니다" : "저장했습니다"); });
+co.addEventListener("click", e => { if (e.target === co) co.classList.remove("on"); });
+document.getElementById("applyForm").onsubmit = e => {
+  e.preventDefault(); modal.classList.remove("on");
+  document.getElementById("pActions").innerHTML = '<div class="p-state"><span class="st go">지원</span><span class="muted small">11월 16일</span><span class="site wanted">원티드</span><button class="btn">상태 변경</button></div>';
+  document.getElementById("recEmpty").hidden = true; document.getElementById("recFilled").hidden = false;
+  toast("지원 완료로 기록했습니다");
+};
+
+document.querySelectorAll("[data-sub]").forEach(b => b.onclick = () => {
+  document.querySelectorAll("[data-sub]").forEach(x => x.setAttribute("aria-selected", x === b));
+  document.querySelectorAll(".subpanel").forEach(p => p.classList.toggle("on", p.id === "u-" + b.dataset.sub));
+});
+document.querySelectorAll(".vlist button").forEach(b => b.onclick = () => document.querySelectorAll(".vlist button").forEach(x => x.setAttribute("aria-pressed", x === b)));
+document.querySelectorAll(".tagin .chip button").forEach(b => b.onclick = () => b.parentElement.remove());
+document.querySelectorAll("[data-toast]").forEach(b => b.onclick = () => toast(b.dataset.toast));
+document.getElementById("saveResume").onclick = () => toast("v4로 저장했습니다. 4개 사이트에 반영할 내용을 정리하고 있습니다.");
+document.querySelectorAll("#reviewRows tr").forEach(tr => tr.querySelector("button").onclick = () => tr.remove());
+
+let open = 3;
+document.querySelectorAll(".done-btn").forEach(b => b.onclick = () => {
+  const card = b.closest(".sync-card");
+  card.classList.add("done");
+  card.querySelector("table").remove(); b.parentElement.remove();
+  card.insertAdjacentHTML("beforeend", '<p class="state-line">반영 완료. 방금 v3까지 반영했습니다.</p>');
+  card.querySelector(".range").textContent = "최신 상태";
+  open -= 1; const c = document.getElementById("syncCount");
+  if (open > 0) c.textContent = open; else c.remove();
+  toast(`${card.dataset.site} 반영 완료로 표시했습니다`);
+});
+</script>
+</body>
+</html>

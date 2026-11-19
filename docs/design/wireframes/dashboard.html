@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>와이어프레임 — 대시보드</title><style>
+/* 와이어프레임 공용 스타일 — 디자인이 아니라 배치·문구 확인용. 색은 회색만 쓴다. */
+:root {
+  --bg: #F2F2F2; --box: #FFFFFF; --line: #9A9A9A; --soft: #D6D6D6; --text: #222; --sub: #6B6B6B; --note: #5A5A5A;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 system-ui, "Malgun Gothic", sans-serif; }
+a { color: inherit; }
+.page-title { max-width: 1240px; margin: 28px auto 6px; padding: 0 20px; font-size: 20px; font-weight: 700; }
+.page-desc { max-width: 1240px; margin: 0 auto 8px; padding: 0 20px; color: var(--sub); }
+.toc { max-width: 1240px; margin: 0 auto 8px; padding: 0 20px; display: flex; gap: 6px 14px; flex-wrap: wrap; }
+
+/* 프레임 = 화면 하나 */
+.frame { max-width: 1240px; margin: 26px auto 0; padding: 0 20px; }
+.frame-name { font-weight: 700; margin: 0 0 6px; }
+.frame-name small { font-weight: 400; color: var(--sub); margin-left: 6px; }
+.screen { background: var(--box); border: 1px solid var(--line); min-height: 200px; }
+.notes { margin: 8px 0 0; padding-left: 18px; color: var(--note); font-size: 13px; }
+
+/* 상단 내비게이션 */
+.nav { display: flex; align-items: center; gap: 18px; height: 52px; padding: 0 20px; border-bottom: 1px solid var(--line); }
+.nav .logo { font-weight: 700; margin-right: 12px; }
+.nav .cur { font-weight: 700; text-decoration: underline; text-underline-offset: 6px; }
+.nav .right { margin-left: auto; color: var(--sub); }
+.cnt { display: inline-block; min-width: 18px; padding: 0 5px; border: 1px solid var(--line); border-radius: 9px; font-size: 11px; text-align: center; margin-left: 3px; }
+
+.body { padding: 20px; }
+.row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.row.between { justify-content: space-between; }
+.grow { flex: 1; }
+.gap { height: 14px; }
+.h1 { font-size: 20px; font-weight: 700; }
+.h2 { font-size: 16px; font-weight: 700; margin: 0 0 8px; }
+.sub { color: var(--sub); }
+.small { font-size: 12px; }
+
+/* 입력 요소 */
+.btn { display: inline-flex; align-items: center; justify-content: center; height: 32px; padding: 0 12px; border: 1px solid var(--line); background: #fff; white-space: nowrap; }
+.btn.primary { border-width: 2px; border-color: #333; font-weight: 700; }
+.btn.off { color: #AAA; border-style: dashed; }
+.btn.sm { height: 26px; font-size: 12px; padding: 0 8px; }
+.input { display: flex; align-items: center; height: 34px; padding: 0 10px; border: 1px solid var(--line); color: var(--sub); background: #fff; }
+.input.big { height: 42px; font-size: 16px; }
+.area { border: 1px solid var(--line); color: var(--sub); padding: 8px 10px; min-height: 80px; background: #fff; }
+.select::after { content: " ▾"; }
+.check::before { content: "☐ "; }
+.check.on::before { content: "☑ "; }
+.radio::before { content: "○ "; }
+.radio.on::before { content: "● "; }
+
+/* 묶음 */
+.box { border: 1px solid var(--line); padding: 12px; }
+.box.dash { border-style: dashed; }
+.banner { border: 2px solid #555; padding: 10px 12px; }
+.banner.soft { border: 1px dashed var(--line); }
+.placeholder { display: grid; place-items: center; background: repeating-linear-gradient(45deg, #F4F4F4, #F4F4F4 8px, #EAEAEA 8px, #EAEAEA 16px); border: 1px solid var(--soft); color: var(--sub); }
+.cols { display: grid; gap: 16px; }
+.c2 { grid-template-columns: 1fr 1fr; }
+.c-main-side { grid-template-columns: 1fr 300px; }
+.c-side-main { grid-template-columns: 200px 1fr; }
+.c4 { grid-template-columns: repeat(4, 1fr); }
+.tabs { display: flex; gap: 0; border-bottom: 1px solid var(--line); }
+.tabs span { padding: 8px 14px; border: 1px solid transparent; border-bottom: 0; margin-bottom: -1px; color: var(--sub); }
+.tabs span.cur { border-color: var(--line); background: #fff; color: var(--text); font-weight: 700; }
+.chip { display: inline-block; padding: 2px 10px; border: 1px solid var(--line); border-radius: 12px; }
+.chip.cur { border-width: 2px; border-color: #333; font-weight: 700; }
+.badge { display: inline-block; padding: 0 6px; border: 1px solid var(--line); font-size: 12px; }
+
+/* 표 */
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; font-weight: 600; color: var(--sub); border-bottom: 1px solid var(--line); padding: 7px 8px; }
+td { border-bottom: 1px solid var(--soft); padding: 8px; vertical-align: top; }
+td.r, th.r { text-align: right; }
+tr.open td { background: #F7F7F7; }
+ul.plain { margin: 0; padding-left: 18px; }
+
+/* 미정(사용자 결정 필요) 표시 */
+.tbd { outline: 2px dashed #999; outline-offset: 2px; position: relative; }
+.tbd::after { content: "미정"; position: absolute; top: -10px; right: -6px; background: #fff; border: 1px solid #999; font-size: 10px; padding: 0 4px; color: #555; }
+
+/* 모달 */
+.overlay { background: rgba(0,0,0,.18); padding: 40px 20px; display: grid; place-items: center; }
+.modal { background: #fff; border: 1px solid #555; width: 440px; max-width: 100%; padding: 16px; }
+.field { display: grid; grid-template-columns: 110px 1fr; gap: 8px; align-items: center; margin-bottom: 10px; }
+
+@media (max-width: 860px) {
+  .c2, .c-main-side, .c-side-main, .c4 { grid-template-columns: 1fr; }
+  .nav { overflow-x: auto; }
+}
+</style></head>
+<body>
+<div class="page-title">1. 대시보드 <span class="sub" style="font-weight:400">/</span></div>
+<div class="page-desc">회사 이름으로 지원 기록을 찾고 전체 지원 목록을 관리한다. <a href="index.html">목록으로</a></div>
+
+<section class="frame">
+  <p class="frame-name">1-1 기본 <small>지원 기록이 있고 검색어 없음</small></p>
+  <div class="screen">
+    <nav class="nav"><span class="logo">Career Flow</span><a class="cur">대시보드</a><a>공고 등록</a><a>분석한 공고</a><a>기본 이력서</a><a>가져오기</a><a>사이트 반영<span class="cnt">3</span></a><a>설정</a><span class="right">분석 진행 중 1건</span></nav>
+    <div class="body">
+      <div class="row between"><span class="h1">지원 기록</span><span class="btn primary">+ 공고 등록</span></div>
+      <div class="gap"></div>
+      <div class="row"><span class="chip cur">전체</span><span class="chip">사이트별</span><span class="chip">상태별</span><span class="chip">이력서별</span></div>
+      <div class="gap"></div>
+      <div class="row">
+        <span class="input big grow">회사나 포지션으로 찾기</span>
+        <span class="btn select">상태: 전체</span><span class="btn select">사이트: 전체</span><span class="btn select">기간: 전체</span>
+      </div>
+      <div class="gap"></div>
+      <div class="row between">
+        <span>이번 달 지원 <b>4</b>　서류합격 <b>1</b>　면접 <b>1</b>　<span class="sub">원티드 7 / 리멤버 3 / 잡코리아 2 / 그룹바이 1</span></span>
+        <a>분석만 한 공고 5건 보기</a>
+      </div>
+      <div class="gap"></div>
+      <table>
+        <thead><tr><th>회사</th><th>포지션</th><th>사이트</th><th>지원일</th><th>상태</th><th>제출한 이력서</th><th class="r">적합도</th></tr></thead>
+        <tbody>
+          <tr><td>모빌페이</td><td>서버 개발자 (결제)</td><td>원티드</td><td>2026-11-10</td><td><span class="badge">서류합격</span></td><td>맞춤 r2</td><td class="r">84</td></tr>
+          <tr><td>한빛커머스</td><td>백엔드 개발자</td><td>리멤버</td><td>2026-11-04</td><td><span class="badge">면접 2차</span></td><td>맞춤 r1</td><td class="r">78</td></tr>
+          <tr><td>스텔라랩스</td><td>Backend Engineer</td><td>그룹바이</td><td>2026-10-28</td><td><span class="badge">지원</span></td><td>기본 v3</td><td class="r">71</td></tr>
+          <tr><td>노을헬스</td><td>서버 개발자</td><td>원티드</td><td>2026-10-15</td><td><span class="badge">최종합격</span></td><td>맞춤 r3</td><td class="r">88</td></tr>
+          <tr><td>그린로지스 <span class="badge small">기록만</span></td><td>Java 백엔드</td><td>잡코리아</td><td>2026-09-30</td><td><span class="badge">지원취소</span></td><td class="sub">모름</td><td class="r">–</td></tr>
+        </tbody>
+      </table>
+      <div class="gap"></div>
+      <div class="sub">총 23건</div>
+    </div>
+  </div>
+  <ul class="notes">
+    <li>검색창은 입력하는 즉시 결과가 바뀐다. 검색어는 주소(<code>?q=</code>)에 남는다.</li>
+    <li>행 클릭: 공고가 있으면 공고 상세로 이동, "기록만"(가져온 기록)이면 그 자리에서 펼친다(1-4).</li>
+    <li>내비게이션 오른쪽 "분석 진행 중 1건"은 AI 작업이 있을 때만 보이고, 누르면 그 공고로 이동한다.</li>
+  </ul>
+</section>
+
+<section class="frame">
+  <p class="frame-name">1-2 · 1-3 보기 전환 <small>제목 아래 보기 탭: 전체 / 사이트별 / 상태별 / 이력서별. 검색·필터는 모든 보기에 같이 적용</small></p>
+  <div class="cols c2">
+    <div class="screen"><div class="body">
+      <div class="row"><span class="chip">전체</span><span class="chip cur">사이트별</span><span class="chip">상태별</span><span class="chip">이력서별</span></div>
+      <div class="gap"></div>
+      <div class="row between"><span>▸ <span class="badge">● 리멤버</span> 2</span><span class="sub small">서류 통과 2 / 2</span></div>
+      <div class="row between" style="margin-top:6px"><span>▾ <span class="badge">● 원티드</span> 3</span><span class="sub small">서류 통과 3 / 3</span></div>
+      <table style="margin:4px 0 6px 18px;width:calc(100% - 18px)"><thead><tr><th>회사</th><th>포지션</th><th>지원일</th><th>상태</th><th>제출한 이력서</th><th class="r">적합도</th></tr></thead><tbody>
+        <tr><td>모빌페이</td><td>서버 개발자 (결제)</td><td>11-10</td><td><span class="badge">서류합격</span></td><td>맞춤 r2</td><td class="r">84</td></tr>
+        <tr><td>노을헬스</td><td>서버 개발자</td><td>10-15</td><td><span class="badge">최종합격</span></td><td>맞춤 r3</td><td class="r">88</td></tr></tbody></table>
+      <div class="row between"><span>▸ <span class="badge">● 그룹바이</span> 1</span><span class="sub small">결과 대기</span></div>
+      <div class="row between" style="margin-top:6px"><span>▸ <span class="badge">● 잡코리아</span> 3</span><span class="sub small">서류 통과 0 / 2</span></div>
+      <div class="row between" style="margin-top:6px"><span>▸ <span class="badge">● 기타</span> 1</span><span class="sub small">결과 대기</span></div>
+    </div></div>
+    <div class="screen"><div class="body">
+      <div class="row"><span class="chip">전체</span><span class="chip">사이트별</span><span class="chip">상태별</span><span class="chip cur">이력서별</span></div>
+      <div class="gap"></div>
+      <div class="row between"><span>▾ <span class="badge">기본 이력서 v3 기준</span> 4 <span class="sub small">기본 2, 맞춤 2</span></span><span class="sub small">서류 통과 2 / 2</span></div>
+      <table style="margin:4px 0 6px 18px;width:calc(100% - 18px)"><thead><tr><th>회사</th><th>사이트</th><th>상태</th><th>제출한 이력서</th></tr></thead><tbody>
+        <tr><td>모빌페이</td><td>원티드</td><td><span class="badge">서류합격</span></td><td>맞춤 r2</td></tr>
+        <tr><td>스텔라랩스</td><td>그룹바이</td><td><span class="badge">지원</span></td><td>기본 v3</td></tr></tbody></table>
+      <div class="row between"><span>▸ <span class="badge">기본 이력서 v2 기준</span> 4 <span class="sub small">기본 2, 맞춤 2</span></span><span class="sub small">서류 통과 3 / 4</span></div>
+      <div class="row between" style="margin-top:6px"><span>▸ <span class="badge">제출 이력서 모름</span> 2 <span class="sub small">가져온 기록</span></span><span class="sub small">서류 통과 0 / 1</span></div>
+    </div></div>
+  </div>
+  <div class="gap"></div>
+  <div class="screen"><div class="body">
+    <div class="row"><span class="chip">전체</span><span class="chip">사이트별</span><span class="chip cur">상태별</span><span class="chip">이력서별</span></div>
+    <div class="gap"></div>
+    <div class="cols" style="grid-template-columns:repeat(5,1fr)">
+      <div class="box"><div><b>지원</b> 2</div><div class="box" style="margin-top:8px"><b>오렌지핀</b><div class="small sub">서버 개발자</div><div class="small">● 기타 지인 추천　11/12　77</div></div><div class="box" style="margin-top:8px"><b>스텔라랩스</b><div class="small">● 그룹바이　10/28　71</div></div></div>
+      <div class="box"><div><b>서류합격</b> 2</div><div class="box" style="margin-top:8px"><b>모빌페이</b><div class="small">● 원티드　11/10　84</div></div></div>
+      <div class="box"><div><b>면접</b> 2</div><div class="box" style="margin-top:8px"><b>한빛커머스</b><div class="small">● 리멤버　2차　11/04　78</div></div></div>
+      <div class="box"><div><b>최종합격</b> 1</div><div class="box" style="margin-top:8px"><b>노을헬스</b><div class="small">● 원티드　10/15　88</div></div></div>
+      <div class="box"><div><b>불합격·지원취소</b> 3</div><div class="box" style="margin-top:8px"><b>코드웨이브</b><div class="small">● 잡코리아　10/08</div></div></div>
+    </div>
+  </div></div>
+  <ul class="notes">
+    <li>사이트별·이력서별: 묶음 머리를 누르면 접고 편다. 머리 오른쪽은 "서류 통과 = 서류합격 이상 / 결과가 나온 지원(지원 단계·지원취소 제외)". 어느 사이트, 어느 이력서 버전이 결과가 좋았는지 비교하는 용도.</li>
+    <li>이력서별: 제출한 이력서의 <b>기준 버전</b>(맞춤본이면 그 맞춤본이 기준으로 삼은 기본 이력서 버전)으로 묶는다. 가져온 기록처럼 제출 이력서를 모르면 "모름" 묶음.</li>
+    <li>상태별: 열 = 지원 / 서류합격 / 면접 / 최종합격 / 불합격·지원취소. 카드 = 회사, 포지션, 사이트, 면접 차수, 지원일, 적합도. 카드를 다른 열로 끌어 놓으면 상태 변경 창(3-4)이 열리고, 날짜·차수를 확인해 저장해야 바뀐다.</li>
+    <li>선택한 보기는 주소(<code>?view=</code>)에 남고, 다음에 열 때도 유지한다. 펼친 묶음은 이 브라우저에만 기억한다.</li>
+    <li>사이트는 색으로 구분한다(색 점 + 이름). 색 값은 목업과 <code>design.md</code>에 있다. 와이어프레임에서는 ●로만 표시.</li>
+  </ul>
+</section>
+
+<section class="frame">
+  <p class="frame-name">1-4 검색 + 기록만 행 펼침 <small>검색어 "그린"</small></p>
+  <div class="screen">
+    <nav class="nav"><span class="logo">Career Flow</span><a class="cur">대시보드</a><a>공고 등록</a><a>분석한 공고</a><a>기본 이력서</a><a>가져오기</a><a>사이트 반영<span class="cnt">3</span></a><a>설정</a></nav>
+    <div class="body">
+      <div class="row between"><span class="h1">지원 기록</span><span class="btn primary">+ 공고 등록</span></div>
+      <div class="gap"></div>
+      <div class="row"><span class="input big grow" style="color:#222">그린</span><span class="btn select">상태: 전체</span><span class="btn select">사이트: 전체</span><span class="btn select">기간: 전체</span></div>
+      <div class="gap"></div>
+      <div class="sub">'그린' 검색 결과 1건</div>
+      <div class="gap"></div>
+      <table>
+        <thead><tr><th>회사</th><th>포지션</th><th>사이트</th><th>지원일</th><th>상태</th><th class="r">적합도</th></tr></thead>
+        <tbody>
+          <tr class="open"><td>그린로지스 <span class="badge small">기록만</span></td><td>Java 백엔드</td><td>잡코리아</td><td>2026-09-30</td><td><span class="badge">지원취소</span></td><td class="r">–</td></tr>
+          <tr class="open"><td colspan="6">
+            <div class="cols c2">
+              <div>
+                <div class="h2">상태 변경</div>
+                <div class="row"><span class="btn select">지원취소</span><span class="input" style="width:140px">2026-11-16</span><span class="input grow">메모 (선택)</span><span class="btn primary">저장</span></div>
+                <div class="gap"></div>
+                <div class="h2">상태 이력</div>
+                <ul class="plain"><li>2026-10-02 지원취소 — 근무지 변경으로 취소</li><li>2026-09-30 지원</li></ul>
+              </div>
+              <div>
+                <div class="h2">메모</div>
+                <div class="area">지인 추천으로 들어온 포지션</div>
+                <div class="gap"></div>
+                <div class="row"><span class="btn">메모 저장</span><span class="grow"></span><span class="btn">기록 수정</span><span class="btn">기록 삭제</span></div>
+              </div>
+            </div>
+          </td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <ul class="notes">
+    <li>[기록 수정]: 회사·포지션·사이트·출처 이름·지원일을 고치는 작은 창(화면 문서 3.10). [기록 삭제]: 확인 창 후 지원 기록과 상태 이력을 지운다 (D-01).</li>
+  </ul>
+</section>
+
+<section class="frame">
+  <p class="frame-name">1-5 비어 있음 <small>왼쪽: 지원 기록 0건 / 오른쪽: 검색 결과 없음</small></p>
+  <div class="cols c2">
+    <div class="screen"><div class="body">
+      <div class="banner soft">기본 이력서를 먼저 등록해야 공고를 분석할 수 있습니다. <a>기본 이력서 등록</a></div>
+      <div class="gap"></div>
+      <div class="box" style="text-align:center;padding:36px">
+        <div class="h2">아직 지원 기록이 없습니다.</div>
+        <div class="sub">공고 링크를 등록하면 분석부터 시작합니다.</div>
+        <div class="gap"></div>
+        <span class="btn primary">+ 공고 등록</span>
+        <div class="gap"></div>
+        <a>이미 지원한 내역이 있다면 가져오기</a>
+      </div>
+    </div></div>
+    <div class="screen"><div class="body">
+      <span class="input big" style="color:#222">카카오</span>
+      <div class="gap"></div>
+      <div class="box" style="text-align:center;padding:36px">
+        <div class="h2">'카카오'에 지원한 기록이 없습니다.</div>
+        <div class="sub">회사명, 법인명, 별칭에서 모두 찾았습니다.</div>
+      </div>
+    </div></div>
+  </div>
+</section>
+<div style="height:40px"></div>
+</body></html>
