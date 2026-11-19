@@ -80,6 +80,13 @@ export const applications = sqliteTable('applications', {
   site: text('site').$type<SiteId>().notNull(),
   siteNote: text('site_note'),
   appliedAt: text('applied_at').notNull(), // YYYY-MM-DD
+  /**
+   * 같은 지원일 안의 순서를 정하는 정렬 전용 값(D-17). 화면에 보이지 않는다.
+   * 한국 시간 고정 모양 `YYYY-MM-DDTHH:mm:ss.SSS+09:00`(문자열 비교로 정렬). nullable(없으면 같은 날 맨 뒤).
+   * 실제 지원 시각이 아닐 수 있다: [지원 완료]는 저장 시각, 지난 메일은 수신 시각,
+   * 직접 입력·가져오기·그룹바이는 표 순서로 만든 값(12:00:00에서 순번초를 뺀 값).
+   */
+  appliedDatetime: text('applied_datetime'),
   submittedResume: text('submitted_resume', { mode: 'json' })
     .$type<{ kind: 'base'; versionId: number } | { kind: 'imported' }>()
     .notNull(),

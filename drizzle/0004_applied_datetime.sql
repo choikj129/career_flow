@@ -1,0 +1,1 @@
+ALTER TABLE `applications` ADD `applied_datetime` text;

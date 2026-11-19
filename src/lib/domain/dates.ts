@@ -52,3 +52,26 @@ export function validDate(s: string): boolean {
   const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
   return d.getUTCFullYear() === +m[1] && d.getUTCMonth() === +m[2] - 1 && d.getUTCDate() === +m[3];
 }
+
+const KST_PARTS = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Asia/Seoul',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  hourCycle: 'h23',
+});
+
+/** 한국 시간(+09:00) 고정 모양 ISO: YYYY-MM-DDTHH:mm:ss.SSS+09:00. PC 시간대와 무관. 문자열 비교로 정렬할 수 있다. */
+export function toKstIso(d: Date): string {
+  const p = Object.fromEntries(KST_PARTS.formatToParts(d).map((x) => [x.type, x.value]));
+  return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}:${p.second}.${String(d.getUTCMilliseconds()).padStart(3, '0')}+09:00`;
+}
+
+/** 같은 지원일 안의 순서만 나타내는 정렬용 값. rank 0이 가장 최근: 12:00:00에서 rank초를 뺀다(0~43199). 실제 시각이 아니다. */
+export function syntheticKstIso(appliedAt: string, rank: number): string {
+  const total = 12 * 3600 - Math.min(Math.max(Math.floor(rank), 0), 43199);
+  return `${appliedAt}T${pad(Math.floor(total / 3600))}:${pad(Math.floor((total % 3600) / 60))}:${pad(total % 60)}.000+09:00`;
+}

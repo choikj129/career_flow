@@ -2,6 +2,7 @@ import { and, desc, eq, gte, like, lte } from 'drizzle-orm';
 import { getDb, type Db } from '@/lib/db/client';
 import { analyses, applications, companies, companyKeys, resumeVersions } from '@/lib/db/schema';
 import { monthLocal } from '@/lib/domain/dates';
+import { applicationOrder } from '@/lib/applications/sort';
 import { docLabel } from '@/lib/documents/files';
 import { normalizeCompanyName } from '@/lib/domain/normalize';
 import {
@@ -53,7 +54,7 @@ export function searchApplications(q: SearchQuery, db: Db = getDb()): DashboardR
     .from(applications)
     .innerJoin(companies, eq(applications.companyId, companies.id))
     .where(conds.length ? and(...conds) : undefined)
-    .orderBy(desc(applications.appliedAt), desc(applications.id))
+    .orderBy(...applicationOrder)
     .all();
 
   const text = q.text?.trim();

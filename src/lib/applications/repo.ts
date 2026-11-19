@@ -1,11 +1,12 @@
-import { and, desc, eq, gte, or } from 'drizzle-orm';
+import { and, eq, gte, or } from 'drizzle-orm';
 import { getDb, type Db } from '@/lib/db/client';
 import { applications, statusEvents } from '@/lib/db/schema';
-import { monthsAgoLocal, todayLocal } from '@/lib/domain/dates';
+import { monthsAgoLocal, syntheticKstIso, toKstIso, todayLocal } from '@/lib/domain/dates';
 import type { ApplicationStatus, SiteId } from '@/lib/domain/types';
 import { findOrCreateCompany } from '@/lib/companies/repo';
 import { DOC_KINDS, isDocsForKind, type SubmittedDocs } from '@/lib/documents/files';
 import { docFileExists } from '@/lib/documents/folder';
+import { applicationOrder } from './sort';
 import { getPosting } from '@/lib/postings/repo';
 import { getLatestResume } from '@/lib/resume/repo';
 
@@ -37,6 +38,7 @@ export function markApplied(
         site,
         siteNote,
         appliedAt,
+        appliedDatetime: toKstIso(new Date()),
         submittedResume: { kind: 'base', versionId: resume.id },
         status: 'applied',
         notes: input.notes ?? null,
@@ -78,7 +80,7 @@ export function getPriorApplications(
     .select()
     .from(applications)
     .where(eq(applications.companyId, companyId))
-    .orderBy(desc(applications.appliedAt), desc(applications.id))
+    .orderBy(...applicationOrder)
     .all()
     .filter((a) => opts.excludePostingId == null || a.postingId !== opts.excludePostingId)
     .map((a) => ({
@@ -117,8 +119,12 @@ export function bulkCreateApplications(
   docsDir?: string,
 ): number {
   for (const r of rows) assertDocsValid(r.submittedDocs, docsDir);
+  // 같은 지원일 행끼리 위에서부터 rank 0, 1, 2… (위 행이 더 최근)
+  const rankByDay = new Map<string, number>();
   return db.transaction((tx) => {
     for (const r of rows) {
+      const rank = rankByDay.get(r.appliedAt) ?? 0;
+      rankByDay.set(r.appliedAt, rank + 1);
       const companyId = findOrCreateCompany({ displayName: r.companyName }, tx as unknown as Db);
       const site = r.site;
       const id = tx
@@ -130,6 +136,7 @@ export function bulkCreateApplications(
           site,
           siteNote: site === 'other' ? (r.siteNote?.trim() || null) : null,
           appliedAt: r.appliedAt,
+          appliedDatetime: syntheticKstIso(r.appliedAt, rank),
           submittedResume: { kind: 'imported' },
           submittedDocs: r.submittedDocs ?? null,
           status: r.status,
@@ -150,7 +157,7 @@ export function listApplicationsForPosting(postingId: number, db: Db = getDb()):
     .select()
     .from(applications)
     .where(eq(applications.postingId, postingId))
-    .orderBy(desc(applications.appliedAt), desc(applications.id))
+    .orderBy(...applicationOrder)
     .all();
 }
 
@@ -192,7 +199,7 @@ export function getRecentApplications(
     .select()
     .from(applications)
     .where(and(where, gte(applications.appliedAt, since)))
-    .orderBy(desc(applications.appliedAt), desc(applications.id))
+    .orderBy(...applicationOrder)
     .all()
     .map((a) => ({
       id: a.id,
