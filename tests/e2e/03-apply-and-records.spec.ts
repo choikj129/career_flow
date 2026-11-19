@@ -29,7 +29,7 @@ test.describe.serial('지원 완료부터 삭제까지(공고 하나의 일생)'
     await expect(state).toContainText('지원');
     await expect(state).toContainText('2026-11-17');
     await expect(state).toContainText('원티드');
-    await expect(page.getByRole('button', { name: '지원 완료' })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: '지원 완료', exact: true })).toHaveCount(0); // 지원 후에는 [다시 지원 완료]만 남는다(D-10)
     await expect(page.getByRole('button', { name: '공고 삭제' })).toHaveCount(0); // 지원 기록이 있으면 삭제 불가
   });
 

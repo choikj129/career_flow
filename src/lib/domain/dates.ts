@@ -7,6 +7,15 @@ export function todayLocal(now: Date = new Date()): string {
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 }
 
+/** 로컬 날짜 기준 months개월 전의 YYYY-MM-DD. 그 달에 없는 날이면 말일로 맞춘다(8/31의 6개월 전은 2/28). */
+export function monthsAgoLocal(now: Date, months: number): string {
+  const total = now.getFullYear() * 12 + now.getMonth() - months;
+  const y = Math.floor(total / 12);
+  const m = total % 12;
+  const last = new Date(y, m + 1, 0).getDate();
+  return `${y}-${pad(m + 1)}-${pad(Math.min(now.getDate(), last))}`;
+}
+
 /** 로컬 시간대 기준 YYYY-MM */
 export function monthLocal(now: Date = new Date()): string {
   return todayLocal(now).slice(0, 7);

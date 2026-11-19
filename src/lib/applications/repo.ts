@@ -1,7 +1,7 @@
-import { desc, eq } from 'drizzle-orm';
+import { and, desc, eq, gte, or } from 'drizzle-orm';
 import { getDb, type Db } from '@/lib/db/client';
 import { applications, statusEvents } from '@/lib/db/schema';
-import { todayLocal } from '@/lib/domain/dates';
+import { monthsAgoLocal, todayLocal } from '@/lib/domain/dates';
 import type { ApplicationStatus, SiteId } from '@/lib/domain/types';
 import { findOrCreateCompany } from '@/lib/companies/repo';
 import { getPosting } from '@/lib/postings/repo';
@@ -19,7 +19,6 @@ export function markApplied(
   const posting = getPosting(input.postingId, db);
   if (!posting) throw new Error('공고를 찾을 수 없습니다');
   if (posting.companyId == null) throw new Error('분석이 끝난 뒤 지원 완료를 눌러주세요');
-  if (getApplicationForPosting(input.postingId, db)) throw new Error('이미 지원 기록이 있는 공고입니다');
   const resume = getLatestResume(db);
   if (!resume) throw new Error('기본 이력서를 먼저 등록하세요.');
 
@@ -125,8 +124,67 @@ export function bulkCreateApplications(
   });
 }
 
+/** 이 공고의 지원 기록 전부. 지원일이 늦은 순, 같으면 나중에 만든 것이 먼저. */
+export function listApplicationsForPosting(postingId: number, db: Db = getDb()): Application[] {
+  return db
+    .select()
+    .from(applications)
+    .where(eq(applications.postingId, postingId))
+    .orderBy(desc(applications.appliedAt), desc(applications.id))
+    .all();
+}
+
+/** 이 공고의 최신 지원 기록(없으면 undefined). */
 export function getApplicationForPosting(postingId: number, db: Db = getDb()): Application | undefined {
-  return db.select().from(applications).where(eq(applications.postingId, postingId)).get();
+  return listApplicationsForPosting(postingId, db)[0];
+}
+
+export type RecentApplication = {
+  id: number;
+  postingId: number | null;
+  positionTitle: string;
+  site: SiteId;
+  siteNote: string | null;
+  appliedAt: string;
+  status: ApplicationStatus;
+  interviewRound: number | null;
+  /** 지금 지원하려는 공고에 낸 기록이면 true */
+  samePosting: boolean;
+};
+
+/**
+ * 같은 공고 또는 같은 회사(companyId)에 최근 months개월(기본 6) 안에 지원한 기록. 최신순.
+ * 경계는 로컬 날짜 기준이고, 정확히 months개월 전 날짜는 포함한다.
+ */
+export function getRecentApplications(
+  postingId: number,
+  opts: { now?: Date; months?: number } = {},
+  db: Db = getDb(),
+): RecentApplication[] {
+  const posting = getPosting(postingId, db);
+  if (!posting) return [];
+  const since = monthsAgoLocal(opts.now ?? new Date(), opts.months ?? 6);
+  const where =
+    posting.companyId != null
+      ? or(eq(applications.postingId, postingId), eq(applications.companyId, posting.companyId))
+      : eq(applications.postingId, postingId);
+  return db
+    .select()
+    .from(applications)
+    .where(and(where, gte(applications.appliedAt, since)))
+    .orderBy(desc(applications.appliedAt), desc(applications.id))
+    .all()
+    .map((a) => ({
+      id: a.id,
+      postingId: a.postingId,
+      positionTitle: a.positionTitle,
+      site: a.site,
+      siteNote: a.siteNote,
+      appliedAt: a.appliedAt,
+      status: a.status,
+      interviewRound: a.interviewRound,
+      samePosting: a.postingId === postingId,
+    }));
 }
 
 export function getApplication(id: number, db: Db = getDb()): Application | undefined {

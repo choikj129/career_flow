@@ -4,7 +4,9 @@ import { z } from 'zod';
 import {
   changeStatus,
   deleteApplication,
+  getRecentApplications,
   markApplied,
+  type RecentApplication,
   updateApplication,
   updateNotes,
 } from '@/lib/applications/repo';
@@ -67,6 +69,17 @@ export async function markAppliedAction(input: {
       notes: v.notes?.trim() || undefined,
     });
   }, '지원 완료로 저장했습니다');
+}
+
+export type RecentApplicationsResult = { ok: true; records: RecentApplication[] } | { ok: false; error: string };
+
+/** [지원 완료]를 누르면 먼저 부른다. 최근 6개월 안에 같은 공고·같은 회사에 지원한 기록(확인 창용). */
+export async function recentApplicationsAction(postingId: number): Promise<RecentApplicationsResult> {
+  try {
+    return { ok: true, records: getRecentApplications(z.number().int().parse(postingId)) };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) };
+  }
 }
 
 export async function updateApplicationAction(input: {

@@ -9,6 +9,7 @@ import {
   getApplication,
   getApplicationForPosting,
   getPriorApplications,
+  listApplicationsForPosting,
   listStatusEvents,
 } from "@/lib/applications/repo";
 import { getCompany, getCompanyUsage } from "@/lib/companies/repo";
@@ -61,7 +62,7 @@ async function PostingDetail({
   const rawA = Array.isArray(sp.a) ? sp.a[0] : sp.a;
 
   const company = posting.companyId != null ? getCompany(posting.companyId) : undefined;
-  const application = getApplicationForPosting(postingId);
+  const application = getApplicationForPosting(postingId); // 최신 기록
   const job = latestJobFor("analyze_posting", (p) => p?.postingId === postingId);
   const jobActive = job != null && (job.status === "queued" || job.status === "running");
   const jobFailed = job?.status === "failed";
@@ -128,6 +129,14 @@ async function PostingDetail({
                 status={application.status}
                 round={application.interviewRound}
               />
+              <ApplyForm
+                postingId={postingId}
+                defaultSite={posting.site}
+                defaultSiteNote={posting.siteNote}
+                siteNotes={siteNotes}
+                label="다시 지원 완료"
+                secondary
+              />
             </div>
           ) : (
             <>
@@ -171,7 +180,6 @@ async function PostingDetail({
         {tab === "record" && (
           <RecordTab
             postingId={postingId}
-            applicationId={application?.id}
             siteNotes={siteNotes}
             defaultSite={posting.site}
             defaultSiteNote={posting.siteNote}
@@ -360,7 +368,6 @@ function RawTab({ posting }: { posting: NonNullable<ReturnType<typeof getPosting
 
 async function RecordTab({
   postingId,
-  applicationId,
   siteNotes,
   defaultSite,
   defaultSiteNote,
@@ -369,7 +376,6 @@ async function RecordTab({
   positionTitle,
 }: {
   postingId: number;
-  applicationId: number | undefined;
   siteNotes: string[];
   defaultSite: Parameters<typeof ApplyForm>[0]["defaultSite"];
   defaultSiteNote: string | null;
@@ -377,8 +383,8 @@ async function RecordTab({
   companyName: string;
   positionTitle: string;
 }) {
-  const app = applicationId != null ? getApplication(applicationId) : undefined;
-  if (!app) {
+  const records = listApplicationsForPosting(postingId); // 최신순
+  if (records.length === 0) {
     return (
       <div className="card" style={{ padding: 40, textAlign: "center" }}>
         <h3 style={{ fontSize: 18 }}>아직 지원하지 않은 공고입니다.</h3>
@@ -393,6 +399,34 @@ async function RecordTab({
       </div>
     );
   }
+  const multi = records.length > 1;
+  return (
+    <>
+      {records.map((app, i) => (
+        <section key={app.id} data-testid={`record-${app.id}`} style={i > 0 ? { marginTop: 36 } : undefined}>
+          {multi && (
+            <h2 style={{ fontSize: 16, margin: "0 0 10px" }}>
+              {i === 0 ? "최근 지원" : "이전 지원"} · {app.appliedAt}
+            </h2>
+          )}
+          <RecordItem app={app} companyName={companyName} positionTitle={positionTitle} siteNotes={siteNotes} />
+        </section>
+      ))}
+    </>
+  );
+}
+
+function RecordItem({
+  app,
+  companyName,
+  positionTitle,
+  siteNotes,
+}: {
+  app: NonNullable<ReturnType<typeof getApplication>>;
+  companyName: string;
+  positionTitle: string;
+  siteNotes: string[];
+}) {
   const events = listStatusEvents(app.id).reverse();
   const resumeNo =
     app.submittedResume.kind === "base" ? (getResumeVersion(app.submittedResume.versionId)?.versionNo ?? null) : null;
