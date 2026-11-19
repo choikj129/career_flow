@@ -158,4 +158,30 @@ test.describe.serial('지난 기록 직접 입력', () => {
     await expect(page.getByText('이 단계를 거친 기록을 모두 보여 줍니다(지금 상태와 관계없이)')).toBeVisible();
     await expect(page.locator('tbody tr.row-link').filter({ hasText: '과제상태회사' })).toHaveCount(1);
   });
+
+  test('TC-PAST-E2E-08 가장 이른 파일보다 앞선 지원: 경력기술서 없음, 이력서는 없음 선택지 없음', async ({ page }) => {
+    await openManual(page);
+    const r = rows(page).first();
+    await r.getByLabel('회사').fill('없음확인회사');
+    await r.getByLabel('포지션').fill('없음 포지션');
+    await r.getByLabel('지원일').fill('2026-08-01');
+    await expect(r.getByLabel('경력기술서')).toHaveValue('none');
+    await expect(r.getByLabel('포트폴리오')).toHaveValue('포트폴리오_20260722.pdf');
+    await expect(r.getByLabel('이력서').locator('option', { hasText: '없음' })).toHaveCount(0);
+    await page.getByRole('button', { name: '1건 등록' }).click();
+    await page.waitForURL(/notice=/);
+
+    await page.goto(`/?q=${encodeURIComponent('없음확인회사')}`);
+    await page.locator('tbody tr.row-link').filter({ hasText: '없음확인회사' }).click();
+    const docs = page.getByTestId('submitted-docs');
+    await expect(page.getByTestId('doc-none-career')).toHaveText('없음');
+    await expect(docs).toContainText('이력서');
+    await expect(docs.locator('li').filter({ hasText: '이력서' })).toContainText('모름');
+    await expect(docs.locator('li').filter({ hasText: '경력기술서' }).getByRole('link', { name: '보기' })).toHaveCount(0);
+
+    await page.goto('/stats?doc=career');
+    const stats = page.getByTestId('stats-docs');
+    await expect(stats.getByTestId('hbar-absent')).toContainText('없음');
+    await expect(stats.getByText('내지 않은 지원')).toBeVisible();
+  });
 });

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { validDate } from '@/lib/domain/dates';
-import { DOC_KINDS, isDocsForKind, type DocKind, type SubmittedDocs } from '@/lib/documents/files';
+import { DOC_KINDS, isValidDocValue, type DocKind, type SubmittedDocs } from '@/lib/documents/files';
 import { APPLICATION_STATUSES, SITE_IDS, type ApplicationStatus, type SiteId } from '@/lib/domain/types';
 
 // 클라이언트 컴포넌트에서도 쓴다. DB·파일에 닿는 모듈을 import하지 않는다.
@@ -76,7 +76,7 @@ export const checkedRowsSchema = z
     })
       // 체크하지 않은 행은 빈 칸이어도 되므로 날짜는 체크된 행만 검사한다.
       .refine((r) => !r.checked || validDate(r.appliedAt), { path: ['appliedAt'], message: '날짜 형식이 올바르지 않습니다' })
-      .refine((r) => DOC_KINDS.every((k) => r.docs[k] == null || isDocsForKind(k, r.docs[k]!)), {
+      .refine((r) => DOC_KINDS.every((k) => isValidDocValue(k, r.docs[k])), {
         path: ['docs'],
         message: '서류 파일 이름이 올바르지 않습니다',
       }),

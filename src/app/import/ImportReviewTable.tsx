@@ -12,7 +12,7 @@ import {
   type RowField,
 } from "@/lib/applications/import-rows";
 import { validDate } from "@/lib/domain/dates";
-import { DOC_KINDS, DOC_KIND_LABELS, pickDocs, type DocFile, type DocKind } from "@/lib/documents/files";
+import { DOC_KINDS, DOC_KIND_LABELS, DOC_NONE, canBeNone, pickDocs, type DocFile, type DocKind } from "@/lib/documents/files";
 import {
   APPLICATION_STATUSES,
   SITE_IDS,
@@ -242,6 +242,7 @@ export function ImportReviewTable({
                       }
                     >
                       <option value="">{DOC_KIND_LABELS[k]} 모름</option>
+                      {canBeNone(k) && <option value={DOC_NONE}>{DOC_KIND_LABELS[k]} 없음</option>}
                       {docFiles
                         .filter((f) => f.kind === k)
                         .map((f) => (
