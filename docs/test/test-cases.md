@@ -551,6 +551,14 @@ AI 작업이 끝나면 `data/ai-work/<번호>/`를 바로 지운다. 올린 이�
 | TC-PAST-66 | 가져오기 행 스키마가 assignment 허용, 프롬프트에 모든 상태 ID | `tests/import-review.test.ts` |
 | TC-PAST-E2E-07 | 과제·코딩테스트 상태 저장(차수 칸 없음, 메모 안내), 보드 칸, 필터 안내 | `tests/e2e/12-past-records.spec.ts` (작성만, 검증 단계에서 실행) |
 | TC-PAST-M2 | 기존 1건(메모 "코딩테스트 단계까지 진행") 상태 이관 후 대시보드 확인(수동, D-22) | 수동 |
+| TC-PAST-70·71 | `pickDocFile`: 가장 이른 파일보다 앞선 지원은 경력기술서·포트폴리오 `none`(없음), 이력서 null, 그 종류 파일 0개면 null, 경계일(10-16 없음 / 10-17 파일). TC-PAST-01 기대값 갱신 | `tests/documents.test.ts` |
+| TC-PAST-72 | `checkedRowsSchema`·`bulkCreateApplications`가 경력기술서·포트폴리오 `none` 허용(파일 확인 없음), 이력서 `none`은 거부 | `tests/import-review.test.ts`, `tests/repos.test.ts` |
+| TC-PAST-73 | `isValidDocValue`·`docFileOf`·`docValueText`, `none`은 파일로 세지 않음(존재 확인) | `tests/documents.test.ts` |
+| TC-PAST-74 | 메모 이관이 메모의 "모름"에 같은 경계를 적용, `markDocsNoneBeforeFirst`(비어 있는 종류만, 메모 이관 전 기록 건너뜀, dry-run, 재실행 안전, 파일 0개 종류 건너뜀), `countDocUsage`는 none 제외 | `tests/documents.test.ts` |
+| TC-PAST-75 | `byDocVersion`: 경력기술서·포트폴리오 파일 → 없음 → 모름, none이 파일 묶음 라벨로 안 나옴, 이력서 순서 그대로 | `tests/stats.test.ts` |
+| TC-PAST-76 | 대시보드 이력서 라벨·묶음은 다른 종류의 none에 영향 없음 | `tests/search.test.ts` |
+| TC-PAST-E2E-08 | 직접 입력에서 지원일 2026-08-01 → 경력기술서 "없음" 자동 선택, 이력서 select에 없음 선택지 없음, 기록 펼침 "없음"·"이력서 모름", 통계 "없음" 막대·"내지 않은 지원" | `tests/e2e/12-past-records.spec.ts` (작성만, 검증 단계에서 실행) |
+| TC-PAST-M3 | 실제 데이터 없음 표시(수동): dry-run 수가 메인 세션이 따로 센 수와 맞는지, 실행 뒤 통계·기록 펼침 확인, 다시 dry-run → 0 | 수동 |
 
 ## 11. 통계 화면 (브랜치 `feat/stats-dashboard`)
 
@@ -563,7 +571,7 @@ AI 작업이 끝나면 `data/ai-work/<번호>/`를 바로 지운다. 올린 이�
 | TC-STATS-03 | `daysBetween`·`weekdayMon0` | 2026-02-28→03-01 = 1, 2024-02-28→03-01 = 2, 같은 날 0. 2026-11-16 → 0(월), 2026-11-22 → 6(일) | `tests/stats.test.ts` |
 | TC-STATS-04 | `byPeriod` 월 | 1월·3월 기록 → 1·2·3월 세 칸(2월 0건). 오늘이 속한 달만 진행 중. 시작일 지정 시 그 달부터 | `tests/stats.test.ts` |
 | TC-STATS-05 | `byPeriod` 년 | 2024·2026 기록 → 2024·2025·2026, 올해만 진행 중 | `tests/stats.test.ts` |
-| TC-STATS-06 | `byDocVersion` | 이력서: 기본 v2 → v1 → 이력서 2026-11-02 → 2026-09-05 → 모름. 첫·마지막 지원일. 경력기술서는 기본 버전 무시 | `tests/stats.test.ts` |
+| TC-STATS-06 | `byDocVersion` | 이력서: 기본 v2 → v1 → 이력서 2026-11-02 → 2026-09-05 → 모름. 첫·마지막 지원일. 경력기술서는 기본 버전 무시, 파일 → 없음 → 모름 순서(TC-PAST-75) | `tests/stats.test.ts` |
 | TC-STATS-07 | `bySite` | 사이트 순서 고정, 0건 사이트 없음, 기타 포함 | `tests/stats.test.ts` |
 | TC-STATS-08 | `funnel` | 지원 = 전체 − 통과 못 한 지원취소. 지원 ≥ 서류 ≥ 면접 ≥ 최종. 앞 단계 0이면 비율 null. 과제·코딩테스트는 곁가지(optional): 과제·면접 비율은 둘 다 서류 통과 대비, 면접 수가 과제 수보다 클 수 있음 | `tests/stats.test.ts` |
 | TC-STATS-09 | `byWeekday` | 기록이 없어도 월~일 7칸 | `tests/stats.test.ts` |
