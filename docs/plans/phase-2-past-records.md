@@ -10,6 +10,7 @@
   - 버전으로 쓰는 파일은 `(이력서|경력기술서|포트폴리오)_YYYYMMDD.pdf` 형식만이다. 버전 날짜는 파일 이름의 날짜다.
   - 앱은 `D:\`를 읽지 않는다. 파일은 프로젝트 데이터 폴더에 복사해 두고(완료, 7개), 지원 기록은 **파일 이름만** 참조한다. [보기]를 누르면 그 파일을 브라우저에서 PDF로 보여 준다(D-15).
   - 지원 기록에 **정렬 전용 일시** 칸을 더한다. 화면에는 보이지 않는다. 같은 지원일 안에서 순서를 정하는 데만 쓴다(D-17, Task 5).
+  - 상태 필터 "서류합격"은 서류합격을 **거친** 기록을 모두 보여 준다(지금 상태와 관계없이). 면접·최종합격도 같다(Task 6).
 
 **Goal:** (1) 지난 지원 기록을 AI 없이 표에 직접 입력해 등록한다. (2) 지원 기록마다 낸 이력서·경력기술서·포트폴리오 **파일 이름**을 저장하고, 화면에서 그 파일을 열어 본다. 지원일로 파일을 자동으로 고르고, 종류마다 가장 이른 파일보다 앞선 지원은 그 종류만 "모름"이다. (3) 메인 세션이 넣은 기록의 메모 "제출 서류" 줄을 이 칸으로 옮긴다. (기획서 7.7·7.9, 화면 문서 1장·3.9·5.5·6장)
 
@@ -82,6 +83,7 @@ src/app/
 src/lib/ (Task 5)
   domain/dates.ts                (수정) toKstIso, syntheticKstIso
   applications/sort.ts           (새) applicationOrder
+  applications/stages.ts         (새, Task 6) reachedStages, matchesStatusFilter
   applications/backfill.ts       (새) 정렬용 일시 일회성 채우기
 scripts/backfill-applied-datetime.ts  (새, Task 5) 일회성 실행 스크립트
 drizzle/0003_submitted_docs.sql  (npx drizzle-kit generate --name submitted_docs)
@@ -318,6 +320,60 @@ Task 2 다음에 해도 되고 Task 4와 나란히 해도 된다(파일이 겹�
 
 ---
 
+### Task 6: 상태 필터를 "거친 단계" 기준으로
+
+사용자 요청(2026-11-19): "상태를 서류합격으로 조회하면 서류 합격된 목록이 다 나와야 됨(해당 상태가 지난 목록이 다 보여야 된다는 것)". 지금은 `searchApplications`가 지금 상태만 본다(`src/lib/search/dashboard.ts:43` `eq(applications.status, q.status)`). 그래서 서류합격 뒤 면접·불합격·지원취소로 바뀐 기록은 빠진다.
+
+**규칙** (`src/lib/applications/stages.ts`, 순수)
+
+| 필터 | 보이는 기록 |
+|---|---|
+| 지원 | 지금 상태가 지원 (그대로) |
+| 서류합격 | 지금 상태가 서류합격·면접·최종합격 **또는** 상태 이력에 서류합격·면접·최종합격이 있는 기록 (예: 서류합격 → 불합격, 서류합격 → 지원취소) |
+| 면접 | 지금 상태가 면접·최종합격 **또는** 이력에 면접·최종합격이 있는 기록 |
+| 최종합격 | 지금 상태가 최종합격 **또는** 이력에 최종합격이 있는 기록 (예: 최종합격 뒤 지원취소) |
+| 불합격 / 지원취소 | 지금 상태 그대로 |
+
+- 지금 상태가 **지원**이면 이력이 있어도 거친 단계로 치지 않는다. 상태를 잘못 눌렀다 되돌린 경우(서류합격 → 지원)를 막기 위해서다.
+- 면접·최종합격은 서류합격을 거친 것으로 본다(가져온 기록은 중간 이력이 없을 수 있다).
+
+**보기별 적용**
+
+| 곳 | 기준 | 이유 |
+|---|---|---|
+| 상태 필터(모든 보기) | 거친 단계 | 사용자 요청 |
+| 상태별 보드의 칸 | **지금 상태 그대로** | 카드가 칸 하나에만 있어야 끌어 놓기로 상태를 바꿀 수 있다(화면 문서 1장). 필터는 보드에도 적용되므로, "서류합격" 필터 + 보드면 서류를 통과한 기록이 지금 상태 칸에 나뉘어 보인다 |
+| 요약 줄의 서류합격·면접·최종합격 수 | 거친 단계 | 숫자를 누르거나 필터를 걸었을 때 나오는 건수와 같게 한다 |
+| 요약 줄의 전체 기록 수, 지원·불합격·지원취소 수 | 지금 상태 그대로 | 합계가 맞아야 한다(`src/app/page.tsx:110`) |
+| 서류 통과율 (사이트별·이력서별 묶음 머리) | 거친 단계 | `passed` = 서류합격을 거친 기록, `decided` = `passed` + 지금 상태 불합격(서류합격을 거치지 않은 것). 지금은 서류합격 뒤 불합격·지원취소가 "통과 못 함"으로 잘못 세진다 |
+
+**Files:**
+- Create: `src/lib/applications/stages.ts`, `tests/stages.test.ts`
+- Modify: `src/lib/search/dashboard.ts`, `src/app/page.tsx`(요약 줄 숫자), `src/app/_components/DashboardFilters.tsx`(안내 문구), `tests/search.test.ts`
+
+**Interfaces:**
+- `stages.ts`
+  - `type ReachedStage = 'document_passed' | 'interview' | 'final_passed'`
+  - `reachedStages(current: ApplicationStatus, history: ApplicationStatus[]): Set<ReachedStage>` — 위 규칙. `current === 'applied'`면 빈 집합
+  - `matchesStatusFilter(filter: ApplicationStatus, current: ApplicationStatus, reached: Set<ReachedStage>): boolean` — 서류합격·면접·최종합격은 `reached.has(filter)`, 나머지는 `current === filter`
+- `dashboard.ts`
+  - `searchApplications`: SQL에서 `status` 조건을 빼고, `statusEvents`에서 `status IN ('document_passed','interview','final_passed')`인 행을 지원 기록별로 한 번에 읽어 `reachedStages` 계산 → `matchesStatusFilter`로 거른다(기록 수백 건 규모라 메모리에서 거르면 충분)
+  - `DashboardRow`에 `reached: ReachedStage[]` 추가(묶음 통과율 계산용)
+  - `makeGroup`의 `passed`/`decided`를 위 표대로 바꾼다
+  - `getDashboardStats`에 `reachedCounts: Record<ReachedStage, number>` 추가. `byStatus`는 그대로(합계용)
+- 화면
+  - 요약 줄의 서류합격·면접·최종합격 숫자는 `reachedCounts`
+  - 상태 필터가 서류합격·면접·최종합격일 때 필터 아래에 작은 회색 안내 "이 단계를 거친 기록을 모두 보여 줍니다(지금 상태와 관계없이)"
+
+- [ ] **Step 1: 실패하는 테스트**
+  - `tests/stages.test.ts`: (지원, []) → 빈 집합. (불합격, [서류합격]) → {서류합격}. (지원취소, [서류합격, 면접]) → {서류합격, 면접}. (면접, []) → {서류합격, 면접}. (지원, [서류합격]) → 빈 집합(되돌림). (지원취소, [최종합격]) → 셋 다
+  - `tests/search.test.ts`: 기록 A 서류합격 → 불합격, B 서류합격 → 면접, C 지원, D 불합격(이력 없음). 필터 서류합격 → A, B. 필터 면접 → B. 필터 불합격 → A, D. 상태별 보드 묶음에서 A는 "종료" 칸, B는 "면접" 칸(지금 상태). `getDashboardStats().reachedCounts.document_passed === 2`, `byStatus` 합계 4
+  - 통과율: 사이트 묶음 {A, B, C, D} → passed 2, decided 3
+- [ ] **Step 2:** FAIL. **Step 3:** 구현. **Step 4:** PASS + 전체 PASS, 대시보드 E2E(`tests/e2e/01-dashboard.spec.ts`)의 상태 필터·요약 기대값이 바뀌면 함께 고친다.
+- [ ] **Step 5:** 커밋 `feat: status filter shows records that passed the stage`.
+
+---
+
 ## 테스트 케이스
 
 | ID | 대상 | 기대 결과 | 종류 | 위치 |
@@ -337,6 +393,11 @@ Task 2 다음에 해도 되고 Task 4와 나란히 해도 된다(파일이 겹�
 | TC-PAST-41 | 정렬 | 지원일 ↓ → 일시 ↓(NULL 맨 뒤) → id ↓, 모든 목록 함수에 같은 순서 | 통합 | applied-datetime |
 | TC-PAST-42 | 입력 순서 유지 | 직접 입력·가져오기에서 같은 날 위 행이 먼저, [지원 완료]는 저장 시각 | 통합 | applied-datetime |
 | TC-PAST-43 | 일회성 채우기 | 메일 줄·그룹바이 표 읽기, 키 맞추기(`(주)` 무시), 이미 값 있으면 안 바꿈, 못 찾음·애매함 보고 | 통합 | applied-datetime |
+| TC-PAST-50 | `reachedStages` | 이력·지금 상태로 거친 단계 계산, 지금 상태가 지원이면 빈 집합, 면접은 서류합격 포함 | 단위 | stages |
+| TC-PAST-51 | 상태 필터 | 서류합격 필터에 서류합격 뒤 불합격·면접·지원취소 기록 포함, 지원·불합격·지원취소 필터는 지금 상태 | 통합 | search |
+| TC-PAST-52 | 상태별 보드 | 칸은 지금 상태 기준 그대로 | 통합 | search |
+| TC-PAST-53 | 요약 줄 | 서류합격·면접·최종합격 수 = 그 필터 결과 수, 전체 합계는 지금 상태 기준 | 통합 | search |
+| TC-PAST-54 | 서류 통과율 | 서류합격 뒤 불합격·지원취소도 통과로 셈 | 통합 | search |
 | TC-PAST-M1 | 실제 데이터 채우기 | dry-run에서 메일 452·그룹바이 17건 모두 맞음, 실행 뒤 대시보드 같은 날 순서 확인 | 수동 | 실제 개인 데이터라 자동 불가 |
 | TC-PAST-E2E-01 | 직접 입력 열기 | 사이트 미선택·"모름"이면 비활성, 그룹바이 → 빈 행 1개(사이트 그룹바이) | E2E | 12-past-records |
 | TC-PAST-E2E-02 | 직접 입력 등록 | 회사·포지션·지원일을 채워야 등록 가능, 하나라도 비면 "… 필요"로 막힘, 등록 후 대시보드에 나옴 | E2E | 12-past-records |
@@ -352,6 +413,7 @@ Task 2 다음에 해도 되고 Task 4와 나란히 해도 된다(파일이 겹�
 | 7.7 직접 입력 | Task 2·4 |
 | 7.9 제출 서류 파일 | Task 1·3·4 |
 | 10장 `applied_datetime`(정렬 전용) | Task 5 |
+| 7.2 상태 필터 = 거친 단계 | Task 6 |
 | 메일 지난 기록 | **범위 밖**. 메인 세션이 한 번 DB에 넣음(0.2) |
 | 앱에서 서류 PDF 올리기 | **범위 밖**. 폴더에 넣으면 바로 목록에 나온다 |
 | 지원 기록 수정 창(3.10)에서 제출 서류 고치기 | **범위 밖**. 3단계 Task 4(제출 이력서 수정)와 함께 다룬다 |

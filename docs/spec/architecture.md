@@ -54,6 +54,7 @@ src/lib/
 ├─ postings/repo.ts          공고 등록·조회·분석 결과 저장
 ├─ applications/repo.ts      지원 기록·상태 이력·중복 조회·일괄 등록·제출 이력서
 ├─ applications/sort.ts      지원 기록 기본 정렬(지원일 → 정렬용 일시 → id)
+├─ applications/stages.ts    거친 단계 계산, 상태 필터 판정 (순수)
 ├─ applications/backfill.ts  정렬용 일시 일회성 채우기
 ├─ documents/
 │  ├─ files.ts               서류 종류, 파일 이름 규칙, 지원일로 파일 고르기, 메모 "제출 서류" 줄 (순수)
