@@ -1,6 +1,7 @@
 import { groupDashboardRows, type DashboardGroup, type DashboardRow } from "@/lib/search/dashboard";
 import type { DashboardView } from "@/lib/search/dashboard-params";
 import type { SiteId } from "@/lib/domain/types";
+import { RateText } from "./RateText";
 import { ApplicationTable } from "./ApplicationTable";
 import { Group } from "./Group";
 import type { RecordDetail } from "./RecordPanel";
@@ -17,10 +18,11 @@ const STATUS_COLUMN_COLORS: Record<string, string> = {
 
 /** 서류 통과율. 결과가 나온 지원이 없으면 "결과 대기". */
 function Rate({ g }: { g: DashboardGroup }) {
-  if (g.decided === 0) return <>결과 대기</>;
+  const t = g.tally;
+  if (t.sample === 0) return <>결과 대기</>;
   return (
     <>
-      서류 통과 <b>{g.passed}</b> / {g.decided}
+      서류 통과 <b>{t.passed}</b> / {t.sample} · <RateText passed={t.passed} sample={t.sample} rate={t.passRate} level={t.sampleLevel} compact />
     </>
   );
 }
@@ -31,11 +33,13 @@ export function DashboardViews({
   rows,
   details,
   siteNotes,
+  today,
 }: {
   view: DashboardView;
   rows: DashboardRow[];
   details: Record<number, RecordDetail>;
   siteNotes: string[];
+  today: string;
 }) {
   if (view === "all") {
     return (
@@ -47,7 +51,7 @@ export function DashboardViews({
   }
 
   if (view === "status") {
-    const columns: BoardColumn[] = groupDashboardRows(rows, "status").map((g) => ({
+    const columns: BoardColumn[] = groupDashboardRows(rows, "status", today).map((g) => ({
       key: g.key,
       label: g.key === "closed" ? "불합격·지원취소" : g.label,
       color: STATUS_COLUMN_COLORS[g.key],
@@ -59,7 +63,7 @@ export function DashboardViews({
   if (view === "site") {
     return (
       <>
-        {groupDashboardRows(rows, "site").map((g) => (
+        {groupDashboardRows(rows, "site", today).map((g) => (
           <Group
             key={g.key}
             storageKey={`site:${g.key}`}
@@ -77,7 +81,7 @@ export function DashboardViews({
   // 이력서별
   return (
     <>
-      {groupDashboardRows(rows, "resume").map((g) => {
+      {groupDashboardRows(rows, "resume", today).map((g) => {
         const base = g.rows.filter((r) => r.resumeLabel?.startsWith("기본")).length;
         const tailored = g.rows.filter((r) => r.resumeLabel?.startsWith("맞춤")).length;
         const chip =

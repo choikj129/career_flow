@@ -4,7 +4,9 @@ import { connection } from "next/server";
 import { SITE_IDS, STATUS_LABELS } from "@/lib/domain/types";
 import { listSiteNotes } from "@/lib/postings/repo";
 import { getLatestResume } from "@/lib/resume/repo";
+import { todayLocal } from "@/lib/domain/dates";
 import { loadDashboard } from "@/lib/search/dashboard";
+import { statsHref } from "@/lib/stats/params";
 import {
   dashboardHref,
   parseDashboardParams,
@@ -178,13 +180,25 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
               </span>
             ))}
           </span>
-          <Link href="/postings/analyzed">분석한 공고 {stats.analyzedNotApplied}건 보기</Link>
+          <span className="links">
+            <Link href="/postings/analyzed">분석한 공고 {stats.analyzedNotApplied}건 보기</Link>
+            <Link
+              href={statsHref({
+                site: params.site,
+                period: params.period === "month" ? undefined : params.period,
+                from: params.from,
+                to: params.to,
+              })}
+            >
+              통계 보기 →
+            </Link>
+          </span>
         </div>
       )}
       {searching && <div style={{ height: 14 }} />}
 
       {rows.length > 0 ? (
-        <DashboardViews view={params.view} rows={rows} details={details} siteNotes={siteNotes} />
+        <DashboardViews view={params.view} rows={rows} details={details} siteNotes={siteNotes} today={todayLocal()} />
       ) : (
         <EmptyState params={params} filtered={Boolean(filtered)} totalRecords={totalRecords} />
       )}

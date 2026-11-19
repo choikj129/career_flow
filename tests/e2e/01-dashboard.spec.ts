@@ -82,7 +82,7 @@ test.describe('대시보드', () => {
     const heads = page.locator('.group-head');
     await expect(heads.first()).toContainText('리멤버');
     await expect(heads.first()).toContainText('서류 통과');
-    await expect(page.locator('.group').filter({ hasText: '기타' }).first().locator('.group-head')).toContainText('결과 대기'); // 결과가 나온 지원이 없으면
+    await expect(page.locator('.group').filter({ hasText: '기타' }).first().locator('.group-head')).toContainText('서류 통과 0 / '); // 통과 없음, 30일 넘은 '지원'은 무응답으로 분모에 든다(D-18)
     await page.reload();
     await expect(page.getByRole('tab', { name: '사이트별' })).toHaveAttribute('aria-selected', 'true');
   });

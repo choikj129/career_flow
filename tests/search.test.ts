@@ -9,6 +9,8 @@ import { saveResumeVersion } from '@/lib/resume/repo';
 import { emptyResume } from '@/lib/resume/schema';
 import type { AnalysisResult } from '@/lib/ai/tasks/schemas';
 import { searchApplications, groupDashboardRows, getDashboardStats, type DashboardRow } from '@/lib/search/dashboard';
+
+const TODAY = '2026-11-05'; // dr()의 기본 지원일(2026-11-01)에서 4일 뒤: 지원 상태는 대기
 import type { ApplicationStatus, SiteId } from '@/lib/domain/types';
 
 type Row = Parameters<typeof bulkCreateApplications>[0][number];
@@ -149,15 +151,16 @@ test('groupDashboardRows by site keeps fixed order and pass rate', () => {
     dr({ site: 'wanted', status: 'withdrawn' }),
     dr({ site: 'jobkorea', status: 'rejected' }),
   ];
-  const g = groupDashboardRows(rows, 'site');
+  const g = groupDashboardRows(rows, 'site', TODAY);
   expect(g.map((x) => x.key)).toEqual(['wanted', 'jobkorea']);
-  expect(g[0]).toMatchObject({ label: '원티드', passed: 1, decided: 1 });
-  expect(g[1]).toMatchObject({ passed: 0, decided: 1 });
+  expect(g[0]).toMatchObject({ label: '원티드' });
+  expect(g[0].tally).toMatchObject({ passed: 1, sample: 1, pending: 1, withdrawn: 1 });
+  expect(g[1].tally).toMatchObject({ passed: 0, rejected: 1, sample: 1 });
 });
 
 test('groupDashboardRows by status keeps all six columns', () => {
   const rows = [dr({ status: 'interview', interviewRound: 2 }), dr({ status: 'rejected' }), dr({ status: 'withdrawn' })];
-  const g = groupDashboardRows(rows, 'status');
+  const g = groupDashboardRows(rows, 'status', TODAY);
   expect(g.map((x) => x.key)).toEqual(['applied', 'document_passed', 'assignment', 'interview', 'final_passed', 'closed']);
   expect(g.find((x) => x.key === 'applied')!.rows).toEqual([]);
   expect(g.find((x) => x.key === 'interview')!.rows).toHaveLength(1);
@@ -172,11 +175,11 @@ test('groupDashboardRows by resume puts unknown last', () => {
     dr({}),
     dr({ resumeLabel: '기본 v3', resumeBaseVersionNo: 3, status: 'final_passed' }),
   ];
-  const g = groupDashboardRows(rows, 'resume');
+  const g = groupDashboardRows(rows, 'resume', TODAY);
   expect(g.map((x) => x.key)).toEqual(['v3', 'v2', 'none']);
   expect(g[0].rows).toHaveLength(2);
   expect(g[2].label).toBe('모름');
-  expect(g[0]).toMatchObject({ passed: 1, decided: 1 });
+  expect(g[0].tally).toMatchObject({ passed: 1, sample: 1 });
 });
 
 test('TC-PAST-31 resume label from submitted document file', () => {
@@ -197,7 +200,7 @@ test('TC-PAST-31 groupDashboardRows by resume: base -> files (newest first) -> u
     dr({ resumeLabel: '이력서 2026-11-02', resumeDocFile: '이력서_20261102.pdf' }),
     dr({ resumeLabel: '이력서 2026-11-02', resumeDocFile: '이력서_20261102.pdf' }),
   ];
-  const g = groupDashboardRows(rows, 'resume');
+  const g = groupDashboardRows(rows, 'resume', TODAY);
   expect(g.map((x) => x.key)).toEqual(['v1', 'doc:이력서_20261102.pdf', 'doc:이력서_20260905.pdf', 'none']);
   expect(g[1].label).toBe('이력서 2026-11-02');
   expect(g[1].rows).toHaveLength(2);
@@ -233,7 +236,7 @@ test('TC-PAST-51 status filter shows records that passed the stage', () => {
 
 test('TC-PAST-52 status board columns stay on the current status', () => {
   const db = reachedDb();
-  const g = groupDashboardRows(searchApplications({ status: 'document_passed' }, db), 'status');
+  const g = groupDashboardRows(searchApplications({ status: 'document_passed' }, db), 'status', TODAY);
   expect(names(g.find((x) => x.key === 'closed')!.rows)).toEqual(['A', 'E']);
   expect(names(g.find((x) => x.key === 'interview')!.rows)).toEqual(['B']);
   expect(g.find((x) => x.key === 'document_passed')!.rows).toEqual([]);
@@ -249,11 +252,27 @@ test('TC-PAST-53 summary counts: reachedCounts follow the filter results, byStat
   expect(s.byStatus.document_passed).toBe(0);
 });
 
+test('TC-STATS-14 dashboard group tally uses the stats definition (pending vs no response)', () => {
+  const db = makeTestDb();
+  bulkCreateApplications(['A', 'B', 'C', 'D'].map((c) => row(c, 'applied', 'wanted')), db);
+  const id = (c: string) => searchApplications({ text: c }, db)[0].applicationId;
+  changeStatus(id('A'), 'document_passed', {}, db);
+  changeStatus(id('A'), 'rejected', {}, db);
+  changeStatus(id('B'), 'document_passed', {}, db);
+  changeStatus(id('B'), 'interview', { interviewRound: 1 }, db);
+  changeStatus(id('D'), 'rejected', {}, db);
+  const rows = searchApplications({}, db); // 모두 지원일 2026-11-01
+  const [early] = groupDashboardRows(rows, 'site', '2026-11-11'); // +10일
+  expect(early.tally).toMatchObject({ passed: 2, sample: 3, pending: 1, noResponse: 0 });
+  const [late] = groupDashboardRows(rows, 'site', '2026-12-11'); // +40일
+  expect(late.tally).toMatchObject({ passed: 2, sample: 4, pending: 0, noResponse: 1 });
+});
+
 test('TC-PAST-54 pass rate counts passed-then-rejected/withdrawn as passed', () => {
   const db = reachedDb();
-  const [g] = groupDashboardRows(searchApplications({}, db), 'site');
-  // passed: A, B, E / decided: passed + 서류합격을 거치지 않은 불합격(D)
-  expect(g).toMatchObject({ passed: 3, decided: 4 });
+  const [g] = groupDashboardRows(searchApplications({}, db), 'site', TODAY);
+  // passed: A, B, E / sample: passed + 서류합격을 거치지 않은 불합격(D). C는 대기, F는 되돌린 기록(지원, 대기)
+  expect(g.tally).toMatchObject({ passed: 3, rejected: 1, sample: 4, pending: 2 });
 });
 
 // A: 서류합격 -> 불합격, B: 서류합격 -> 면접, C: 지원, D: 불합격, E: 서류합격 -> 과제 -> 불합격, F: 과제(지금 상태)
@@ -282,7 +301,7 @@ test('TC-PAST-62 filters with the assignment stage', () => {
 
 test('TC-PAST-63 status board has six columns in order; cards stay on the current status', () => {
   const db = assignmentDb();
-  const g = groupDashboardRows(searchApplications({}, db), 'status');
+  const g = groupDashboardRows(searchApplications({}, db), 'status', TODAY);
   expect(g.map((x) => x.key)).toEqual(['applied', 'document_passed', 'assignment', 'interview', 'final_passed', 'closed']);
   expect(names(g.find((x) => x.key === 'assignment')!.rows)).toEqual(['F']);
   expect(names(g.find((x) => x.key === 'closed')!.rows)).toEqual(['A', 'D', 'E']);
@@ -293,6 +312,6 @@ test('TC-PAST-64 reachedCounts and pass rate include assignment records', () => 
   const s = getDashboardStats(new Date(2026, 10, 16), db);
   expect(s.reachedCounts.assignment).toBe(2);
   expect(s.reachedCounts.document_passed).toBe(4);
-  const [g] = groupDashboardRows(searchApplications({}, db), 'site');
-  expect(g.passed).toBe(4); // A, B, E, F
+  const [g] = groupDashboardRows(searchApplications({}, db), 'site', TODAY);
+  expect(g.tally.passed).toBe(4); // A, B, E, F
 });
