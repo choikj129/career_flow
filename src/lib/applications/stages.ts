@@ -2,12 +2,13 @@ import type { ApplicationStatus } from '@/lib/domain/types';
 
 // 클라이언트 컴포넌트에서도 쓸 수 있는 순수 함수.
 
-export type ReachedStage = 'document_passed' | 'interview' | 'final_passed';
-export const REACHED_STAGES: ReachedStage[] = ['document_passed', 'interview', 'final_passed'];
+export type ReachedStage = 'document_passed' | 'assignment' | 'interview' | 'final_passed';
+export const REACHED_STAGES: ReachedStage[] = ['document_passed', 'assignment', 'interview', 'final_passed'];
 
-/** 이 상태에 도달했다면 거친 것으로 보는 단계(면접·최종합격은 서류합격을 거친 것으로 본다). */
+/** 이 상태에 도달했다면 거친 것으로 보는 단계. 면접·최종합격은 서류합격을 거친 것으로 보지만 과제·코딩테스트를 거친 것으로는 보지 않는다. */
 const IMPLIES: Partial<Record<ApplicationStatus, ReachedStage[]>> = {
   document_passed: ['document_passed'],
+  assignment: ['document_passed', 'assignment'],
   interview: ['document_passed', 'interview'],
   final_passed: ['document_passed', 'interview', 'final_passed'],
 };
@@ -23,12 +24,16 @@ export function reachedStages(current: ApplicationStatus, history: ApplicationSt
   return out;
 }
 
-/** 서류합격·면접·최종합격 필터는 거친 단계, 나머지는 지금 상태. */
+export function isReachedStage(s: ApplicationStatus): s is ReachedStage {
+  return (REACHED_STAGES as string[]).includes(s);
+}
+
+/** 서류합격·과제·코딩테스트·면접·최종합격 필터는 거친 단계, 나머지는 지금 상태. */
 export function matchesStatusFilter(
   filter: ApplicationStatus,
   current: ApplicationStatus,
   reached: Set<ReachedStage>,
 ): boolean {
-  if (filter === 'document_passed' || filter === 'interview' || filter === 'final_passed') return reached.has(filter);
+  if (isReachedStage(filter)) return reached.has(filter);
   return current === filter;
 }

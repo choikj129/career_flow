@@ -155,10 +155,10 @@ test('groupDashboardRows by site keeps fixed order and pass rate', () => {
   expect(g[1]).toMatchObject({ passed: 0, decided: 1 });
 });
 
-test('groupDashboardRows by status keeps all five columns', () => {
+test('groupDashboardRows by status keeps all six columns', () => {
   const rows = [dr({ status: 'interview', interviewRound: 2 }), dr({ status: 'rejected' }), dr({ status: 'withdrawn' })];
   const g = groupDashboardRows(rows, 'status');
-  expect(g.map((x) => x.key)).toEqual(['applied', 'document_passed', 'interview', 'final_passed', 'closed']);
+  expect(g.map((x) => x.key)).toEqual(['applied', 'document_passed', 'assignment', 'interview', 'final_passed', 'closed']);
   expect(g.find((x) => x.key === 'applied')!.rows).toEqual([]);
   expect(g.find((x) => x.key === 'interview')!.rows).toHaveLength(1);
   expect(g.find((x) => x.key === 'closed')).toMatchObject({ label: '종료' });
@@ -254,4 +254,45 @@ test('TC-PAST-54 pass rate counts passed-then-rejected/withdrawn as passed', () 
   const [g] = groupDashboardRows(searchApplications({}, db), 'site');
   // passed: A, B, E / decided: passed + 서류합격을 거치지 않은 불합격(D)
   expect(g).toMatchObject({ passed: 3, decided: 4 });
+});
+
+// A: 서류합격 -> 불합격, B: 서류합격 -> 면접, C: 지원, D: 불합격, E: 서류합격 -> 과제 -> 불합격, F: 과제(지금 상태)
+function assignmentDb() {
+  const db = makeTestDb();
+  bulkCreateApplications(['A', 'B', 'C', 'D', 'E', 'F'].map((c) => row(c, 'applied', 'wanted')), db);
+  const id = (c: string) => searchApplications({ text: c }, db)[0].applicationId;
+  changeStatus(id('A'), 'document_passed', {}, db);
+  changeStatus(id('A'), 'rejected', {}, db);
+  changeStatus(id('B'), 'document_passed', {}, db);
+  changeStatus(id('B'), 'interview', { interviewRound: 1 }, db);
+  changeStatus(id('D'), 'rejected', {}, db);
+  changeStatus(id('E'), 'document_passed', {}, db);
+  changeStatus(id('E'), 'assignment', {}, db);
+  changeStatus(id('E'), 'rejected', {}, db);
+  changeStatus(id('F'), 'assignment', {}, db);
+  return db;
+}
+
+test('TC-PAST-62 filters with the assignment stage', () => {
+  const db = assignmentDb();
+  expect(names(searchApplications({ status: 'assignment' }, db))).toEqual(['E', 'F']);
+  expect(names(searchApplications({ status: 'document_passed' }, db))).toEqual(['A', 'B', 'E', 'F']);
+  expect(names(searchApplications({ status: 'interview' }, db))).toEqual(['B']);
+});
+
+test('TC-PAST-63 status board has six columns in order; cards stay on the current status', () => {
+  const db = assignmentDb();
+  const g = groupDashboardRows(searchApplications({}, db), 'status');
+  expect(g.map((x) => x.key)).toEqual(['applied', 'document_passed', 'assignment', 'interview', 'final_passed', 'closed']);
+  expect(names(g.find((x) => x.key === 'assignment')!.rows)).toEqual(['F']);
+  expect(names(g.find((x) => x.key === 'closed')!.rows)).toEqual(['A', 'D', 'E']);
+});
+
+test('TC-PAST-64 reachedCounts and pass rate include assignment records', () => {
+  const db = assignmentDb();
+  const s = getDashboardStats(new Date(2026, 10, 16), db);
+  expect(s.reachedCounts.assignment).toBe(2);
+  expect(s.reachedCounts.document_passed).toBe(4);
+  const [g] = groupDashboardRows(searchApplications({}, db), 'site');
+  expect(g.passed).toBe(4); // A, B, E, F
 });

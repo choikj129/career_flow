@@ -75,6 +75,7 @@ h1, h2, h3 { font-family: var(--font-head); font-weight: var(--head-weight); let
 .st.go { background: var(--accent-tint); color: var(--accent); }
 .st.ok { background: var(--good-tint); color: var(--good); }
 .st.pass { background: #E6F2F8; color: #0369A1; }
+.st.asg { background: #E8EEF7; color: #1F5FAD; }
 .st.no { background: transparent; color: var(--faint); font-weight: 500; padding: 0; }
 .st.warn { background: var(--mark-tint); color: var(--mark); }
 
@@ -290,7 +291,7 @@ details summary { cursor: pointer; font-weight: 600; margin: 22px 0 10px; }
 .res-tag { font-size: 12.5px; font-weight: 600; color: var(--sub); border: 1px solid var(--line-strong); border-radius: 5px; padding: 1px 6px; white-space: nowrap; }
 .res-tag.tailored { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 35%, white); }
 /* 상태별 보드 */
-.board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(200px, 1fr); gap: 12px; overflow-x: auto; padding-bottom: 8px; }
+.board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(180px, 1fr); gap: 12px; overflow-x: auto; padding-bottom: 8px; }
 .col { border-radius: var(--r); padding: 10px; background: color-mix(in srgb, var(--cc) 6%, var(--bg)); min-height: 220px; }
 .col-head { display: flex; align-items: center; gap: 8px; padding: 2px 4px 10px; }
 .col-head .label-chip { --c: var(--cc); }

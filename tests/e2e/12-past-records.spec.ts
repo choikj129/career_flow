@@ -126,4 +126,36 @@ test.describe.serial('지난 기록 직접 입력', () => {
     await page.goto(`/?view=resume&q=${encodeURIComponent('이관회사')}`);
     await expect(page.getByText('이력서 2026-10-17').first()).toBeVisible();
   });
+
+  test('TC-PAST-E2E-07 과제·코딩테스트 상태: 차수 없이 저장, 보드 칸, 필터 안내', async ({ page }) => {
+    await openManual(page);
+    const r = rows(page).first();
+    await r.getByLabel('회사').fill('과제상태회사');
+    await r.getByLabel('포지션').fill('과제 포지션');
+    await r.getByLabel('지원일').fill('2026-10-17');
+    await page.getByRole('button', { name: '1건 등록' }).click();
+    await page.waitForURL(/notice=/);
+
+    // 기록만 행에서 상태 변경
+    await page.goto(`/?q=${encodeURIComponent('과제상태회사')}`);
+    await page.locator('tbody tr.row-link').filter({ hasText: '과제상태회사' }).click();
+    const panel = page.locator('.rec-panel');
+    await panel.getByLabel('새 상태').selectOption('assignment');
+    await expect(panel.getByLabel('면접 차수')).toHaveCount(0);
+    await expect(panel.getByPlaceholder('선택 (예: 코딩테스트, 과제 제출)')).toBeVisible();
+    await panel.getByPlaceholder('선택 (예: 코딩테스트, 과제 제출)').fill('코딩테스트');
+    await panel.getByRole('button', { name: '저장', exact: true }).click();
+    await toast(page, '상태를 바꿨습니다');
+    await expect(page.locator('tbody tr.row-link').filter({ hasText: '과제상태회사' })).toContainText('과제·코딩테스트');
+
+    // 상태별 보드: 과제·코딩테스트 칸
+    await page.goto(`/?view=status&q=${encodeURIComponent('과제상태회사')}`);
+    await expect(page.locator('.col-head').nth(2)).toContainText('과제·코딩테스트');
+    await expect(page.locator('.col').nth(2).locator('.kcard', { hasText: '과제상태회사' })).toHaveCount(1);
+
+    // 상태 필터: 과제·코딩테스트 + 안내 문구
+    await page.goto('/?status=assignment');
+    await expect(page.getByText('이 단계를 거친 기록을 모두 보여 줍니다(지금 상태와 관계없이)')).toBeVisible();
+    await expect(page.locator('tbody tr.row-link').filter({ hasText: '과제상태회사' })).toHaveCount(1);
+  });
 });

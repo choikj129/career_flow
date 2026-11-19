@@ -1,4 +1,7 @@
 import { describe, expect, test } from 'vitest';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { APPLICATION_STATUSES } from '@/lib/domain/types';
 import { bulkCreateApplications } from '@/lib/applications/repo';
 import { findExistingMatches, markExistingRows } from '@/lib/applications/import-review';
 import { checkedRowsSchema, missingFields, rowsToRegister, type ReviewRow } from '@/lib/applications/import-rows';
@@ -141,5 +144,15 @@ describe('findExistingMatches (TC-PAST-10)', () => {
       db,
     );
     expect(r).toEqual(['same', 'same_day', 'none', 'same', 'none', 'none']);
+  });
+});
+
+describe('assignment status in import (TC-PAST-66)', () => {
+  test('row schema accepts assignment', () => {
+    expect(checkedRowsSchema.safeParse([{ ...row({ status: 'assignment' }), checked: true }]).success).toBe(true);
+  });
+  test('import prompt lists every status id', () => {
+    const prompt = readFileSync(join(process.cwd(), 'prompts', 'import-applications.md'), 'utf8');
+    for (const s of APPLICATION_STATUSES) expect(prompt, s).toContain(s);
   });
 });

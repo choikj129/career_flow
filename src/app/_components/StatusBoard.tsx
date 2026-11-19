@@ -14,6 +14,7 @@ export type BoardColumn = { key: string; label: string; color: string; rows: Das
 const DROP_STATUS: Record<string, ApplicationStatus> = {
   applied: "applied",
   document_passed: "document_passed",
+  assignment: "assignment",
   interview: "interview",
   final_passed: "final_passed",
   closed: "rejected",

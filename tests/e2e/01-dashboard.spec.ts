@@ -97,11 +97,12 @@ test.describe('대시보드', () => {
     await expect(page.locator('.group').first()).toHaveAttribute('data-open', 'false');
   });
 
-  test('TC-DASH-12 보기 전환: 상태별 보드 5열', async ({ page }) => {
+  test('TC-DASH-12 보기 전환: 상태별 보드 6열', async ({ page }) => {
     await page.goto('/?view=status');
-    await expect(page.locator('.board .col')).toHaveCount(5);
-    await expect(page.locator('.col-head').nth(4)).toContainText('불합격·지원취소');
-    await expect(page.locator('.col').nth(2).locator('.kcard')).toHaveCount(2); // 면접: 한빛커머스, 하이퍼셀
+    await expect(page.locator('.board .col')).toHaveCount(6);
+    await expect(page.locator('.col-head').nth(2)).toContainText('과제·코딩테스트');
+    await expect(page.locator('.col-head').nth(5)).toContainText('불합격·지원취소');
+    await expect(page.locator('.col').nth(3).locator('.kcard')).toHaveCount(2); // 면접: 한빛커머스, 하이퍼셀
   });
 
   test('TC-DASH-13 상태별 보드: 카드를 끌면 상태 변경 창이 열리고 저장해야 바뀐다', async ({ page }) => {

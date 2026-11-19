@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { APPLICATION_STATUSES, SITE_IDS, SITE_LABELS, STATUS_LABELS } from "@/lib/domain/types";
+import { isReachedStage } from "@/lib/applications/stages";
 import { dashboardHref, PERIODS, type DashboardParams, type Period } from "@/lib/search/dashboard-params";
 
 const PERIOD_LABELS: Record<Period, string> = {
@@ -109,7 +110,7 @@ export function DashboardFilters({ params }: { params: DashboardParams }) {
           </div>
         )}
       </div>
-      {(params.status === "document_passed" || params.status === "interview" || params.status === "final_passed") && (
+      {(params.status && isReachedStage(params.status)) && (
         <p className="muted small" style={{ margin: "6px 0 0" }}>
           이 단계를 거친 기록을 모두 보여 줍니다(지금 상태와 관계없이)
         </p>

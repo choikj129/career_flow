@@ -9,6 +9,7 @@ import { StatusBoard, type BoardColumn } from "./StatusBoard";
 const STATUS_COLUMN_COLORS: Record<string, string> = {
   applied: "#5B6475",
   document_passed: "#0369A1",
+  assignment: "#1F5FAD",
   interview: "#2342C8",
   final_passed: "#15803D",
   closed: "#98A0AE",

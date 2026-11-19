@@ -152,6 +152,12 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
               <b>{stats.reachedCounts.document_passed}</b>
             </span>
           )}
+          {stats.reachedCounts.assignment > 0 && (
+            <span>
+              {STATUS_LABELS.assignment}
+              <b>{stats.reachedCounts.assignment}</b>
+            </span>
+          )}
           {stats.reachedCounts.interview > 0 && (
             <span>
               {STATUS_LABELS.interview}

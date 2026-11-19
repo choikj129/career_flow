@@ -77,7 +77,7 @@ export function StatusForm({
         </label>
         <label className="f" style={{ flex: "1 1 180px" }}>
           메모
-          <input className="in-sm" value={note} onChange={(e) => setNote(e.target.value)} placeholder="선택" />
+          <input className="in-sm" value={note} onChange={(e) => setNote(e.target.value)} placeholder={status === "assignment" ? "선택 (예: 코딩테스트, 과제 제출)" : "선택"} />
         </label>
         <button type="submit" className="btn primary sm" disabled={pending}>
           저장
