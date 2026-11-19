@@ -3,11 +3,13 @@
 import { useState } from "react";
 import { deleteApplicationAction, updateNotesAction } from "@/app/_actions/applications";
 import { eventDate } from "@/lib/domain/dates";
+import type { DocKind, SubmittedDocs as Docs } from "@/lib/documents/files";
 import type { ApplicationStatus, SiteId } from "@/lib/domain/types";
 import { ApplicationEditModal } from "./ApplicationEditModal";
 import { ConfirmModal } from "./Modal";
 import { StatusBadge } from "./StatusBadge";
 import { StatusForm } from "./StatusForm";
+import { SubmittedDocs } from "./SubmittedDocs";
 import { useAction } from "./useAction";
 
 export type RecordDetail = {
@@ -20,6 +22,8 @@ export type RecordDetail = {
   status: ApplicationStatus;
   interviewRound: number | null;
   notes: string | null;
+  submittedDocs: Docs | null;
+  docExists: Record<DocKind, boolean>;
   events: { id: number; status: ApplicationStatus; interviewRound: number | null; at: string; note: string | null }[];
 };
 
@@ -67,6 +71,8 @@ export function RecordPanel({
           ))}
         </ul>
       </div>
+
+      <SubmittedDocs docs={record.submittedDocs} exists={record.docExists} />
 
       <form
         onSubmit={(e) => {

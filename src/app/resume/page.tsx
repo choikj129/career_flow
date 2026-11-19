@@ -12,6 +12,7 @@ import {
 import { ResumeContent, emptyResume } from "@/lib/resume/schema";
 import { JobFailureCard } from "../_components/JobFailureCard";
 import { JobStatus } from "../_components/JobStatus";
+import { DocFiles } from "./DocFiles";
 import { PreferencesForm } from "./PreferencesForm";
 import { ResumeEditor } from "./ResumeEditor";
 import { ResumeTabs } from "./ResumeTabs";
@@ -111,6 +112,8 @@ async function ResumeLoader({ searchParams }: { searchParams: PageProps<"/resume
         edit={<ResumeEditor key={latest.id} initial={latest.content} savedLabel={savedLabel} />}
         versions={<VersionHistory versions={versions} />}
         prefs={<PreferencesForm initial={getPreferences()} />}
+        docs={<DocFiles />}
+        initialTab={first(sp.tab)}
       />
     </>
   );

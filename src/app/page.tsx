@@ -14,6 +14,7 @@ import {
   type DashboardParams,
   type DashboardView,
 } from "@/lib/search/dashboard-params";
+import { docExistence } from "@/lib/documents/folder";
 import { DashboardFilters } from "./_components/DashboardFilters";
 import { DashboardViews } from "./_components/DashboardViews";
 import type { RecordDetail } from "./_components/RecordPanel";
@@ -95,6 +96,8 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
       status: app.status,
       interviewRound: app.interviewRound,
       notes: app.notes,
+      submittedDocs: app.submittedDocs,
+      docExists: docExistence(app.submittedDocs),
       events: listStatusEvents(app.id).map((e) => ({
         id: e.id,
         status: e.status,

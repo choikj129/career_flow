@@ -2,6 +2,7 @@ import { and, desc, eq, gte, like, lte } from 'drizzle-orm';
 import { getDb, type Db } from '@/lib/db/client';
 import { analyses, applications, companies, companyKeys, resumeVersions } from '@/lib/db/schema';
 import { monthLocal } from '@/lib/domain/dates';
+import { docLabel } from '@/lib/documents/files';
 import { normalizeCompanyName } from '@/lib/domain/normalize';
 import {
   APPLICATION_STATUSES,
@@ -28,6 +29,8 @@ export type DashboardRow = {
   fitScore: number | null;
   resumeLabel: string | null;
   resumeBaseVersionNo: number | null;
+  /** 낸 이력서 파일 이름(기록에 있으면). 기본 이력서 버전이 없을 때 라벨로 쓴다 */
+  resumeDocFile: string | null;
 };
 
 export type SearchQuery = {
@@ -89,6 +92,7 @@ export function searchApplications(q: SearchQuery, db: Db = getDb()): DashboardR
   return filtered.map(({ a, companyName }) => {
     const sr = a.submittedResume;
     const versionNo = sr && sr.kind === 'base' ? (versionNoById.get(sr.versionId) ?? null) : null;
+    const resumeDocFile = a.submittedDocs?.resume ?? null;
     return {
       applicationId: a.id,
       postingId: a.postingId,
@@ -101,8 +105,9 @@ export function searchApplications(q: SearchQuery, db: Db = getDb()): DashboardR
       status: a.status,
       interviewRound: a.interviewRound,
       fitScore: a.postingId != null ? (fitByPosting.get(a.postingId) ?? null) : null,
-      resumeLabel: versionNo != null ? `기본 v${versionNo}` : null,
+      resumeLabel: versionNo != null ? `기본 v${versionNo}` : resumeDocFile ? docLabel(resumeDocFile) : null,
       resumeBaseVersionNo: versionNo,
+      resumeDocFile,
     };
   });
 }
@@ -150,7 +155,13 @@ export function groupDashboardRows(rows: DashboardRow[], by: 'site' | 'status' |
   const groups = versions.map((v) =>
     makeGroup(`v${v}`, `기본 v${v}`, rows.filter((r) => r.resumeBaseVersionNo === v)),
   );
-  const unknown = rows.filter((r) => r.resumeBaseVersionNo == null);
+  const files = [
+    ...new Set(rows.filter((r) => r.resumeBaseVersionNo == null).map((r) => r.resumeDocFile).filter((f): f is string => f != null)),
+  ].sort((a, b) => (a < b ? 1 : a > b ? -1 : 0)); // 파일 이름의 날짜(YYYYMMDD)가 늦은 순
+  for (const f of files) {
+    groups.push(makeGroup(`doc:${f}`, docLabel(f), rows.filter((r) => r.resumeBaseVersionNo == null && r.resumeDocFile === f)));
+  }
+  const unknown = rows.filter((r) => r.resumeBaseVersionNo == null && r.resumeDocFile == null);
   if (unknown.length > 0) groups.push(makeGroup('none', '모름', unknown));
   return groups;
 }

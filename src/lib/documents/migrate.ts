@@ -55,3 +55,15 @@ export function migrateDocsFromNotes(
 export function countDocsNotesPending(db: Db = getDb()): number {
   return targets(db).length;
 }
+
+/** 파일 이름별로 그 파일을 낸 지원 기록 수. */
+export function countDocUsage(db: Db = getDb()): Map<string, number> {
+  const out = new Map<string, number>();
+  for (const a of db.select({ docs: applications.submittedDocs }).from(applications).where(isNotNull(applications.submittedDocs)).all()) {
+    for (const k of DOC_KINDS) {
+      const n = a.docs?.[k];
+      if (n) out.set(n, (out.get(n) ?? 0) + 1);
+    }
+  }
+  return out;
+}

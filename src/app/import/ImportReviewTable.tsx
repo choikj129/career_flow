@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
-import { checkExistingAction, commitApplicationImportAction } from "@/app/_actions/import";
+import { checkExistingAction, checkExistingMatchesAction, commitApplicationImportAction } from "@/app/_actions/import";
 import { useAction } from "@/app/_components/useAction";
 import {
   emptyRow,
@@ -10,6 +10,8 @@ import {
   type CheckedRow,
   type RowField,
 } from "@/lib/applications/import-rows";
+import { validDate } from "@/lib/domain/dates";
+import { DOC_KINDS, DOC_KIND_LABELS, pickDocs, type DocFile, type DocKind } from "@/lib/documents/files";
 import {
   APPLICATION_STATUSES,
   SITE_IDS,
@@ -19,7 +21,14 @@ import {
   type SiteId,
 } from "@/lib/domain/types";
 
-type Row = CheckedRow & { key: number; existing: boolean };
+type Row = CheckedRow & {
+  key: number;
+  existing: boolean;
+  /** 같은 회사·같은 날 기록은 있지만 포지션이 다름(체크 유지) */
+  sameDay: boolean;
+  /** 사용자가 직접 고른 서류 칸(날짜를 바꿔도 다시 고르지 않는다) */
+  touched: Partial<Record<DocKind, boolean>>;
+};
 
 const FIELD_NAME: Record<RowField, string> = { companyName: "회사명", positionTitle: "포지션", appliedAt: "지원일(YYYY-MM-DD)" };
 
@@ -27,27 +36,64 @@ const FIELD_NAME: Record<RowField, string> = { companyName: "회사명", positio
 export function ImportReviewTable({
   initialRows,
   initialExisting,
+  docFiles,
+  manual = false,
 }: {
   initialRows: CheckedRow[];
   initialExisting: boolean[];
+  docFiles: DocFile[];
+  manual?: boolean;
 }) {
   const router = useRouter();
   const nextKey = useRef(initialRows.length);
   const [rows, setRows] = useState<Row[]>(() =>
-    initialRows.map((r, i) => ({ ...r, key: i, existing: initialExisting[i] ?? false })),
+    initialRows.map((r, i) => ({
+      ...r,
+      docs: validDate(r.appliedAt) ? pickDocs(r.appliedAt, docFiles) : r.docs,
+      key: i,
+      existing: initialExisting[i] ?? false,
+      sameDay: false,
+      touched: {},
+    })),
   );
   const { pending, error, run } = useAction();
 
   const patch = (key: number, p: Partial<Row>) => setRows((cur) => cur.map((r) => (r.key === key ? { ...r, ...p } : r)));
 
-  /** 회사·지원일을 고친 뒤 "이미 있음"을 다시 판단한다. */
+  /** 지원일을 고치면 직접 고르지 않은 서류 칸을 다시 고른다. */
+  function setAppliedAt(key: number, appliedAt: string) {
+    setRows((cur) =>
+      cur.map((r) => {
+        if (r.key !== key) return r;
+        if (!validDate(appliedAt)) return { ...r, appliedAt };
+        const picked = pickDocs(appliedAt, docFiles);
+        const docs = { ...r.docs };
+        for (const k of DOC_KINDS) if (!r.touched[k]) docs[k] = picked[k];
+        return { ...r, appliedAt, docs };
+      }),
+    );
+  }
+
+  /** 회사·포지션·지원일을 고친 뒤 "이미 있음"을 다시 판단한다. */
   async function recheck(key: number) {
     const r = rows.find((x) => x.key === key);
     if (!r) return;
-    const [hit] = await checkExistingAction([{ companyName: r.companyName, appliedAt: r.appliedAt }]);
+    let hit: boolean;
+    let sameDay = false;
+    if (manual) {
+      const [m] = await checkExistingMatchesAction([
+        { companyName: r.companyName, positionTitle: r.positionTitle, appliedAt: r.appliedAt },
+      ]);
+      hit = m === "same";
+      sameDay = m === "same_day";
+    } else {
+      [hit] = await checkExistingAction([{ companyName: r.companyName, appliedAt: r.appliedAt }]);
+    }
     setRows((cur) =>
       cur.map((x) =>
-        x.key === key ? { ...x, existing: hit, checked: hit && x.existing !== hit ? false : x.checked } : x,
+        x.key === key
+          ? { ...x, existing: hit, sameDay, checked: hit && x.existing !== hit ? false : x.checked }
+          : x,
       ),
     );
   }
@@ -74,8 +120,17 @@ export function ImportReviewTable({
     <div className="card" style={{ marginTop: 16, padding: "18px 20px" }}>
       <div className="toolbar">
         <span>
-          <b>{total}건을 찾았습니다.</b>{" "}
-          <span className="muted">틀린 값을 고치고 등록할 행을 고르세요. 이미 있는 기록은 체크가 해제되어 있습니다.</span>
+          {manual ? (
+            <>
+              <b>지난 지원 기록을 직접 입력합니다.</b>{" "}
+              <span className="muted">사이트·회사·포지션·지원일은 꼭 채우세요. 서류는 지원일에 맞춰 자동으로 골라집니다.</span>
+            </>
+          ) : (
+            <>
+              <b>{total}건을 찾았습니다.</b>{" "}
+              <span className="muted">틀린 값을 고치고 등록할 행을 고르세요. 이미 있는 기록은 체크가 해제되어 있습니다.</span>
+            </>
+          )}
         </span>
         <button type="button" className="btn quiet" onClick={() => router.push("/import")}>
           처음부터
@@ -91,6 +146,8 @@ export function ImportReviewTable({
             <th>사이트</th>
             <th>지원일</th>
             <th>상태</th>
+            <th>서류</th>
+            <th>메모</th>
             <th />
             <th />
           </tr>
@@ -121,6 +178,7 @@ export function ImportReviewTable({
                     placeholder="포지션"
                     value={r.positionTitle}
                     onChange={(e) => patch(r.key, { positionTitle: e.target.value })}
+                    onBlur={() => manual && void recheck(r.key)}
                   />
                 </td>
                 <td>
@@ -148,7 +206,7 @@ export function ImportReviewTable({
                     aria-label="지원일"
                     placeholder="2026-10-03"
                     value={r.appliedAt}
-                    onChange={(e) => patch(r.key, { appliedAt: e.target.value })}
+                    onChange={(e) => setAppliedAt(r.key, e.target.value)}
                     onBlur={() => void recheck(r.key)}
                   />
                 </td>
@@ -162,8 +220,46 @@ export function ImportReviewTable({
                   </select>
                 </td>
                 <td>
+                  {DOC_KINDS.map((k) => (
+                    <select
+                      key={k}
+                      className="in"
+                      style={{ display: "block", marginBottom: 2 }}
+                      aria-label={DOC_KIND_LABELS[k]}
+                      value={r.docs[k] ?? ""}
+                      onChange={(e) =>
+                        patch(r.key, {
+                          docs: { ...r.docs, [k]: e.target.value || null },
+                          touched: { ...r.touched, [k]: true },
+                        })
+                      }
+                    >
+                      <option value="">{DOC_KIND_LABELS[k]} 모름</option>
+                      {docFiles
+                        .filter((f) => f.kind === k)
+                        .map((f) => (
+                          <option key={f.fileName} value={f.fileName}>
+                            {DOC_KIND_LABELS[k]} {f.date}
+                          </option>
+                        ))}
+                    </select>
+                  ))}
+                </td>
+                <td>
+                  <textarea
+                    className="in"
+                    rows={1}
+                    aria-label="메모"
+                    placeholder="메모(선택)"
+                    value={r.notes}
+                    onChange={(e) => patch(r.key, { notes: e.target.value })}
+                  ></textarea>
+                </td>
+                <td>
                   {r.existing ? (
                     <span className="flag">이미 있음</span>
+                  ) : r.sameDay && missing.length === 0 ? (
+                    <span className="flag">같은 날 기록 있음</span>
                   ) : missing.length > 0 ? (
                     <span className="flag need">{FIELD_NAME[missing[0]]} 필요</span>
                   ) : null}
@@ -187,7 +283,7 @@ export function ImportReviewTable({
           onClick={() =>
             setRows((cur) => [
               ...cur,
-              { ...emptyRow(cur.at(-1)?.site ?? "other"), checked: true, key: nextKey.current++, existing: false },
+              { ...emptyRow(cur.at(-1)?.site ?? "other"), checked: true, key: nextKey.current++, existing: false, sameDay: false, touched: {} },
             ])
           }
         >

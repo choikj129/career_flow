@@ -1,7 +1,7 @@
 import { readdirSync, statSync, type Dirent } from 'node:fs';
 import { join, resolve, sep } from 'node:path';
 import { config } from '@/lib/config';
-import { DOC_KINDS, parseDocFileName, type DocFile } from './files';
+import { DOC_KINDS, parseDocFileName, type DocFile, type DocKind, type SubmittedDocs } from './files';
 
 // 서버 전용: 데이터 폴더 안의 서류 폴더만 읽는다. 파일 내용은 읽지 않는다.
 
@@ -45,4 +45,16 @@ export function docFileExists(fileName: string, dir: string = config.documentsDi
   } catch {
     return false;
   }
+}
+
+/** 기록에 적힌 파일이 지금 폴더에 있는지 종류별로. */
+export function docExistence(
+  docs: SubmittedDocs | null | undefined,
+  dir?: string,
+): Record<DocKind, boolean> {
+  const has = (k: DocKind) => {
+    const n = docs?.[k];
+    return n ? docFileExists(n, dir) : false;
+  };
+  return { resume: has('resume'), career: has('career'), portfolio: has('portfolio') };
 }

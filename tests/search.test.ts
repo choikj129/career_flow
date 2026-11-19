@@ -1,5 +1,6 @@
 import { expect, test } from 'vitest';
 import { makeTestDb } from './helpers/db';
+import { applications } from '@/lib/db/schema';
 import { addCompanyAlias, findOrCreateCompany } from '@/lib/companies/repo';
 import { bulkCreateApplications, markApplied } from '@/lib/applications/repo';
 import { registerPosting, saveAnalysis } from '@/lib/postings/repo';
@@ -134,6 +135,7 @@ function dr(over: Partial<DashboardRow>): DashboardRow {
     fitScore: null,
     resumeLabel: null,
     resumeBaseVersionNo: null,
+    resumeDocFile: null,
     ...over,
   };
 }
@@ -173,4 +175,28 @@ test('groupDashboardRows by resume puts unknown last', () => {
   expect(g[0].rows).toHaveLength(2);
   expect(g[2].label).toBe('모름');
   expect(g[0]).toMatchObject({ passed: 1, decided: 1 });
+});
+
+test('TC-PAST-31 resume label from submitted document file', () => {
+  const db = makeTestDb();
+  bulkCreateApplications([row('A', 'applied', 'wanted')], db);
+  db.update(applications).set({ submittedDocs: { resume: '이력서_20261102.pdf', career: null, portfolio: null } }).run();
+  const r = searchApplications({}, db)[0];
+  expect(r.resumeLabel).toBe('이력서 2026-11-02');
+  expect(r.resumeDocFile).toBe('이력서_20261102.pdf');
+  expect(r.resumeBaseVersionNo).toBeNull();
+});
+
+test('TC-PAST-31 groupDashboardRows by resume: base -> files (newest first) -> unknown', () => {
+  const rows = [
+    dr({}),
+    dr({ resumeLabel: '이력서 2026-09-05', resumeDocFile: '이력서_20260905.pdf' }),
+    dr({ resumeLabel: '기본 v1', resumeBaseVersionNo: 1 }),
+    dr({ resumeLabel: '이력서 2026-11-02', resumeDocFile: '이력서_20261102.pdf' }),
+    dr({ resumeLabel: '이력서 2026-11-02', resumeDocFile: '이력서_20261102.pdf' }),
+  ];
+  const g = groupDashboardRows(rows, 'resume');
+  expect(g.map((x) => x.key)).toEqual(['v1', 'doc:이력서_20261102.pdf', 'doc:이력서_20260905.pdf', 'none']);
+  expect(g[1].label).toBe('이력서 2026-11-02');
+  expect(g[1].rows).toHaveLength(2);
 });

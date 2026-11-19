@@ -4,7 +4,8 @@ import { connection } from "next/server";
 import { getJob, listActiveJobs } from "@/lib/ai/queue";
 import { ImportedApplications } from "@/lib/ai/tasks/schemas";
 import { markExistingRows } from "@/lib/applications/import-review";
-import type { CheckedRow } from "@/lib/applications/import-rows";
+import { listDocFiles } from "@/lib/documents/folder";
+import { emptyRow, type CheckedRow } from "@/lib/applications/import-rows";
 import { SITE_IDS, type SiteId } from "@/lib/domain/types";
 import { JobFailureCard } from "../_components/JobFailureCard";
 import { JobStatus } from "../_components/JobStatus";
@@ -47,6 +48,19 @@ async function ImportLoader({ searchParams }: { searchParams: PageProps<"/import
   const raw = Array.isArray(sp.job) ? sp.job[0] : sp.job;
   const jobId = Number(raw);
   const job = Number.isInteger(jobId) && jobId > 0 ? getJob(jobId) : undefined;
+
+  const manual = (Array.isArray(sp.manual) ? sp.manual[0] : sp.manual) === "1";
+  if (manual && !job) {
+    const rawSite = Array.isArray(sp.site) ? sp.site[0] : sp.site;
+    const site: SiteId = (SITE_IDS as string[]).includes(rawSite ?? "") ? (rawSite as SiteId) : "other";
+    const rows: CheckedRow[] = [{ ...emptyRow(site), checked: true }];
+    return (
+      <>
+        <Header step={2} />
+        <ImportReviewTable key="manual" manual initialRows={rows} initialExisting={[false]} docFiles={listDocFiles().files} />
+      </>
+    );
+  }
 
   if (!job || job.type !== "import_applications") {
     return (
@@ -128,7 +142,7 @@ async function ImportLoader({ searchParams }: { searchParams: PageProps<"/import
   return (
     <>
       <Header step={2} />
-      <ImportReviewTable key={job.id} initialRows={rows} initialExisting={existing} />
+      <ImportReviewTable key={job.id} initialRows={rows} initialExisting={existing} docFiles={listDocFiles().files} />
     </>
   );
 }

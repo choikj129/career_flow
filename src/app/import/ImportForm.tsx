@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useActionState, useState } from "react";
 import { startApplicationImportAction, type ImportStartState } from "@/app/_actions/import";
 import { SITE_IDS, SITE_LABELS } from "@/lib/domain/types";
@@ -10,6 +11,7 @@ type Picked = { name: string; reason?: string };
 /** 입력 단계: 사이트, 텍스트, 캡처 이미지. docs/spec/screens.md 6.1 */
 export function ImportForm() {
   const [state, action, pending] = useActionState<ImportStartState, FormData>(startApplicationImportAction, null);
+  const router = useRouter();
   const [site, setSite] = useState<string>("");
   const [text, setText] = useState("");
   const [files, setFiles] = useState<Picked[]>([]);
@@ -83,7 +85,16 @@ export function ImportForm() {
         </p>
       ))}
 
-      <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 16 }}>
+      <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 12, marginTop: 16 }}>
+        {site === "" && <span className="muted small">직접 입력하려면 사이트를 고르세요</span>}
+        <button
+          type="button"
+          className="btn"
+          disabled={site === "" || pending}
+          onClick={() => router.push(`/import?manual=1&site=${site}`)}
+        >
+          표에 직접 입력
+        </button>
         <button type="submit" className="btn primary" disabled={empty || pending}>
           {pending ? "올리는 중…" : "추출하기"}
         </button>
