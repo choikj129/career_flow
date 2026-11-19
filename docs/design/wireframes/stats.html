@@ -40,7 +40,6 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 syst
 .card .big { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .panel { border: 1px solid var(--line); padding: 14px; }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-.grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
 .badge { display: inline-block; border: 1px solid var(--line); padding: 0 6px; font-size: 11px; color: var(--sub); }
 .info { border: 1px dashed var(--line); padding: 8px 12px; color: var(--note); }
 table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
@@ -71,7 +70,7 @@ details summary { cursor: pointer; color: var(--sub); font-size: 13px; margin-to
 </style></head><body>
 
 <p class="page-title">와이어프레임 — 통계 <code>/stats</code></p>
-<p class="page-desc">배치·문구 확인용. 동작·정의는 <code>docs/work/stats-dashboard.md</code> 1장(설계 중, D-18~D-21 미정). 숫자는 모두 예시다. 화면 위치는 D-19 추천안(새 화면) 기준.</p>
+<p class="page-desc">배치·문구 확인용. 동작·문구는 <code>docs/spec/screens.md</code> 10장, 그래프 색은 <code>docs/design/design.md</code> 7장(D-18~D-21 결정 반영). 숫자는 모두 예시다(지난 기록을 불합격으로 정리한 뒤 새 지원 12건이 있다고 가정).</p>
 <div class="toc"><a href="#s1">S-1 기본</a><a href="#s2">S-2 연별·비율·필터</a><a href="#s3">S-3 표본 부족</a><a href="#s4">S-4 빈 상태</a><a href="#s5">S-5 대시보드 연결</a></div>
 
 <!-- S-1 -->
@@ -87,12 +86,12 @@ details summary { cursor: pointer; color: var(--sub); font-size: 13px; margin-to
       <p class="sub small" style="margin:6px 0 12px">지원 후 30일이 지나도 '지원' 상태인 기록은 <b>무응답</b>으로 셉니다. 기간은 지원일 기준입니다. <u>용어 설명</u></p>
 
       <div class="cards">
-        <div class="card"><div class="sub small">지원</div><div class="big">469</div><div class="sub small">2024-12 ~ 2026-11</div></div>
+        <div class="card"><div class="sub small">지원</div><div class="big">481</div><div class="sub small">2024-12 ~ 2026-11</div></div>
         <div class="card"><div class="sub small">서류 통과</div><div class="big">9</div><div class="sub small">면접 6 · 최종합격 0</div></div>
-        <div class="card"><div class="sub small">서류 통과율</div><div class="big">2.0%</div><div class="sub small">9 / 455 · 판정 기준 100% (9/9)</div></div>
-        <div class="card"><div class="sub small">무응답 비율</div><div class="big">98.0%</div><div class="sub small">지원 후 30일 넘게 '지원' 상태</div></div>
+        <div class="card"><div class="sub small">서류 통과율</div><div class="big">1.9%</div><div class="sub small">9 / 469 · 판정 기준 1.9% (9/469)</div></div>
+        <div class="card"><div class="sub small">무응답 비율</div><div class="big">0.0%</div><div class="sub small">지원 후 30일 넘게 '지원' 상태</div></div>
         <div class="card"><div class="sub small">대기</div><div class="big">12</div><div class="sub small">지원 후 30일 안 됨</div></div>
-        <div class="card"><div class="sub small">지원취소</div><div class="big">2</div><div class="sub small">통과율 계산에서 뺌</div></div>
+        <div class="card"><div class="sub small">지원취소</div><div class="big">0</div><div class="sub small">통과율 계산에서 뺌</div></div>
       </div>
       <div class="gap"></div>
 
@@ -103,37 +102,37 @@ details summary { cursor: pointer; color: var(--sub); font-size: 13px; margin-to
         </div>
         <div class="gap"></div><div class="gap"></div>
         <div class="cols">
-          <div class="col"><i class="n" style="height:12px"></i></div>
-          <div class="col"><i class="n" style="height:30px"></i></div>
-          <div class="col"><i class="n" style="height:22px"></i></div>
-          <div class="col"><i class="n" style="height:18px"></i></div>
-          <div class="col"><i class="n" style="height:26px"></i></div>
-          <div class="col"><i class="n" style="height:40px"></i></div>
-          <div class="col"><i class="n" style="height:33px"></i></div>
-          <div class="col"><i class="n" style="height:20px"></i></div>
-          <div class="col"><i class="n" style="height:14px"></i></div>
-          <div class="col"><i class="n" style="height:8px"></i></div>
-          <div class="col"><i class="n" style="height:0"></i></div>
-          <div class="col"><i class="n" style="height:10px"></i></div>
-          <div class="col"><i class="n" style="height:24px"></i></div>
-          <div class="col"><i class="n" style="height:36px"></i></div>
-          <div class="col"><i class="n" style="height:44px"></i></div>
-          <div class="col"><i class="p" style="height:4px"></i><i class="n" style="height:50px"></i><b>4.2%</b></div>
-          <div class="col"><i class="n" style="height:58px"></i></div>
-          <div class="col"><i class="p" style="height:4px"></i><i class="n" style="height:62px"></i><b>3.5%</b></div>
-          <div class="col"><i class="n" style="height:70px"></i></div>
-          <div class="col"><i class="p" style="height:4px"></i><i class="n" style="height:84px"></i><b>2.6%</b></div>
-          <div class="col"><i class="p" style="height:8px"></i><i class="r" style="height:2px"></i><i class="n" style="height:110px"></i><b>4.0%</b></div>
-          <div class="col"><i class="p" style="height:12px"></i><i class="n" style="height:128px"></i><b>5.2%</b></div>
-          <div class="col"><i class="p" style="height:4px"></i><i class="n" style="height:90px"></i><i class="w" style="height:20px"></i><b>2.4%</b></div>
+          <div class="col"><i class="r" style="height:12px"></i></div>
+          <div class="col"><i class="r" style="height:30px"></i></div>
+          <div class="col"><i class="r" style="height:22px"></i></div>
+          <div class="col"><i class="r" style="height:18px"></i></div>
+          <div class="col"><i class="r" style="height:26px"></i></div>
+          <div class="col"><i class="r" style="height:40px"></i></div>
+          <div class="col"><i class="r" style="height:33px"></i></div>
+          <div class="col"><i class="r" style="height:20px"></i></div>
+          <div class="col"><i class="r" style="height:14px"></i></div>
+          <div class="col"><i class="r" style="height:8px"></i></div>
+          <div class="col"><i class="r" style="height:0"></i></div>
+          <div class="col"><i class="r" style="height:10px"></i></div>
+          <div class="col"><i class="r" style="height:24px"></i></div>
+          <div class="col"><i class="r" style="height:36px"></i></div>
+          <div class="col"><i class="r" style="height:44px"></i></div>
+          <div class="col"><i class="p" style="height:4px"></i><i class="r" style="height:50px"></i><b>4.2%</b></div>
+          <div class="col"><i class="r" style="height:58px"></i></div>
+          <div class="col"><i class="p" style="height:4px"></i><i class="r" style="height:62px"></i><b>3.5%</b></div>
+          <div class="col"><i class="r" style="height:70px"></i></div>
+          <div class="col"><i class="p" style="height:4px"></i><i class="r" style="height:84px"></i><b>2.6%</b></div>
+          <div class="col"><i class="p" style="height:8px"></i><i class="r" style="height:2px"></i><i class="r" style="height:110px"></i><b>4.0%</b></div>
+          <div class="col"><i class="p" style="height:12px"></i><i class="r" style="height:128px"></i><b>5.2%</b></div>
+          <div class="col"><i class="p" style="height:4px"></i><i class="r" style="height:90px"></i><i class="w" style="height:20px"></i><b>2.4%</b></div>
           <div class="col"><i class="w" style="height:30px"></i><b class="sub">–</b></div>
         </div>
         <div class="xl"><span>24-12</span><span>01</span><span>02</span><span>03</span><span>04</span><span>05</span><span>06</span><span>07</span><span>08</span><span>09</span><span>10</span><span>11</span><span>25-12</span><span>01</span><span>02</span><span>03</span><span>04</span><span>05</span><span>06</span><span>07</span><span>08</span><span>09</span><span>10</span><span>11<br>(진행 중)</span></div>
-        <div class="legend"><span><i class="sw" style="background:var(--pass)"></i>서류 통과</span><span><i class="sw" style="background:var(--rej)"></i>불합격</span><span><i class="sw" style="background:var(--nores)"></i>무응답</span><span><i class="sw" style="border:1px dashed #555"></i>대기</span><span>막대 위 숫자 = 서류 통과율 (표본 부족이면 –)</span></div>
+        <div class="legend"><span><i class="sw" style="background:var(--pass)"></i>서류 통과</span><span><i class="sw" style="background:var(--rej)"></i>불합격</span><span><i class="sw" style="background:var(--nores)"></i>무응답</span><span><i class="sw" style="border:1px dashed #555"></i>대기</span><span>막대 위 숫자 = 서류 통과율 (분모 5 미만이면 –)</span></div>
         <details><summary>표로 보기</summary>
           <table><tr><th>월</th><th>지원</th><th>통과</th><th>불합격</th><th>무응답</th><th>대기</th><th>취소</th><th>서류 통과율</th><th>판정 기준</th></tr>
-          <tr><td>2026-11 (진행 중)</td><td>12</td><td>0</td><td>0</td><td>0</td><td>12</td><td>0</td><td class="sub">– 결과 없음</td><td class="sub">–</td></tr>
-          <tr><td>2026-10</td><td>…</td><td>…</td><td>…</td><td>…</td><td>…</td><td>…</td><td>2.4% (1/42)</td><td class="sub">표본 부족 (n=1)</td></tr>
+          <tr><td>2026-11 (진행 중)</td><td>15</td><td>0</td><td>3</td><td>0</td><td>12</td><td>0</td><td class="sub">표본 부족 (n=3)</td><td class="sub">표본 부족 (n=3)</td></tr>
+          <tr><td>2026-10</td><td>42</td><td>1</td><td>41</td><td>0</td><td>0</td><td>0</td><td>2.4% (1/42)</td><td>2.4% (1/42)</td></tr>
           <tr><td>…</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr></table>
         </details>
       </div>
@@ -147,7 +146,7 @@ details summary { cursor: pointer; color: var(--sub); font-size: 13px; margin-to
           <div class="hb"><span>이력서 2026-10-17</span><span class="track"><i style="width:40%"></i><i class="p" style="width:3%"></i></span><span class="rate">7.1% (3/42) <span class="badge">표본 적음</span></span></div>
           <div class="hb"><span>이력서 2026-09-05</span><span class="track"><i style="width:55%"></i><i class="p" style="width:3%"></i></span><span class="rate">4.0% (3/75)</span></div>
           <div class="hb"><span>모름<br><span class="sub small">버전 파일보다 앞선 지원</span></span><span class="track"><i style="width:100%"></i><i class="p" style="width:1%"></i></span><span class="rate">0.9% (3/335)</span></div>
-          <table><tr><th>버전</th><th>지원</th><th>통과</th><th>무응답</th><th>대기</th><th>쓴 기간</th><th>서류 통과율</th></tr>
+          <table><tr><th>버전</th><th>지원</th><th>통과</th><th>불합격</th><th>대기</th><th>쓴 기간</th><th>서류 통과율</th></tr>
             <tr><td>이력서 2026-11-02</td><td>15</td><td>0</td><td>3</td><td>12</td><td>11-02 ~ 11-18</td><td class="sub">표본 부족 (n=3)</td></tr>
             <tr><td>…</td><td></td><td></td><td></td><td></td><td></td><td></td></tr></table>
           <p class="sub small">버전마다 쓴 기간과 사이트가 다릅니다. 기간·사이트 필터로 조건을 맞춰 비교하세요.</p>
@@ -156,38 +155,32 @@ details summary { cursor: pointer; color: var(--sub); font-size: 13px; margin-to
           <div class="h2">사이트별</div>
           <div class="gap"></div>
           <div class="hb"><span>● 리멤버</span><span class="track"><i style="width:21%"></i><i class="p" style="width:1%"></i></span><span class="rate">2.9% (2/68)</span></div>
-          <div class="hb"><span>● 원티드</span><span class="track"><i style="width:100%"></i><i class="p" style="width:2%"></i></span><span class="rate">1.9% (6/320)</span></div>
+          <div class="hb"><span>● 원티드</span><span class="track"><i style="width:100%"></i><i class="p" style="width:2%"></i></span><span class="rate">1.8% (6/329)</span></div>
           <div class="hb"><span>● 그룹바이</span><span class="track"><i style="width:5%"></i></span><span class="rate">0.0% (0/17) <span class="badge">표본 적음</span></span></div>
           <div class="hb"><span>● 잡코리아</span><span class="track"><i style="width:16%"></i><i class="p" style="width:1%"></i></span><span class="rate">2.0% (1/50)</span></div>
           <table><tr><th>사이트</th><th>지원</th><th>통과</th><th>불합격</th><th>무응답</th><th>대기</th><th>서류 통과율</th><th>무응답 비율</th></tr>
-            <tr><td>원티드</td><td>329</td><td>6</td><td>0</td><td>314</td><td>8</td><td>1.9%</td><td>98.1%</td></tr>
+            <tr><td>원티드</td><td>337</td><td>6</td><td>323</td><td>0</td><td>8</td><td>1.8% (6/329)</td><td>0.0%</td></tr>
             <tr><td>…</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr></table>
           <p class="sub small">막대 길이 = 지원 수, 진한 부분 = 서류 통과. 실제 화면은 사이트 색.</p>
         </div>
       </div>
       <div class="gap"></div>
 
-      <div class="grid3">
+      <div class="grid2">
         <div class="panel">
-          <div class="h2">단계별 깔때기</div>
-          <div class="hb" style="grid-template-columns:70px 1fr 90px"><span>지원</span><span class="track"><i style="width:100%;background:#999"></i></span><span class="rate">467</span></div>
+          <div class="h2">단계별 흐름</div>
+          <div class="hb" style="grid-template-columns:70px 1fr 90px"><span>지원</span><span class="track"><i style="width:100%;background:#999"></i></span><span class="rate">481</span></div>
           <div class="hb" style="grid-template-columns:70px 1fr 90px"><span>서류 통과</span><span class="track"><i class="p" style="width:2%"></i></span><span class="rate">9 (1.9%)</span></div>
           <div class="hb" style="grid-template-columns:70px 1fr 90px"><span>면접</span><span class="track"><i class="p" style="width:1.5%"></i></span><span class="rate">6 (67%)</span></div>
           <div class="hb" style="grid-template-columns:70px 1fr 90px"><span>최종합격</span><span class="track"></span><span class="rate">0 (0%)</span></div>
           <p class="sub small">지원 = 전체 − 지원취소. 괄호 = 앞 단계 대비.</p>
         </div>
         <div class="panel">
-          <div class="h2">서류 통과까지 걸린 일수</div>
-          <p class="small" style="margin:4px 0">중앙값 <b>9일</b> · 최소 2일 · 최대 26일 · 7건 <span class="sub">(날짜 모름 2건)</span></p>
-          <div class="cols" style="height:90px"><div class="col"><i class="p" style="height:20px"></i></div><div class="col"><i class="p" style="height:30px"></i></div><div class="col"><i class="p" style="height:40px"></i></div><div class="col"><i class="p" style="height:10px"></i></div><div class="col"><i class="p" style="height:0"></i></div></div>
-          <div class="xl"><span>0~3</span><span>4~7</span><span>8~14</span><span>15~30</span><span>31+</span></div>
-          <p class="sub small">무응답 기준(30일)을 정할 때 참고.</p>
-        </div>
-        <div class="panel">
           <div class="h2">요일별</div>
           <div class="cols" style="height:110px"><div class="col"><i class="n" style="height:80px"></i></div><div class="col"><i class="n" style="height:70px"></i></div><div class="col"><i class="n" style="height:75px"></i></div><div class="col"><i class="n" style="height:68px"></i></div><div class="col"><i class="n" style="height:60px"></i></div><div class="col"><i class="n" style="height:30px"></i></div><div class="col"><i class="n" style="height:25px"></i></div></div>
           <div class="xl"><span>월</span><span>화</span><span>수</span><span>목</span><span>금</span><span>토</span><span>일</span></div>
-          <p class="sub small">막대 = 지원 수. 표에 요일별 서류 통과율.</p>
+          <p class="sub small">막대 = 지원 수, 진한 부분 = 통과. 아래 표에 요일별 서류 통과율.</p>
+          <table><tr><th>요일</th><th>지원</th><th>통과</th><th>서류 통과율</th></tr><tr><td>월</td><td>98</td><td>2</td><td>2.1% (2/96)</td></tr><tr><td>…</td><td></td><td></td><td></td></tr></table>
         </div>
       </div>
       <details open><summary>용어 설명</summary>
@@ -202,9 +195,9 @@ details summary { cursor: pointer; color: var(--sub); font-size: 13px; margin-to
     </div>
   </div>
   <ul class="notes">
-    <li>S-1 아래 줄(깔때기·걸린 일수·요일별)은 D-21 a안일 때만. b안이면 없다.</li>
+    <li>서류 통과까지 걸린 일수는 넣지 않는다(D-21).</li>
     <li>모든 전환·필터는 주소에 남는다(<code>?period= &amp;site= &amp;unit=year &amp;mode=ratio &amp;doc=career</code>).</li>
-    <li>그래프는 SVG(D-20 a안). 막대에 마우스를 올리면 "2026-10 · 통과 1 · 불합격 0 · 무응답 41 · 대기 0".</li>
+    <li>그래프는 직접 그린 SVG(D-20). 막대에 마우스를 올리면 "2026-10 · 통과 1 · 불합격 41 · 무응답 0 · 대기 0".</li>
   </ul>
 </section>
 
@@ -227,7 +220,7 @@ details summary { cursor: pointer; color: var(--sub); font-size: 13px; margin-to
     </div>
     <div class="gap"></div>
     <div class="panel"><div class="row"><span class="h2">사이트별</span><span class="badge">사이트 필터 적용 중</span></div>
-      <div class="hb"><span>● 원티드</span><span class="track"><i style="width:100%"></i><i class="p" style="width:2%"></i></span><span class="rate">1.9% (6/320)</span></div></div>
+      <div class="hb"><span>● 원티드</span><span class="track"><i style="width:100%"></i><i class="p" style="width:2%"></i></span><span class="rate">1.8% (6/329)</span></div></div>
   </div></div>
   <ul class="notes"><li>사이트 필터가 걸리면 카드·그래프·표 모두 그 사이트 기록만. 사이트별 카드는 한 줄 + 배지.</li></ul>
 </section>
@@ -252,8 +245,6 @@ details summary { cursor: pointer; color: var(--sub); font-size: 13px; margin-to
       <tr><td>분모 1~4</td><td class="sub">표본 부족 (n=3)</td></tr>
       <tr><td>분모 5~19</td><td>12.5% (1/8) <span class="badge">표본 적음</span></td></tr>
       <tr><td>분모 20 이상</td><td>2.1% (9/431)</td></tr></table>
-    <div class="gap"></div>
-    <div class="panel"><div class="h2">서류 통과까지 걸린 일수</div><p class="sub">서류 통과 날짜가 있는 기록이 없습니다.</p></div>
   </div></div>
 </section>
 
@@ -270,14 +261,14 @@ details summary { cursor: pointer; color: var(--sub); font-size: 13px; margin-to
 
 <!-- S-5 -->
 <section class="frame" id="s5">
-  <p class="frame-name">S-5 대시보드 연결 <small>대시보드 요약 줄과 사이트별 묶음 머리 (D-18 c-1)</small></p>
+  <p class="frame-name">S-5 대시보드 연결 <small>대시보드 요약 줄과 사이트별 묶음 머리 (D-18·D-19)</small></p>
   <div class="screen"><div class="body">
     <div class="row between"><span>이번 달 지원 12 · 서류합격 1 · 면접 2<br><span class="sub">● 원티드 7 · ● 리멤버 3 · ● 잡코리아 2</span></span><span><u>분석한 공고 5건 보기 →</u> &nbsp; <u>통계 보기 →</u></span></div>
     <div class="gap"></div>
-    <div class="panel"><div class="row between"><span>▾ ● 원티드 <span class="sub">329</span></span><span>서류 통과 6 / 320 · 1.9%</span></div></div>
+    <div class="panel"><div class="row between"><span>▾ ● 원티드 <span class="sub">329</span></span><span>서류 통과 6 / 329 · 1.8%</span></div></div>
     <div class="panel" style="margin-top:6px"><div class="row between"><span>▸ ● 그룹바이 <span class="sub">17</span></span><span>서류 통과 0 / 17 · 0.0% <span class="badge">표본 적음</span></span></div></div>
   </div></div>
-  <ul class="notes"><li>"통계 보기 →"는 대시보드의 기간·사이트 필터를 넘긴다("이번 달"은 넘기지 않음).</li><li>D-19 b안(대시보드 보기 탭)이면 이 링크 대신 보기 탭에 "통계"가 생기고, 그 탭에서는 검색창·상태 필터를 숨긴다.</li></ul>
+  <ul class="notes"><li>"통계 보기 →"는 대시보드의 기간·사이트 필터를 넘긴다("이번 달"은 넘기지 않음).</li><li>묶음 머리 통과율은 통계 화면과 같은 정의다(D-18). 분모 0이면 "결과 대기".</li></ul>
 </section>
 
 </body></html>

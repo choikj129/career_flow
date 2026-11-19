@@ -546,6 +546,35 @@ AI 작업이 끝나면 `data/ai-work/<번호>/`를 바로 지운다. 올린 이�
 | TC-PAST-M1 | 실제 데이터 채우기(수동): dry-run 메일 452·그룹바이 17건 모두 맞음, 실행 뒤 같은 날 순서 확인 | 수동 |
 | TC-PAST-E2E-01~06 | 직접 입력 열기·등록·서류 자동 선택·제출 서류 보기·서류 파일 탭·메모 이관 | `tests/e2e/12-past-records.spec.ts` (작성만, 검증 단계에서 실행) |
 
+## 11. 통계 화면 (브랜치 `feat/stats-dashboard`)
+
+계획: [phase-2-stats.md](../plans/phase-2-stats.md), 정의: 기획서 7.10, 화면 문서 10장. 자동 테스트는 임시 DB만 쓰고, 날짜는 고정한 `today`나 오늘 기준 상대 날짜로 만든다.
+
+| ID | 대상 | 기대 결과 | 테스트 위치 |
+|---|---|---|---|
+| TC-STATS-01 | `classifyOutcome` | 지원 29일 → 대기, 30일 → 무응답, 당일 → 대기. 서류합격 뒤 불합격·지원취소 → 통과. 통과 없는 지원취소 → 지원취소, 불합격 → 불합격. 기준 일수 인자로 경계가 바뀜 | `tests/stats.test.ts` |
+| TC-STATS-02 | `tally`·`sampleLevel`·`formatPercent` | 통과 2·불합격 1·무응답 7·대기 3·취소 1 → 전체 14, 분모 10, 통과율 0.2, 판정 기준 2/3. 분모 0/4/5/19/20 → none/few/low/low/ok. 0.01918 → "1.9%". 빈 목록은 비율 모두 null | `tests/stats.test.ts` |
+| TC-STATS-03 | `daysBetween`·`weekdayMon0` | 2026-02-28→03-01 = 1, 2024-02-28→03-01 = 2, 같은 날 0. 2026-11-16 → 0(월), 2026-11-22 → 6(일) | `tests/stats.test.ts` |
+| TC-STATS-04 | `byPeriod` 월 | 1월·3월 기록 → 1·2·3월 세 칸(2월 0건). 오늘이 속한 달만 진행 중. 시작일 지정 시 그 달부터 | `tests/stats.test.ts` |
+| TC-STATS-05 | `byPeriod` 년 | 2024·2026 기록 → 2024·2025·2026, 올해만 진행 중 | `tests/stats.test.ts` |
+| TC-STATS-06 | `byDocVersion` | 이력서: 기본 v2 → v1 → 이력서 2026-11-02 → 2026-09-05 → 모름. 첫·마지막 지원일. 경력기술서는 기본 버전 무시 | `tests/stats.test.ts` |
+| TC-STATS-07 | `bySite` | 사이트 순서 고정, 0건 사이트 없음, 기타 포함 | `tests/stats.test.ts` |
+| TC-STATS-08 | `funnel` | 지원 = 전체 − 통과 못 한 지원취소. 지원 ≥ 서류 ≥ 면접 ≥ 최종. 앞 단계 0이면 비율 null | `tests/stats.test.ts` |
+| TC-STATS-09 | `byWeekday` | 기록이 없어도 월~일 7칸 | `tests/stats.test.ts` |
+| TC-STATS-10 | `loadStatItems` | 사이트·기간(지원일 양끝 포함) 적용, 제출 서류 파일 읽기, 서류합격 → 지원취소는 통과, 서류합격 → 지원(되돌림)은 통과 아님 | `tests/stats.test.ts` |
+| TC-STATS-11 | `getStats` | 빈 DB → 빈 상태. 필터 결과만 0건 → 빈 상태 아님, 전체 0. 면접 거친 수 | `tests/stats.test.ts` |
+| TC-STATS-12 | 주소 파라미터 | 잘못된 값 → 기본값, 기본값은 주소에서 생략, `period=month` → 전체, custom이 아니면 시작·종료일 무시 | `tests/stats.test.ts` |
+| TC-STATS-13 | 축 눈금 | niceMax 0→1, 7→10, 13→20, 46→50, 329→500. ticks(20) = 0,5,10,15,20 | `tests/stats.test.ts` |
+| TC-STATS-14 | 대시보드 묶음 통과율 | A 서류합격→불합격, B 서류합격→면접, C 지원, D 불합격. C 지원 후 10일이면 통과 2 / 분모 3, 대기 1. 40일이면 통과 2 / 분모 4, 무응답 1. TC-PAST-54 기대값을 이것으로 바꿈 | `tests/search.test.ts` |
+| TC-STATS-E2E-01 | 화면 | 내비 "통계" → `/stats`, 카드 6개, 기간별 그래프, "표로 보기" | `tests/e2e/13-stats.spec.ts` |
+| TC-STATS-E2E-02 | 전환 | [연별] → `unit=year`, 표가 연 단위. [비율] → `mode=ratio` | `tests/e2e/13-stats.spec.ts` |
+| TC-STATS-E2E-03 | 사이트 필터 | 원티드 → 카드 숫자가 원티드 기록만, 사이트별 한 줄 + "사이트 필터 적용 중" | `tests/e2e/13-stats.spec.ts` |
+| TC-STATS-E2E-04 | 빈 상태 | 빈 DB → 빈 상태 문구·[공고 등록]. 필터 0건 → [필터 지우기] | `tests/e2e/13-stats.spec.ts` |
+| TC-STATS-E2E-05 | 서류 종류 | [경력기술서] → `doc=career`, 묶음 라벨이 경력기술서 | `tests/e2e/13-stats.spec.ts` |
+| TC-STATS-E2E-06 | 표본 표시 | 분모 3 → "표본 부족 (n=3)", 분모 8 → "표본 적음" | `tests/e2e/13-stats.spec.ts` |
+| TC-STATS-E2E-07 | 대시보드 연결 | 원티드 + 최근 1년에서 "통계 보기 →" → `/stats?period=1y&site=wanted`. 사이트별 묶음 머리 `서류 통과 k / n · x.x%` | `tests/e2e/13-stats.spec.ts` |
+| TC-STATS-M1 | 실제 데이터(수동, 불합격 일괄 정리 뒤) | 전체 469(그 뒤 새 지원은 더함), 원티드 329·리멤버 70·잡코리아 53·그룹바이 17, 서류 통과 9, 면접 거침 6, 불합격 약 460, 무응답·대기 0(새 지원 제외), 서류 통과율 약 1.9%(9/469), 대시보드 사이트별 묶음 통과 수 합 9 | 수동 (개인 데이터) |
+
 ## 9. 미구현 (3~5단계)
 
 아래는 아직 코드가 없어 케이스를 만들지 않았다. 구현되면 이 문서에 영역을 추가한다.

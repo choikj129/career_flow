@@ -4,420 +4,292 @@
 
 - 요청: 대시보드에서 월/년별 지원 수와 서류 합격률, 이력서별 지원 수와 서류 합격률 등 취업 전략에 필요한 통계를 볼 수 있는 화면(가능하면 그래프 포함). 보여줄 내용과 화면 구성부터 기획한다.
 - 브랜치: `feat/stats-dashboard` (past-records 병합 뒤 생성)
-- 상태: 설계 중
-- 관련 결정: D-15(서류 파일 이름 참조), D-17(정렬용 지원 일시)
+- 상태: 설계 완료(D-18~D-21 반영), 사용자 검토 대기
+- 관련 결정: D-15(서류 파일 이름 참조), D-17(정렬용 지원 일시), D-18(무응답·통과율 정의), D-19(새 화면), D-20(직접 SVG), D-21(1차 범위) — 모두 결정됨
+- 계획 본문: [docs/plans/phase-2-stats.md](../plans/phase-2-stats.md)
 
 ## 1. 설계 (product-planner)
 
-- 작성: 2026-11-19, product-planner. 실제 `claude` 호출 0회.
-- 와이어프레임: [../design/wireframes/stats.html](../design/wireframes/stats.html)
-- 전제: past-records(`docs/work/past-records.md`)가 먼저 병합되어 `applications.submitted_docs`(종류별 파일 이름)가 있어야 한다. 이 설계는 그 칸을 읽기만 한다.
-- 열린 결정: D-18(무응답 처리·통과율 정의), D-19(화면 위치), D-20(그래프 구현 방식), D-21(1차 범위). 아래 "정할 것 초안" 참고. **D-18 답에 따라 숫자 정의가 바뀌므로 사용자 검토 때 함께 정한다.**
+### 검토할 것 (사용자용 요약)
 
-### 1.1 왜 기존 통과율로는 안 되는가 (확인한 사실)
+1. 상단 메뉴에 **"통계"**가 생기고, 새 화면 `/stats`가 열립니다. 대시보드 요약 줄에도 "통계 보기 →" 링크가 생깁니다.
+2. 모든 지원은 다섯 가지 중 하나로 셉니다: **서류 통과 / 불합격 / 무응답 / 대기 / 지원취소**.
+3. 서류 통과: 서류합격을 한 번이라도 거친 기록입니다. 그 뒤 불합격이나 지원취소가 되어도 통과로 셉니다.
+4. 무응답: 지원하고 **30일**이 지나도 '지원' 상태인 기록입니다. 30일이 안 됐으면 대기입니다.
+5. **서류 통과율 = 통과 ÷ (통과 + 불합격 + 무응답)**입니다. 대기와 지원취소는 빼고 계산합니다.
+6. 대시보드의 사이트별·이력서별 묶음에 보이는 통과율도 이 정의로 바꿉니다.
+7. 보여 주는 것은 여섯 가지입니다: 요약 카드, 월별·연별 그래프, 서류 버전별, 사이트별, 단계별 흐름(지원 → 서류 → 면접 → 최종), 요일별.
+8. 서류 버전별은 이력서·경력기술서·포트폴리오를 골라서 봅니다. 날짜 버전마다 지원 수와 통과율을 보여 줍니다.
+9. 기간과 사이트로 거를 수 있습니다. 모든 그래프 아래에는 같은 숫자를 담은 표가 있습니다.
+10. 결과가 정해진 기록이 5건 미만이면 비율 대신 "표본 부족", 5~19건이면 "표본 적음"이라고 표시합니다.
+11. 그래프는 외부 라이브러리 없이 직접 그립니다. 새로 설치하는 것이 없습니다.
+12. 입력할 것은 늘지 않습니다. AI 호출과 DB 구조 변경도 없습니다.
+13. 지난 기록은 사용자가 불합격으로 정리했습니다. 그래서 지금은 대략 "서류 통과 9 / 불합격 460, 통과율 약 1.9%"로 보일 것입니다.
+14. 빠진 것: 서류 통과까지 걸린 일수(D-21), 시간대별, 같은 회사 재지원, 적합도별 통계.
+15. 확인할 화면 배치: [와이어프레임](../design/wireframes/stats.html)
 
-- 지금 대시보드의 서류 통과율은 `통과 / 판정`이고, 판정에서 `applied`·`withdrawn`을 뺀다(`src/lib/search/dashboard.ts:118-128`).
-- 실제 데이터 성격: 469건 중 지원 460, 면접 6, 서류합격 1, 지원취소 2. 불합격 기록은 0건이다. 그래서 판정 = 7건 안팎이고 통과율은 거의 늘 100%가 된다. 전략 판단에 쓸 수 없다.
-- 또 현재 상태만 보므로, **서류를 통과한 뒤 지원취소·불합격이 된 기록은 통과로 세지 않는다**(`makeGroup`이 `r.status`만 봄, `dashboard.ts:121-128`). 서류 통과 9건은 상태 이력(`status_events`)에 서류합격 날짜가 있는데, 지금 상태가 면접 6·서류합격 1이므로 나머지 2건은 다른 상태로 바뀐 것으로 **추정**한다.
-- 가져온 기록의 첫 상태 이력 `at`은 실제 날짜가 아니라 가져온 시각이다(`src/lib/applications/repo.ts:121`). [지원 완료]의 첫 이력도 저장 시각이다(`repo.ts:45`). 그래서 "걸린 일수"는 첫 이력을 빼고 계산해야 한다.
+### 1.1 확인한 사실
+
+- 대시보드 묶음 통과율은 past-records Task 6에서 "거친 단계" 기준으로 바뀌었다.
+  - 통과는 서류합격을 거친 기록, 분모는 통과에 서류합격을 거치지 않은 불합격을 더한 수다(`src/lib/search/dashboard.ts` `makeGroup`).
+  - 거친 단계 계산은 `src/lib/applications/stages.ts`의 `reachedStages`다. 지금 상태가 지원이면 빈 집합이다.
+- Task 6 정의에는 무응답이 없다. '지원'으로 남은 기록은 언제까지나 분모에서 빠진다. D-18은 30일 넘은 '지원'을 무응답으로 분모에 넣는다. 이 설계에서 둘을 하나로 합쳤다(1.4).
+- 데이터 성격(2026-11-19, 사용자가 일괄 정리 중이라 대략값)
+  - 지원 기록 469건, 2024-12 ~ 2026-11
+  - 사이트: 원티드 329, 리멤버 70, 잡코리아 53, 그룹바이 17
+  - 서류 통과 9건(상태 이력에 서류합격이 있음). 지금 상태는 면접 6, 서류합격 1, 지원취소 2(서류합격 뒤 취소, **추정**)
+  - 나머지 약 460건은 사용자가 '불합격'으로 일괄 정리했다(D-18). 그래서 지금은 무응답·대기가 거의 0이다. 무응답 규칙은 앞으로 [지원 완료]로 쌓이는 기록에 쓰인다.
+  - 서류 버전: 이력서 3개, 경력기술서 2개, 포트폴리오 2개. 가장 이른 파일보다 앞선 지원은 "모름"이다.
 
 ### 1.2 목표와 범위
 
-**목표**: 지원 기록만으로(추가 입력 없이) "언제·어디에·어떤 서류로 지원했을 때 서류가 잘 통과했는지"를 숫자와 그래프로 본다.
+**목표**: 추가 입력 없이 지원 기록만으로 "언제, 어디에, 어떤 서류로 지원했을 때 서류가 잘 통과했는지"를 숫자와 그래프로 본다.
 
-1. 새 화면 `/stats`(D-19 추천안). 상단 내비게이션에 "통계", 대시보드 요약 줄에 "통계 보기 →".
-2. 지원 결과를 **5가지 결과**로 나누는 공통 규칙(1.3)과, 통과율 2종(1.4).
-3. 1차 범위(D-21 추천안)의 통계 7가지(1.5의 S1~S7).
-4. 그래프는 외부 라이브러리 없이 서버에서 그리는 SVG(D-20 추천안). 모든 그래프 아래에 같은 숫자의 표.
-5. 대시보드 사이트별·이력서별 묶음의 통과율도 같은 정의로 바꾼다(D-18 추천안 c-1).
+1. 새 화면 `/stats`(D-19). 상단 내비게이션 "통계", 대시보드 요약 줄 "통계 보기 →".
+2. 지원 결과 5가지 분류(1.3)와 비율 정의(1.4). 대시보드 묶음 통과율도 같은 정의를 쓴다(D-18).
+3. 통계 6가지: S1 요약 카드, S2 기간별, S3 서류 버전별, S4 사이트별, S5 단계별 흐름, S7 요일별(D-21).
+4. 그래프는 외부 라이브러리 없이 서버에서 그리는 SVG다(D-20). 모든 그래프 아래에 같은 숫자의 표가 있다.
 
 **만들지 않는 것**
 
-- 상태를 일괄로 "불합격"으로 바꾸는 기능, 무응답 기록에 대한 알림·할 일. 기록 부담을 늘리지 않는다(반목표 3장).
-- 시간대별 통계. 정렬용 일시(`applied_datetime`)는 실제 지원 시각이 아닐 수 있다(D-17, 기획서 10장).
-- 포지션 키워드별 통계(키워드 사전이 필요함 → 나중, P3).
-- 무응답 기준 일수(N)를 설정 화면에서 바꾸는 것. 코드 상수로 둔다(D-18).
-- 통계 내보내기(CSV·이미지), 목표치 설정, 예측. AI 분석(`claude` 호출 0회).
-- 스키마 변경. 새 테이블·칸 없음.
+- S6 서류 통과까지 걸린 일수(D-21에서 뺌)
+- S8 같은 회사 재지원, S9 적합도 구간별: 데이터가 쌓인 뒤 다시 검토
+- 시간대별 통계: 정렬용 일시가 실제 지원 시각이 아닐 수 있다(D-17)
+- 포지션 키워드별 통계, 주별 활동량
+- 상태 일괄 변경 기능, 무응답 알림·할 일. 기록 부담을 늘리지 않는다(기획서 3장 반목표).
+- 무응답 기준 일수를 설정 화면에서 바꾸는 것. 코드 상수로 둔다.
+- 통계 내보내기(CSV·이미지), 목표치, 예측, AI 분석(`claude` 호출 0회)
+- 스키마 변경, 새 의존성
 
 ### 1.3 결과 분류 (모든 통계의 바탕)
 
-지원 기록 하나를 아래 순서로 판정한다. "도달 단계"는 **현재 상태와 상태 이력 전체** 중 가장 높은 단계다.
-
-| 도달 단계 `ReachedStage` | 조건 |
-|---|---|
-| `final` | 상태 또는 이력에 `final_passed` |
-| `interview` | 위가 아니고, 상태 또는 이력에 `interview` |
-| `document` | 위가 아니고, 상태 또는 이력에 `document_passed` |
-| `applied` | 그 밖 |
+"서류 통과"는 past-records Task 6의 `reachedStages(status, history)`를 그대로 쓴다.
+- 결과에 `document_passed`가 있으면 통과다.
+- 면접·최종합격은 서류합격을 거친 것으로 본다.
+- 지금 상태가 지원이면 이력이 있어도 거친 것으로 보지 않는다.
 
 | 결과 `Outcome` | 조건 (위에서부터 처음 맞는 것) | 화면 이름 |
 |---|---|---|
-| `passed` | 도달 단계가 `document` 이상 | 서류 통과 |
-| `withdrawn` | 현재 상태 `withdrawn` | 지원취소 |
-| `rejected` | 현재 상태 `rejected` | 불합격 |
-| `pending` | 현재 상태 `applied`이고 지원일부터 오늘까지 N일 미만 | 대기 |
-| `no_response` | 현재 상태 `applied`이고 N일 이상 | 무응답 |
+| `passed` | 거친 단계에 `document_passed`가 있음 | 서류 통과 |
+| `withdrawn` | 지금 상태 `withdrawn` | 지원취소 |
+| `rejected` | 지금 상태 `rejected` | 불합격 |
+| `pending` | 지금 상태 `applied`이고 `daysBetween(appliedAt, today) < 30` | 대기 |
+| `no_response` | 지금 상태 `applied`이고 30일 이상 | 무응답 |
 
-- N = `NO_RESPONSE_DAYS = 30`(D-18 추천). 경계: `daysBetween(appliedAt, today) >= 30`이면 무응답. 지원일 당일은 0일.
-- 서류 통과 뒤 지원취소·불합격이 된 기록은 `passed`다(서류 단계 기준으로는 통과했으므로).
-- 오늘 = `todayLocal(now)`.
+- `NO_RESPONSE_DAYS = 30`(D-18). 지원일 당일은 0일이다. 오늘은 `todayLocal(now)`로 구한다.
+- 서류 통과 뒤 지원취소·불합격이 된 기록은 `passed`다.
 
-### 1.4 비율 정의
+### 1.4 비율 정의 (대시보드와 통계 화면 공통, Task 6 정의를 대체)
 
 | 이름 | 식 | 쓰는 곳 |
 |---|---|---|
-| **서류 통과율** (주 지표) | 통과 ÷ (통과 + 불합격 + 무응답) | 모든 카드·그래프·표, 대시보드 묶음 머리(D-18) |
-| 판정 기준 통과율 (참고) | 통과 ÷ (통과 + 불합격) | 요약 카드 보조 줄, 표의 마지막 열 |
-| 무응답 비율 | 무응답 ÷ (통과 + 불합격 + 무응답) | 요약 카드, 사이트별 표 |
+| **서류 통과율** | 통과 ÷ (통과 + 불합격 + 무응답) | 통계 화면 전체, 대시보드 사이트별·이력서별 묶음 머리 |
+| 판정 기준 통과율 (참고) | 통과 ÷ (통과 + 불합격) | 통계 요약 카드 보조 줄, 표 마지막 열 |
+| 무응답 비율 | 무응답 ÷ (통과 + 불합격 + 무응답) | 통계 요약 카드, 사이트별 표 |
 
-- 분모 = "결과가 정해진 지원"(`sample`). 대기와 지원취소는 분모에서 뺀다. 그래서 이번 달처럼 대기가 많은 기간도 비율이 낮게 왜곡되지 않는다.
-- 표시 형식: `2.1%`(소수 한 자리) 옆에 항상 `9/431`처럼 분자/분모를 쓴다.
-- **표본 수 표시** (`sampleLevel`)
+- 분모는 "결과가 정해진 지원"(`sample`)이다. 대기와 지원취소는 뺀다. 이번 달처럼 대기가 많은 기간도 비율이 낮게 왜곡되지 않는다.
+- Task 6과의 관계: Task 6의 `decided`(통과 + 통과 못 한 불합격)에 무응답을 더한 것이 새 `sample`이다. 무응답이 0이면 두 값이 같다. 지금 데이터가 그렇다.
+- 표시 형식: 비율은 소수 한 자리(`1.9%`)로 쓰고, 옆에 항상 분자/분모(`9/469`)를 함께 쓴다.
 
-| 분모 | 수준 | 비율 칸 표시 | 그래프 |
+**표본 수 표시** (`sampleLevel`, 상수 `MIN_SAMPLE = 5`, `ENOUGH_SAMPLE = 20`)
+
+| 분모 | 수준 | 비율 칸 | 그래프 |
 |---|---|---|---|
-| 0 | `none` | "–" + 보조 글자 "결과 없음" | 막대만(개수) |
-| 1~4 | `few` | 비율 숨김, "표본 부족 (n=3)" | 막대만, 비율 점 없음 |
-| 5~19 | `low` | `12.5% (1/8)` + 회색 "표본 적음" 작은 배지 | 비율 점을 속 빈 원으로 |
-| 20 이상 | `ok` | `2.1% (9/431)` | 비율 점을 채운 원으로 |
+| 0 | `none` | "–" + 보조 글자 "결과 없음" (대시보드 묶음은 "결과 대기") | 막대만 |
+| 1~4 | `few` | 비율 숨김, "표본 부족 (n=3)" | 막대만 |
+| 5~19 | `low` | `12.5% (1/8)` + 회색 "표본 적음" 배지 | 막대 위 숫자를 보조 글자색으로 |
+| 20 이상 | `ok` | `1.9% (9/469)` | 막대 위 숫자 강조색 |
 
-- 상수: `MIN_SAMPLE = 5`, `ENOUGH_SAMPLE = 20`(`src/lib/stats/rates.ts`).
-
-### 1.5 보여줄 통계
+### 1.5 보여줄 통계 (D-21 범위)
 
 기간 기준은 모두 **지원일**(`applied_at`)이다. 필터(기간·사이트)는 모든 통계에 똑같이 적용된다.
 
-| # | 통계 | 우선 | 목적(어떤 판단에 쓰나) | 정의 | 그래프 |
-|---|---|---|---|---|---|
-| S1 | 요약 카드 | P1 | 지금 전체 성적을 한눈에 | 지원 수, 서류 통과 수(보조 줄에 면접·최종합격 도달 수), 서류 통과율(+판정 기준 보조 줄), 무응답 비율, 대기 수, 지원취소 수 | 없음(카드 6개) |
-| S2 | 기간별 지원과 결과 (월별 / 연별) | P1 **(요청)** | 지원량을 늘렸을 때 통과도 늘었는지, 언제 성적이 좋았는지 | 단위(월·년)마다 결과 5종 개수 + 서류 통과율. 기간 안의 첫 달~마지막 달을 빈 달 없이 채움(0건 달도 막대 자리). 이번 달(올해)은 "진행 중" 표시 | 세로 누적 막대(통과·불합격·무응답·대기; 취소는 표에만) + 서류 통과율 점(오른쪽 축 없이 막대 위 숫자). [개수] / [비율](100% 누적) 전환 |
-| S3 | 서류 버전별 지원과 통과율 | P1 **(요청)** | 어느 이력서·경력기술서·포트폴리오 버전이 통과가 잘 됐는지 → 어떤 버전을 계속 쓸지 | 종류 선택 [이력서][경력기술서][포트폴리오]. 묶음 키는 1.6. 묶음마다 지원 수, 통과, 서류 통과율, 그 버전으로 지원한 기간(첫 지원일~마지막 지원일) | 가로 막대(지원 수, 통과 부분 진하게) + 오른쪽 비율 |
-| S4 | 사이트별 | P1 | 어느 사이트에 힘을 줄지 | 사이트마다 지원 수, 통과, 서류 통과율, 무응답 비율. `SITE_IDS` 순서, 0건 사이트는 숨김 | 가로 막대(사이트 색) |
-| S5 | 단계별 깔때기 | P2(1차 포함 추천) | 어느 단계에서 가장 많이 떨어지는지 | 도달 단계 누적: 지원(전체−취소) → 서류 통과 → 면접 → 최종합격. 단계마다 개수와 앞 단계 대비 % | 가로 막대 4줄(단계 색) |
-| S6 | 서류 통과까지 걸린 일수 | P2(1차 포함 추천) | 무응답 기준 N일이 맞는지, 지원 후 얼마나 기다릴지 | 통과 기록 중 "첫 이력을 뺀 이력"에서 처음 나온 `document_passed`·`interview`·`final_passed`의 날짜 − 지원일. 음수는 뺀다. 건수, 중앙값, 최소, 최대, 구간 0~3 / 4~7 / 8~14 / 15~30 / 31일 이상. 날짜가 없는 통과는 "날짜 모름 n건" | 세로 막대 5개(구간) |
-| S7 | 요일별 | P2(1차 포함 추천) | 어느 요일에 지원하면 나은지(참고용) | 지원일의 요일(월~일)별 지원 수, 서류 통과율 | 세로 막대 7개 |
-| S8 | 같은 회사 재지원 | P2(나중 추천) | 떨어진 회사에 다시 지원할 가치가 있는지 | 회사(`company_id`)별 지원일 순으로 첫 지원 / 두 번째 이후로 나눠 각 서류 통과율. 2건 이상 지원한 회사 수 | 표만 |
-| S9 | 적합도 구간별 | P2(나중 추천) | 적합도 몇 점 이상에 지원할지 | 공고 분석이 있는 기록만. 0~49 / 50~69 / 70~84 / 85~100 구간별 서류 통과율. 분석 없는 기록 수 따로 | 가로 막대 |
-| — | 시간대별, 포지션 키워드별, 주별 활동량 | P3(안 함) | — | 정렬용 일시가 실제 시각이 아님(D-17) / 키워드 사전 필요 / 월별로 충분 | — |
+| # | 통계 | 목적 | 정의 | 그래프 |
+|---|---|---|---|---|
+| S1 | 요약 카드 6개 | 지금 전체 성적을 한눈에 | 지원 수, 서류 통과 수(보조 줄: 면접·최종합격을 거친 수), 서류 통과율(보조 줄: 판정 기준), 무응답 비율, 대기 수, 지원취소 수 | 없음 |
+| S2 | 기간별 지원과 결과 (월별 / 연별) **요청** | 지원을 늘렸을 때 통과도 늘었는지, 언제 성적이 좋았는지 | 월·년마다 결과 5종 개수와 서류 통과율을 보인다. 기간의 첫 단위부터 마지막 단위까지 빈칸 없이 채운다(0건도 자리 있음). 오늘이 속한 단위는 "진행 중" | 세로 누적 막대(통과·불합격·무응답·대기, 취소는 표에만) + 막대 위 통과율. [개수]/[비율] 전환 |
+| S3 | 서류 버전별 **요청** | 어느 버전이 통과가 잘 됐는지, 어떤 버전을 계속 쓸지 | 종류 [이력서]/[경력기술서]/[포트폴리오] 중 하나를 고른다. 묶음 규칙은 1.6. 묶음마다 지원 수, 결과 5종, 서류 통과율, 쓴 기간(첫~마지막 지원일) | 가로 막대(길이 = 지원 수, 진한 부분 = 통과) + 비율 |
+| S4 | 사이트별 | 어느 사이트에 힘을 줄지 | 사이트마다 지원 수, 결과 5종, 서류 통과율, 무응답 비율. `SITE_IDS` 순서, 0건 사이트는 숨김 | 가로 막대(사이트 색) |
+| S5 | 단계별 흐름 | 어느 단계에서 가장 많이 떨어지는지 | 지원(전체 − 통과 못 한 지원취소) → 서류 통과 → 면접 → 최종합격을 각각 거친 수. 앞 단계 대비 % | 가로 막대 4줄(단계 색) |
+| S7 | 요일별 | 어느 요일 지원이 나은지(참고용) | 지원일의 요일(월~일)별 지원 수와 서류 통과율. 7칸 항상 | 세로 막대 7개 |
 
-- P1 = 이번 작업 필수. P2 = 데이터로 바로 계산되고 비용이 작음. 포함 여부는 D-21.
-- 현재 데이터 기준 기대 모습(추정): S9는 앱에서 분석한 공고가 적어 대부분 "표본 부족"이 된다. S8도 표본이 작다. 그래서 나중을 추천한다.
+(S6·S8·S9 번호는 비워 둔다. 나중에 다시 넣을 때 같은 번호를 쓴다.)
 
 ### 1.6 서류 버전 묶음 (S3)
 
-- **이력서**: past-records의 대시보드 규칙과 같게 한다(`docs/plans/phase-2-past-records.md:238`).
-  1. 앱의 기본 이력서로 지원(`submitted_resume.kind = 'base'`) → `기본 v{n}`, 버전 번호 내림차순
-  2. 아니면 `submitted_docs.resume` 파일 → `docLabel` 결과(`이력서 2026-11-02`), 날짜 늦은 순
-  3. 둘 다 없음 → "모름" (맨 끝)
-- **경력기술서·포트폴리오**: `submitted_docs.career` / `.portfolio` 파일 → 날짜 늦은 순, 없으면 "모름".
-- 맞춤 이력서(3단계)가 생기면 그 맞춤본의 기준 기본 버전으로 묶는다(화면 문서 1장 이력서별 규칙과 같음). 지금은 해당 기록 없음.
-- "모름" 묶음은 비율을 보여 주되 보조 글자 "버전 파일보다 앞선 지원"을 붙인다.
+- **이력서**: 대시보드 "이력서별" 보기와 같은 규칙이다(`groupDashboardRows('resume')`).
+  1. 앱 기본 이력서로 지원했으면(`submitted_resume.kind = 'base'`) `기본 v{n}`. 버전 번호 내림차순.
+  2. 아니고 `submitted_docs.resume` 파일이 있으면 `docLabel` 결과(`이력서 2026-11-02`). 파일 날짜 늦은 순.
+  3. 둘 다 없으면 "모름". 맨 끝에 둔다.
+- **경력기술서·포트폴리오**: `submitted_docs.career` / `.portfolio` 파일로 묶는다. 날짜 늦은 순, 없으면 "모름".
+- 맞춤 이력서(3단계)가 생기면 그 맞춤본의 기준 기본 버전으로 묶는다(화면 문서 1장과 같음).
+- "모름" 묶음 이름 아래에 보조 글자 "버전 파일보다 앞선 지원"을 붙인다.
 - 해석 주의 문구(S3 카드 아래, 고정): "버전마다 쓴 기간과 사이트가 다릅니다. 기간·사이트 필터로 조건을 맞춰 비교하세요."
 
 ### 1.7 화면 구성 `/stats`
 
-배치는 와이어프레임 [stats.html](../design/wireframes/stats.html) 프레임 S-1~S-4.
+배치는 와이어프레임 [stats.html](../design/wireframes/stats.html) S-1~S-5를 따른다. 동작과 문구는 화면 문서 10장 "통계"에 옮겼다.
 
 ```
 [상단 내비: 대시보드 · 통계 · 공고 등록 · …]
-통계                                   [기간 ▾ 전체] [사이트 ▾ 전체]
-결과 분류 안내 한 줄: "지원 후 30일이 지나도 '지원' 상태면 무응답으로 셉니다. ⓘ 용어 설명"
-
-[지원 469] [서류 통과 9] [서류 통과율 2.0%] [무응답 비율 98.0%] [대기 12] [지원취소 2]
-                          판정 기준 100% (9/9)
-
-┌ 기간별 지원과 결과 ──────────────── [월별|연별]  [개수|비율] ┐
-│ 세로 누적 막대 + 막대 위 통과율                               │
-│ 범례: ■통과 ■불합격 ■무응답 □대기                             │
-│ ▸ 표로 보기 (details)                                         │
-└───────────────────────────────────────────────────────────────┘
-┌ 서류 버전별 [이력서|경력기술서|포트폴리오] ┐ ┌ 사이트별 ────────┐
-│ 가로 막대 + 표                             │ │ 가로 막대 + 표   │
-│ 해석 주의 문구                             │ │                  │
-└────────────────────────────────────────────┘ └──────────────────┘
-┌ 단계별 깔때기 ┐ ┌ 서류 통과까지 걸린 일수 ┐ ┌ 요일별 ┐       (P2)
-└───────────────┘ └─────────────────────────┘ └────────┘
-▸ 용어 설명 (details): 결과 5종, 통과율 2종, 표본 수 표시
+통계                                         [기간 ▾ 전체] [사이트 ▾ 전체]
+"지원 후 30일이 지나도 '지원' 상태인 기록은 무응답으로 셉니다. 기간은 지원일 기준입니다."
+[지원] [서류 통과] [서류 통과율] [무응답 비율] [대기] [지원취소]
+┌ 기간별 지원과 결과 ─────────── [월별|연별] [개수|비율] ┐
+│ 세로 누적 막대 + 막대 위 통과율, 범례, ▸ 표로 보기       │
+└──────────────────────────────────────────────────────────┘
+┌ 서류 버전별 [이력서|경력기술서|포트폴리오] ┐ ┌ 사이트별 ┐
+└────────────────────────────────────────────┘ └──────────┘
+┌ 단계별 흐름 ┐ ┌ 요일별 ┐
+└─────────────┘ └────────┘
+▸ 용어 설명
 ```
 
 **필터·전환 (모두 주소에 남김)**
 
 | 요소 | 값 | 주소 |
 |---|---|---|
-| `[기간 ▾]` | 전체 / 최근 3개월 / 최근 1년 / 직접 지정(시작일~종료일). 대시보드의 "이번 달"은 통계에 의미가 적어 뺀다 | `?period=3m\|1y\|custom&from=&to=` (기본 전체는 생략) |
+| `[기간 ▾]` | 전체 / 최근 3개월 / 최근 1년 / 직접 지정(시작일~종료일) | `?period=3m\|1y\|custom&from=&to=` (전체는 생략) |
 | `[사이트 ▾]` | 전체 / 리멤버 / 원티드 / 그룹바이 / 잡코리아 / 기타 | `?site=` |
-| `[월별 \| 연별]` | S2 단위 | `?unit=year` (기본 월별 생략) |
-| `[개수 \| 비율]` | S2 막대 모양 | `?mode=ratio` (기본 개수 생략) |
-| `[이력서 \| 경력기술서 \| 포트폴리오]` | S3 종류 | `?doc=career\|portfolio` (기본 이력서 생략) |
+| `[월별 \| 연별]` | S2 단위 | `?unit=year` (월별은 생략) |
+| `[개수 \| 비율]` | S2 막대 모양 | `?mode=ratio` (개수는 생략) |
+| `[이력서 \| 경력기술서 \| 포트폴리오]` | S3 종류 | `?doc=career\|portfolio` (이력서는 생략) |
 
-- 전환은 링크(`statsHref`)로 한다. 클라이언트 상태를 두지 않는다. 필터는 `StatsFilters`(클라이언트, 선택 즉시 `router.replace`).
-- 사이트 필터가 걸리면 S4 카드는 그 사이트 한 줄만 보이고 제목 옆에 "사이트 필터 적용 중".
-- 상태 필터와 검색어는 두지 않는다(통계는 결과 전체를 나눠 보는 것이라 상태 필터와 맞지 않음).
+- 전환 버튼은 링크(`statsHref`)다. 필터 선택은 `StatsFilters`(클라이언트)가 바로 `router.replace`로 반영한다.
+- 상태 필터와 검색어는 두지 않는다. 상태로 거르면 통과율이 0% 아니면 100%가 되기 때문이다.
+- 사이트 필터가 걸리면 S4는 그 사이트 한 줄만 보이고, 제목 옆에 "사이트 필터 적용 중" 배지를 단다.
 
-**요약 카드 문구 (S1)**
+**요약 카드 문구 (S1)**. 숫자는 예시다: 앞으로 12건을 더 지원했다고 가정했다. 지원 481 = 통과 9 + 불합격 460 + 무응답 0 + 대기 12 + 취소 0.
 
-| 카드 | 큰 숫자 | 아래 보조 줄 |
+| 카드 | 큰 숫자 | 보조 줄 |
 |---|---|---|
-| 지원 | `469` | `2024-12 ~ 2026-11` (필터 기간 안의 첫·마지막 지원월) |
+| 지원 | `481` | `2024-12 ~ 2026-12`(필터 안 첫·마지막 지원월) |
 | 서류 통과 | `9` | `면접 6 · 최종합격 0` |
-| 서류 통과율 | `2.0%` | `9 / 455 · 판정 기준 100% (9/9)` — 판정 기준은 분모 5 미만이면 "판정 기준: 표본 부족" |
-| 무응답 비율 | `98.0%` | `지원 후 30일 넘게 '지원' 상태` |
+| 서류 통과율 | `1.9%` | `9 / 469 · 판정 기준 1.9% (9/469)`. 판정 기준 분모가 5 미만이면 "판정 기준: 표본 부족" |
+| 무응답 비율 | `0.0%` | `지원 후 30일 넘게 '지원' 상태` |
 | 대기 | `12` | `지원 후 30일 안 됨` |
-| 지원취소 | `2` | `통과율 계산에서 뺌` |
+| 지원취소 | `0` | `통과율 계산에서 뺌` |
 
-(숫자는 예시: 지원 469 = 통과 9 + 불합격 0 + 무응답 446 + 대기 12 + 취소 2, 분모 455. 면접·최종합격 도달 수는 서류 통과 카드 보조 줄에 둔다.)
-
-**표 (S2 "표로 보기", S3·S4는 늘 보임)** 열: 기간(또는 버전·사이트) / 지원 / 통과 / 불합격 / 무응답 / 대기 / 취소 / 서류 통과율 / 판정 기준. 비율 칸은 1.4 표본 규칙대로.
+**표**: S2는 "표로 보기"를 펼치면 나오고, S3·S4·S5·S7은 늘 보인다. 열은 다음과 같다.
+- 이름(기간·버전·사이트·요일) / 지원 / 통과 / 불합격 / 무응답 / 대기 / 취소 / 서류 통과율 / 판정 기준
+- S5는 단계 / 거친 수 / 앞 단계 대비
 
 **상황별 표시**
 
 | 상황 | 표시 |
 |---|---|
-| 지원 기록이 하나도 없음 | 카드·그래프 대신 "아직 지원 기록이 없습니다. 지원 기록이 쌓이면 여기에 통계가 보입니다." + `[공고 등록]` + "이미 지원한 내역이 있다면 → 가져오기" |
+| 지원 기록이 하나도 없음 | "아직 지원 기록이 없습니다. 지원 기록이 쌓이면 여기에 통계가 보입니다." + `[공고 등록]` + "이미 지원한 내역이 있다면 → 가져오기" |
 | 필터 결과 0건 | "이 기간·사이트에 지원 기록이 없습니다." + `[필터 지우기]`(→ `/stats`) |
-| 서류 통과가 0건 | 카드 아래 안내 한 줄: "서류합격·면접 연락을 받았다면 대시보드에서 상태를 바꿔 주세요. 통계가 정확해집니다." (링크 없음, 강요하지 않음) |
-| 분모가 1~4 / 5~19 | 1.4 표본 규칙 |
-| S6 통과 날짜가 하나도 없음 | "서류 통과 날짜가 있는 기록이 없습니다." |
-| S3 선택한 종류의 파일 기록이 하나도 없음 | 묶음 "모름" 한 줄 + "이 종류의 제출 서류 기록이 없습니다" |
-| 이번 달·올해 막대 | x축 이름 옆 "(진행 중)", 대기 부분이 많을 수 있음을 범례 아래 작은 글자로 |
+| 서류 통과 0건 | 카드 아래 한 줄: "서류합격·면접 연락을 받았다면 대시보드에서 상태를 바꿔 주세요. 통계가 정확해집니다." |
+| 분모 0 / 1~4 / 5~19 | 1.4 표본 규칙 |
+| S3에서 고른 종류의 파일 기록이 없음 | "모름" 묶음 한 줄 + "이 종류의 제출 서류 기록이 없습니다" |
+| 오늘이 속한 달·해 | x축 이름 아래 "(진행 중)" |
 
 **대시보드 변경**
 
-- 요약 줄 오른쪽 "분석한 공고 N건 보기 →" 옆에 "통계 보기 →"(`/stats`, 대시보드의 기간·사이트 필터를 그대로 넘김. `period=month`면 넘기지 않음).
-- 사이트별·이력서별 묶음 머리의 통과율을 1.4 "서류 통과율"로 바꾸고 문구를 `서류 통과 9 / 455 · 2.0%`로(D-18 c-1). 분모 0이면 "결과 대기" 유지, 1~4면 "표본 부족".
+- 요약 줄 "분석한 공고 N건 보기 →" 옆에 "통계 보기 →"를 둔다.
+  - 대시보드의 사이트 필터와 기간 필터를 넘긴다.
+  - 기간이 "이번 달"이면 기간은 넘기지 않는다. 통계 화면에는 "이번 달"이 없다.
+- 사이트별·이력서별 묶음 머리에는 `서류 통과 9 / 469 · 1.9%`를 쓴다(1.4 표본 규칙 적용). 분모가 0이면 "결과 대기".
 
-### 1.8 그래프 색 (디자인 B 토큰 사용)
+### 1.8 그래프 색 (디자인 B 토큰)
 
 | 계열 | 색 | 근거 |
 |---|---|---|
-| 서류 통과 | 하늘 `#0369A1` | 상태 색 "서류합격"(design.md 4장) |
-| 면접 (깔때기) | 코발트 `#2342C8` | 상태 색 "면접" |
-| 최종합격 (깔때기) | 초록 `#15803D` | 상태 색 "최종합격" |
+| 서류 통과 | 하늘 `#0369A1` | 상태 색 "서류합격" |
+| 면접 (흐름) | 코발트 `#2342C8` | 상태 색 "면접" |
+| 최종합격 (흐름) | 초록 `#15803D` | 상태 색 "최종합격" |
+| 지원 (흐름 첫 줄) | 회색 `#5B6475` | 상태 색 "지원" |
 | 불합격 | 흐린 회색 `#98A0AE` | 상태 색 "불합격" |
-| 무응답 | **새 토큰** 연회색 `#D5D9E1` | 불합격과 구분되는 더 옅은 회색. 큰 면적을 차지하므로 눈에 덜 띄어야 함 |
-| 대기 | 흰 면 + 회색 `#5B6475` 1px 점선 테두리 | 아직 결과가 아님을 모양으로 |
-| 지원 (깔때기 첫 줄) | 회색 `#5B6475` | 상태 색 "지원" |
-| 서류 통과율 점·숫자 | 코발트 `#2342C8` | 강조 색 |
-| 사이트별 막대 | 사이트 색(design.md 3장) | 다른 화면과 같은 색 = 같은 사이트 |
-| 서류 버전·요일·일수 막대 | 코발트 `#2342C8`(통과 부분) + 연회색 `#D5D9E1`(나머지) | 범주에 의미 있는 색이 없으므로 단색 |
+| 무응답 | **새 토큰** 연회색 `#D5D9E1` | 불합격과 구분되는 더 옅은 회색 |
+| 대기 | 흰 면 + `#5B6475` 1px 점선 테두리 | 아직 결과가 아님을 모양으로 |
+| 막대 위 통과율 숫자 | 코발트 `#2342C8` (표본 적음이면 보조 글자 `#5B6475`) | 강조 색 |
+| 사이트별 막대 | 사이트 색 | 다른 화면과 같은 사이트 = 같은 색 |
+| 서류 버전·요일 막대 | 통과 부분 하늘 `#0369A1`, 나머지 연회색 `#D5D9E1` | 범주에 의미 있는 색이 없음 |
 
-- 색만으로 구분하지 않는다. 범례 + 표가 항상 있고, 대기는 점선 테두리로 모양이 다르다. 막대에 SVG `<title>`로 "2026-10 · 통과 2 · 불합격 0 · 무응답 31 · 대기 0"을 넣어 마우스를 올리면 보인다.
-- 숫자는 고정폭 숫자(design.md 2장).
+- 색만으로 구분하지 않는다. 범례와 표가 늘 함께 있고, 대기는 점선 테두리로 모양부터 다르다.
+- 막대마다 SVG `<title>`을 단다(예: "2026-10 · 통과 1 · 불합격 41 · 무응답 0 · 대기 0"). 마우스를 올리면 보인다.
+- 숫자는 고정폭 숫자로 쓴다.
 
-### 1.9 데이터·함수 변경
+### 1.9 데이터·함수
 
-스키마 변경 없음. 새 폴더 `src/lib/stats/`(화면 없이 테스트 가능, `lib`은 `app`을 import하지 않음).
+스키마 변경은 없다. 함수 시그니처와 Steps는 계획 [phase-2-stats.md](../plans/phase-2-stats.md)에 있다. 요약:
 
-```ts
-// src/lib/domain/dates.ts (추가)
-/** 두 YYYY-MM-DD 사이의 일수(to - from). 날짜만 비교하므로 시간대 영향 없음. */
-export function daysBetween(from: string, to: string): number;
-/** YYYY-MM-DD의 요일. 0=월 … 6=일 */
-export function weekdayMon0(date: string): number;
-
-// src/lib/stats/outcome.ts
-export const NO_RESPONSE_DAYS = 30;
-export type ReachedStage = 'applied' | 'document' | 'interview' | 'final';
-export type Outcome = 'passed' | 'rejected' | 'no_response' | 'pending' | 'withdrawn';
-export function reachedStage(status: ApplicationStatus, eventStatuses: ApplicationStatus[]): ReachedStage;
-export function classifyOutcome(
-  input: { status: ApplicationStatus; appliedAt: string; reached: ReachedStage },
-  today: string,
-  noResponseDays?: number, // 기본 NO_RESPONSE_DAYS
-): Outcome;
-/** 첫 이력(생성 이력)을 뺀 이력 중 처음 통과 단계가 된 날짜(YYYY-MM-DD). 없으면 null */
-export function firstPassDate(events: { id: number; status: ApplicationStatus; at: string }[]): string | null;
-
-// src/lib/stats/rates.ts
-export const MIN_SAMPLE = 5;
-export const ENOUGH_SAMPLE = 20;
-export type Tally = {
-  total: number; passed: number; rejected: number; noResponse: number; pending: number; withdrawn: number;
-  sample: number;              // passed + rejected + noResponse
-  passRate: number | null;     // sample 0 이면 null
-  decidedRate: number | null;  // passed + rejected 0 이면 null
-  noResponseRate: number | null;
-  sampleLevel: 'none' | 'few' | 'low' | 'ok';
-};
-export function tally(outcomes: Outcome[]): Tally;
-export function sampleLevel(n: number): Tally['sampleLevel'];
-/** "2.1%" 또는 null(표본 부족·없음). 화면 문구 조립은 컴포넌트에서 */
-export function formatRate(rate: number | null, n: number): string | null;
-
-// src/lib/stats/load.ts
-export type StatItem = {
-  applicationId: number; companyId: number; site: SiteId; appliedAt: string;
-  reached: ReachedStage; outcome: Outcome; firstPassDate: string | null;
-  baseVersionNo: number | null;
-  docs: { resume: string | null; career: string | null; portfolio: string | null };
-  fitScore: number | null; // P2 S9용. S9를 안 하면 빼도 됨
-};
-export type StatsQuery = { site?: SiteId; from?: string; to?: string };
-/** applications 1회 + status_events 1회 + resume_versions 1회(+ analyses 1회) 읽어 조립. 기간은 지원일 기준 */
-export function loadStatItems(q: StatsQuery, now?: Date, db?: Db): StatItem[];
-
-// src/lib/stats/aggregate.ts (전부 순수 함수)
-export type PeriodBucket = { key: string; label: string; partial: boolean; tally: Tally };
-export function byPeriod(items: StatItem[], unit: 'month' | 'year', range: { from?: string; to?: string }, today: string): PeriodBucket[];
-export type DocKind = 'resume' | 'career' | 'portfolio';
-export type DocBucket = { key: string; label: string; firstApplied: string | null; lastApplied: string | null; tally: Tally };
-export function byDocVersion(items: StatItem[], kind: DocKind): DocBucket[];
-export function bySite(items: StatItem[]): { site: SiteId; tally: Tally }[];
-export function funnel(items: StatItem[]): { stage: 'applied' | 'document' | 'interview' | 'final'; count: number; ofPrev: number | null }[];
-export function daysToPass(items: StatItem[]): {
-  count: number; unknown: number; median: number | null; min: number | null; max: number | null;
-  buckets: { key: '0-3' | '4-7' | '8-14' | '15-30' | '31+'; count: number }[];
-};
-export function byWeekday(items: StatItem[]): { weekday: number; label: string; tally: Tally }[];
-export type StatsData = {
-  isEmptyAll: boolean; // 필터와 관계없이 지원 기록 0건
-  firstMonth: string | null; lastMonth: string | null;
-  summary: Tally & { interview: number; final: number };
-  periods: PeriodBucket[]; docs: DocBucket[]; sites: ...; funnel: ...; days: ...; weekdays: ...;
-};
-export function getStats(q: StatsQuery & { unit: 'month' | 'year'; doc: DocKind }, now?: Date, db?: Db): StatsData;
-
-// src/lib/stats/params.ts
-export type StatsParams = { period: 'all' | '3m' | '1y' | 'custom'; from?: string; to?: string; site?: SiteId;
-  unit: 'month' | 'year'; mode: 'count' | 'ratio'; doc: DocKind };
-export function parseStatsParams(sp: Record<string, string | string[] | undefined>): StatsParams;
-export function statsHref(p: Partial<StatsParams>): string; // 기본값은 생략
-export function toStatsQuery(p: StatsParams, now?: Date): StatsQuery; // periodRange 재사용
-
-// src/lib/stats/chart-scale.ts
-/** 축 최대값을 1·2·5×10^k 단위로 올림. 0이면 1 */
-export function niceMax(n: number): number;
-/** 0~max를 count칸(기본 4)으로 나눈 눈금 */
-export function ticks(max: number, count?: number): number[];
-```
-
-- 이력서 버전 라벨은 past-records의 `docLabel`(`src/lib/documents/files.ts`)을 쓴다. 날짜 늦은 순 정렬은 `parseDocFileName`의 날짜로.
-- `byPeriod`: `range.from`이 없으면 items의 가장 이른 지원월부터, `range.to`가 없으면 오늘이 속한 달까지. 0건 달도 넣는다. `partial` = 그 단위가 오늘을 포함.
-- 대시보드(D-18 c-1): `DashboardGroup`의 `passed`·`decided`를 `tally: Tally`로 바꾼다. `searchApplications`는 상태 이력을 읽지 않으므로, `groupDashboardRows` 호출 전에 `loadReachedStages(applicationIds, db?): Map<number, ReachedStage>`(load.ts)로 도달 단계를 받아 `classifyOutcome`에 넘긴다. 시그니처: `groupDashboardRows(rows, by, ctx: { reached: Map<number, ReachedStage>; today: string })`.
-- 성능: 469건 + 이력 수백 건을 메모리에서 집계. 요청당 쿼리 4회 이하. 인덱스 추가 불필요(추정, 1000건 단위까지 문제 없음).
-
-**화면 파일** (한 화면 전용이므로 `src/app/stats/`)
-
-| 파일 | 종류 | 내용 |
-|---|---|---|
-| `src/app/stats/page.tsx` | 서버 | `parseStatsParams` → `getStats` → 배치 |
-| `src/app/stats/StatsFilters.tsx` | 클라이언트 | 기간·사이트 선택, 직접 지정 날짜 |
-| `src/app/stats/SummaryCards.tsx` | 서버 | S1 |
-| `src/app/stats/RateText.tsx` | 서버 | 1.4 표본 규칙대로 비율 문구 |
-| `src/app/stats/StackedBarChart.tsx` | 서버(SVG) | S2. props: `buckets`, `mode` |
-| `src/app/stats/HBarChart.tsx` | 서버(SVG) | S3·S4·S5. props: `rows: {label, total, highlight, color?, rate}` |
-| `src/app/stats/ColumnChart.tsx` | 서버(SVG) | S6·S7 |
-| `src/app/stats/StatsTable.tsx` | 서버 | 공용 표 |
-| `src/app/_components/Nav.tsx` | 수정 | `LINKS`에 `{ href: "/stats", label: "통계" }`를 대시보드 다음에 |
-| `src/app/page.tsx`, `src/app/_components/DashboardViews.tsx` | 수정 | "통계 보기 →", 묶음 통과율(D-18 c-1) |
-
-- SVG는 `viewBox`로 그려 너비에 맞춰 늘어나게 한다. 클라이언트 JS 없음. 애니메이션 없음.
+- `src/lib/domain/dates.ts`: `daysBetween(from, to)`, `weekdayMon0(date)` 추가
+- `src/lib/applications/repo.ts`: `listReachedHistory(db?)`. `dashboard.ts`의 비공개 `readReached`를 옮겨 공개하고, 대시보드와 통계가 같이 쓴다.
+- `src/lib/stats/outcome.ts`: `NO_RESPONSE_DAYS`, `Outcome`, `classifyOutcome`
+- `src/lib/stats/rates.ts`: `Tally`, `tally`, `sampleLevel`, `formatPercent`
+- `src/lib/stats/load.ts`: `StatItem`, `loadStatItems`, `getStats`(DB 읽기)
+- `src/lib/stats/aggregate.ts`: `byPeriod`, `byDocVersion`, `bySite`, `funnel`, `byWeekday`(순수)
+- `src/lib/stats/params.ts`: `parseStatsParams`, `statsHref`, `toStatsQuery`
+- `src/lib/stats/chart-scale.ts`: `niceMax`, `ticks`
+- `src/lib/search/dashboard.ts`: `DashboardGroup`의 `passed`·`decided`를 `tally: Tally`로 바꾼다. `groupDashboardRows(rows, by, today)`.
+- 화면: `src/app/stats/*`(page, StatsFilters, SummaryCards, StackedBarChart, HBarChart, ColumnChart, StatsTable)
+  - `src/app/_components/RateText.tsx`: 대시보드와 통계가 같이 쓴다.
+  - `Nav.tsx`, `src/app/page.tsx`, `DashboardViews.tsx`를 고친다.
 
 ### 1.10 테스트 케이스
 
 | ID | 대상 | 기대 결과 |
 |---|---|---|
-| TC-STATS-01 | `reachedStage` | 이력에 서류합격이 있고 지금 지원취소 → `document`. 면접 뒤 불합격 → `interview`. 이력·상태 모두 지원 → `applied`. 최종합격 → `final` |
-| TC-STATS-02 | `classifyOutcome` | 지원 29일 → `pending`, 30일 → `no_response`, 지원 당일 → `pending`. 통과 뒤 지원취소 → `passed`. 통과 없는 지원취소 → `withdrawn`, 불합격 → `rejected`. `noResponseDays` 인자로 경계가 바뀜 |
-| TC-STATS-03 | `firstPassDate` | 첫(가장 작은 id) 이력이 면접이어도 무시. 둘째 이력의 서류합격 날짜. ISO 시각 `at`은 로컬 날짜로(`eventDate`). 통과 이력 없으면 null |
-| TC-STATS-04 | `tally`·`sampleLevel`·`formatRate` | 통과 2·불합격 1·무응답 7·대기 3·취소 1 → sample 10, passRate 0.2, decidedRate 0.667, total 14. sample 0/4/5/19/20 → none/few/low/low/ok. few·none이면 `formatRate` null, 0.0213 → "2.1%" |
-| TC-STATS-05 | `daysBetween`·`weekdayMon0` | 2026-02-28→03-01 = 1, 2024-02-28→03-01 = 2(윤년), 같은 날 0. 2026-11-16 = 0(월), 2026-11-22 = 6(일) |
-| TC-STATS-06 | `byPeriod` 월 | 2026-01, 2026-03에만 기록 → 01·02·03 세 칸, 02는 total 0. 오늘이 속한 달 `partial` true. range.from/to 적용 |
-| TC-STATS-07 | `byPeriod` 년 | 2024·2025·2026 세 칸, 올해만 `partial` |
-| TC-STATS-08 | `byDocVersion('resume')` | 기본 v2 → 기본 v1 → 이력서 2026-11-02 → 이력서 2026-09-05 → 모름 순. first/lastApplied 맞음. 'career'는 파일만 보고 기본 버전은 무시 |
-| TC-STATS-09 | `bySite` | `SITE_IDS` 순서, 0건 사이트 없음, 기타 포함 |
-| TC-STATS-10 | `funnel` | 취소(통과 없음) 제외한 지원 ≥ 서류 ≥ 면접 ≥ 최종, `ofPrev`는 앞 단계 대비 비율, 앞 단계 0이면 null |
-| TC-STATS-11 | `daysToPass` | 날짜 없는 통과는 `unknown`, 음수 제외, 중앙값 홀수·짝수(짝수는 두 값 평균), 구간 경계 3/4, 7/8, 14/15, 30/31 |
-| TC-STATS-12 | `byWeekday` | 월~일 7칸 항상, 라벨 "월"~"일" |
-| TC-STATS-13 | `loadStatItems`(임시 DB) | 기간·사이트 필터가 지원일 기준으로 적용. `submitted_docs` 읽음. 서류합격→지원취소 기록이 `passed`. 가져온 기록의 첫 이력 시각은 `firstPassDate`에 안 쓰임 |
-| TC-STATS-14 | `getStats`(임시 DB) | 기록 0건 → `isEmptyAll` true. 필터 결과 0건이지만 전체는 있음 → false, summary.total 0 |
-| TC-STATS-15 | `parseStatsParams`·`statsHref`·`toStatsQuery` | 잘못된 값은 기본값, 기본값은 주소에서 생략, custom이 아니면 from/to 무시, `period=month`는 `all`로 |
-| TC-STATS-16 | `niceMax`·`ticks` | 0→1, 7→10, 13→20, 46→50, 329→500. ticks(20,4) = [0,5,10,15,20] |
-| TC-STATS-17 | 대시보드 묶음(D-18 c-1) | `groupDashboardRows`가 새 정의로 tally. 통과 뒤 지원취소가 통과로 셈. 기존 `tests/search.test.ts`의 통과율 기대값을 새 정의로 고침 |
-| TC-STATS-E2E-01 | 화면 | 내비 "통계" → `/stats`, 요약 카드 6개와 S2 그래프·표가 보임 |
-| TC-STATS-E2E-02 | 전환 | [연별] 누르면 주소 `unit=year`, 표 행이 연 단위. [비율] 누르면 `mode=ratio` |
-| TC-STATS-E2E-03 | 필터 | 사이트 원티드 → 모든 카드 숫자가 원티드 기록만, S4 한 줄 + "사이트 필터 적용 중" |
-| TC-STATS-E2E-04 | 빈 상태 | 기록 0건 DB → 빈 상태 문구와 [공고 등록]. 필터 0건 → [필터 지우기] |
+| TC-STATS-01 | `classifyOutcome` | 지원 29일 → `pending`, 30일 → `no_response`, 당일 → `pending`. 통과 뒤 지원취소·불합격 → `passed`. 통과 없는 지원취소 → `withdrawn`, 불합격 → `rejected`. 세 번째 인자로 경계가 바뀜 |
+| TC-STATS-02 | `tally`·`sampleLevel`·`formatPercent` | 통과 2·불합격 1·무응답 7·대기 3·취소 1 → total 14, sample 10, passRate 0.2, decidedRate 2/3. 분모 0/4/5/19/20 → none/few/low/low/ok. 0.01918 → "1.9%" |
+| TC-STATS-03 | `daysBetween`·`weekdayMon0` | 2026-02-28→03-01 = 1, 2024-02-28→03-01 = 2, 같은 날 0. 2026-11-16 → 0(월), 2026-11-22 → 6(일) |
+| TC-STATS-04 | `byPeriod` 월 | 2026-01·03에만 기록 → 01·02·03 세 칸(02는 0건). 오늘이 속한 달만 `partial`. range 적용 |
+| TC-STATS-05 | `byPeriod` 년 | 2024·2025·2026 세 칸, 올해만 `partial` |
+| TC-STATS-06 | `byDocVersion` | resume: 기본 v2 → 기본 v1 → 이력서 2026-11-02 → 이력서 2026-09-05 → 모름. first/lastApplied 맞음. career: 파일만 보고 기본 버전은 무시 |
+| TC-STATS-07 | `bySite` | `SITE_IDS` 순서, 0건 사이트 없음, 기타 포함 |
+| TC-STATS-08 | `funnel` | 지원 = 전체 − 통과 못 한 지원취소. 지원 ≥ 서류 ≥ 면접 ≥ 최종. `ofPrev`는 앞 단계 0이면 null |
+| TC-STATS-09 | `byWeekday` | 월~일 7칸 항상, 라벨 "월"~"일" |
+| TC-STATS-10 | `loadStatItems`(임시 DB) | 기간·사이트가 지원일 기준으로 적용. `submitted_docs` 읽음. 서류합격 → 지원취소 기록이 `passed`. 지원으로 되돌린 기록은 통과 아님 |
+| TC-STATS-11 | `getStats`(임시 DB) | 기록 0건 → `isEmptyAll` true. 필터 결과만 0건 → false, `summary.total` 0 |
+| TC-STATS-12 | `parseStatsParams`·`statsHref`·`toStatsQuery` | 잘못된 값 → 기본값, 기본값은 주소에서 생략, custom이 아니면 from/to 무시, `period=month` → `all` |
+| TC-STATS-13 | `niceMax`·`ticks` | 0→1, 7→10, 13→20, 46→50, 329→500. ticks(20) = [0,5,10,15,20] |
+| TC-STATS-14 | 대시보드 묶음 통과율 | `groupDashboardRows(rows, 'site', today)`의 tally. 서류합격 뒤 불합격 = 통과, 30일 넘은 지원 = 무응답(분모 포함), 30일 안 된 지원·지원취소는 분모 제외. 기존 TC-PAST-54 기대값을 새 tally로 고침 |
+| TC-STATS-E2E-01 | 화면 | 내비 "통계" → `/stats`, 카드 6개, S2 그래프와 "표로 보기" |
+| TC-STATS-E2E-02 | 전환 | [연별] → `unit=year`, 표 행이 연 단위. [비율] → `mode=ratio` |
+| TC-STATS-E2E-03 | 사이트 필터 | 원티드 → 카드 숫자가 원티드 기록만, S4 한 줄 + "사이트 필터 적용 중" |
+| TC-STATS-E2E-04 | 빈 상태 | 0건 DB → 빈 상태 문구·[공고 등록]. 필터 0건 → [필터 지우기] |
 | TC-STATS-E2E-05 | 서류 종류 | [경력기술서] → `doc=career`, 묶음이 경력기술서 파일 기준 |
-| TC-STATS-E2E-06 | 표본 표시 | 분모 3인 묶음은 "표본 부족 (n=3)", 분모 8은 "표본 적음" 배지 |
-| TC-STATS-E2E-07 | 대시보드 연결 | 대시보드 "통계 보기 →"가 사이트·기간 필터를 넘김 |
-| TC-STATS-M1 | 실제 데이터(수동) | 전체 지원 합 = 469, 사이트 합 = 원티드 329·리멤버 70·잡코리아 53·그룹바이 17, 서류 통과 = 9(상태 이력 기준). 메인 세션이 읽기 전용으로 확인 |
+| TC-STATS-E2E-06 | 표본 표시 | 분모 3 → "표본 부족 (n=3)", 분모 8 → "표본 적음" 배지 |
+| TC-STATS-E2E-07 | 대시보드 연결 | "통계 보기 →"가 사이트·기간을 넘김(이번 달은 안 넘김), 사이트별 묶음 머리 문구 `서류 통과 k / n · x.x%` |
+| TC-STATS-M1 | 실제 데이터(수동, 일괄 정리 뒤) | 전체 469(그 뒤 새 지원은 더함). 사이트 원티드 329·리멤버 70·잡코리아 53·그룹바이 17. 서류 통과 9, 면접 거침 6, 불합격 약 460, 무응답·대기 0(새 지원 제외), 서류 통과율 약 1.9%(9/469). 대시보드 사이트별 묶음 통과 수 합 = 9 |
 
-- E2E 시드는 기존 e2e 시드 방식을 따르고, 지원일을 `now` 기준 상대 날짜로 만들어 대기/무응답이 날짜에 흔들리지 않게 한다.
+- E2E 시드의 지원일은 `now` 기준 상대 날짜로 만든다. 그래야 실행 날짜에 따라 대기·무응답이 흔들리지 않는다.
 
-### 1.11 구현 순서 (계획 문서로 옮길 Task 초안)
+### 1.11 구현 순서
 
-| Task | 내용 | 파일 | 테스트 |
-|---|---|---|---|
-| 1 | 날짜 도우미, 결과 분류, 비율 | `domain/dates.ts`, `stats/outcome.ts`, `stats/rates.ts` | TC-STATS-01~05 |
-| 2 | 읽기·집계·주소·축 | `stats/load.ts`, `stats/aggregate.ts`, `stats/params.ts`, `stats/chart-scale.ts` | 06~16 |
-| 3 | `/stats` 화면, SVG 그래프 3종, 내비 | `src/app/stats/*`, `Nav.tsx` | E2E-01~06 |
-| 4 | 대시보드 연결과 통과율 통일(D-18 c-1) | `search/dashboard.ts`, `page.tsx`, `DashboardViews.tsx`, `tests/search.test.ts` | 17, E2E-07 |
+계획 [phase-2-stats.md](../plans/phase-2-stats.md)의 Task 1~4.
 
-- 크기: 보통(D-21 추천 범위 기준). 브랜치 `feat/stats-dashboard`, past-records 병합 뒤.
-- 실제 `claude` 호출 0회.
-
-### 1.12 다른 문서에 옮길 변경 (메인 세션용)
-
-past-records 작업이 끝난 뒤, D-18~D-21 답을 반영해서 옮긴다.
-
-| 문서 | 절 | 바꿀 내용 |
+| Task | 내용 | 테스트 |
 |---|---|---|
-| `docs/spec/product.md` | 3장 목표 | "지원 기록만으로 서류 통과율을 기간·사이트·서류 버전별로 본다" 한 줄 |
-| `docs/spec/product.md` | 7.2 끝 또는 새 7.10 "통계" | 1.3 결과 분류, 1.4 비율 정의, 1.5 통계 목록(D-21 범위), 무응답 N일(D-18) |
-| `docs/spec/product.md` | 12장 화면 구성, 14장 구현 단계 | `/stats` 추가, 단계 위치(D-19, 마일스톤 순서는 status.md) |
-| `docs/spec/screens.md` | 0.1 화면 목록, 0.2 화면 이동, 0.3 내비 | "통계 `/stats`" 행, 대시보드 → 통계 링크, 내비 항목 |
-| `docs/spec/screens.md` | 1장 보기 전환 아래 통과율 정의 문단 | 1.4 "서류 통과율" 정의로 교체, 표본 부족 표시, 요약 줄 "통계 보기 →" |
-| `docs/spec/screens.md` | 새 절 "통계 `/stats`" | 1.7 전체(필터·전환·카드 문구·표·상황별 표시) |
-| `docs/spec/screens.md` | 10장 단계별 화면 | 통계가 생기는 단계 |
-| `docs/spec/architecture.md` | `src/lib/` 폴더 표, `src/app/` 화면 표 | `lib/stats/{outcome,rates,load,aggregate,params,chart-scale}.ts`, `app/stats/*`, 의존: `stats → db, domain, documents`; `search/dashboard → stats` |
-| `docs/design/design.md` | 2장 토큰 | "무응답" `#D5D9E1` 추가(그래프 전용) |
-| `docs/design/design.md` | 새 장 "통계 그래프 색" | 1.8 표 |
-| `docs/design/design.md` | 1장 문서 구성, `wireframes/index.html` | 통계 와이어프레임 링크(index에 한 줄) |
-| `docs/design/mockups/` | 새 화면 | 통계 목업(디자인 B). 사용자가 원하면 별도 작업 |
-| `docs/plans/phase-2-stats.md`(새 파일) | 전체 | 1.9~1.11을 Task 1~4로. `CLAUDE.md` 문서 표에 한 줄 |
-| `docs/test/test-cases.md` | 새 절 | TC-STATS-01~17, E2E-01~07, M1 |
-| `docs/pm/status.md` | 마일스톤·백로그 | 통계 화면 위치(3단계 앞/뒤는 사용자 결정) |
+| 1 | 날짜 도우미, 결과 분류, 비율, 이력 읽기 이동 | TC-STATS-01~03 |
+| 2 | 읽기·집계·주소·축 | 04~13 |
+| 3 | `/stats` 화면, SVG 그래프 3종, 내비 | E2E-01~06 |
+| 4 | 대시보드 통과율 통일과 "통계 보기 →" | 14, E2E-07 |
 
-### 1.13 정할 것 초안
+- 크기: 보통. 실제 `claude` 호출 0회.
 
-**D-18 응답 없는 지원과 서류 통과율 정의** (핵심. 숫자 정의가 바뀜)
+### 1.12 옮긴 문서 (2026-11-19)
 
-- 배경: 불합격 연락이 거의 없어 지원 기록 대부분이 '지원'으로 남는다(469건 중 460). 지금 정의(판정된 것만 분모)는 분모가 7건 안팎이라 통과율이 의미가 없다. 서류 통과 뒤 다른 상태가 된 기록도 통과로 세지 않는다.
-- 선택지
-  - a. **(추천)** 지원 후 30일 넘게 '지원'이면 무응답으로 보고 탈락처럼 분모에 넣는다. 30일 안 된 것은 대기로 빼고, 지원취소도 뺀다. 주 지표 = 통과 ÷ (통과+불합격+무응답). 판정 기준 통과율은 참고로 함께 보인다. 도달 단계는 상태 이력까지 본다.
-  - b. 모든 지원을 분모로(취소만 뺌). 단순하지만 최근 달은 결과가 나오기 전이라 통과율이 낮게 보인다.
-  - c. 지금 정의 유지 + 무응답 수만 따로 표시. 비율은 대부분 "표본 부족"이 된다.
-  - N일 값: 30(추천) / 21 / 45. S6 "걸린 일수"를 보고 나중에 바꿀 수 있다(코드 상수).
-  - 대시보드 묶음 머리: **c-1 (추천)** 같은 정의로 바꾼다 / c-2 대시보드는 지금 그대로 두고 통계 화면만 새 정의.
-- 바뀌는 문서: 기획서 7.2·새 7.10, 화면 문서 1장 통과율 문단·통계 절, 계획 Task 1·4, `tests/search.test.ts` 기대값.
+| 문서 | 절 | 내용 |
+|---|---|---|
+| `docs/spec/product.md` | 3장 목표, 7.2, 새 7.10, 12장, 14장 | 목표 한 줄, 대시보드 통과율 정의, 통계 기능, 화면 목록, 계획 링크 |
+| `docs/spec/screens.md` | 0.1, 0.2, 0.3, 1장, 새 10장, 11·12장(번호만 밀림) | 화면 목록·이동·내비, 대시보드 통과율·"통계 보기 →", 통계 화면 전체 |
+| `docs/spec/architecture.md` | 2장, 3장, 7장 | `lib/stats/*`, `app/stats/*`, `RateText`, 단계 표, 테스트 파일 |
+| `docs/design/design.md` | 1장, 2장 토큰, 5장, 새 7장 | 와이어프레임 링크, 무응답 토큰, 묶음 통과율, 통계 그래프 색 |
+| `docs/design/wireframes/index.html` | 목록 | 통계 링크 |
+| `docs/design/wireframes/stats.html` | 전체 | 결정 반영(S6 제거, 숫자 갱신) |
+| `docs/plans/phase-2-stats.md` | 새 파일 | Task 1~4 |
+| `CLAUDE.md` | 문서 표 | 새 계획 한 줄 |
+| `docs/test/test-cases.md` | 새 11장 | TC-STATS |
+| `docs/plans/phase-2-past-records.md` | Task 6 "보기별 적용" 표의 서류 통과율 행 | 정의가 통계 작업으로 넘어갔다는 메모 |
 
-**D-19 통계 화면 위치**
+- 메인 세션이 할 것: `docs/decisions.md`, `docs/pm/status.md`. 통계 목업(디자인 B)은 사용자가 원하면 별도 작업이다.
 
-- 배경: 요청은 "대시보드에서" 보는 것. 대시보드 보기 탭은 지원 기록을 묶어 보여 주는 목록이고 검색어·상태 필터가 함께 걸린다.
-- 선택지
-  - a. **(추천)** 새 화면 `/stats` + 내비 "통계" + 대시보드 요약 줄 "통계 보기 →"(필터 넘김). 이유: 통계에는 검색어·상태 필터가 맞지 않고(상태 필터를 걸면 통과율이 0 또는 100%가 됨), 그래프·카드가 많아 목록 화면과 섞으면 무겁다. 링크로 한 번에 간다.
-  - b. 대시보드 5번째 보기 탭 "통계"(`?view=stats`). 이 탭에서는 검색창과 상태 필터를 숨기고, 기간·사이트만 남긴다. 내용(1.7 본문)은 a와 같고, 주소 파라미터가 대시보드 쪽(`dashboard-params.ts`)에 붙는다. 화면 파일은 `src/app/_components/StatsView.tsx` 등으로 바뀐다.
-- 바뀌는 문서: 화면 문서 0.1·0.3·1장, 와이어프레임, 구조 문서.
+### 1.13 정할 것
 
-**D-20 그래프 구현 방식** (새 의존성 여부)
-
-- 배경: 필요한 그래프는 막대(세로 누적, 가로, 세로 단순) 세 가지뿐이다. 앱은 로컬 전용이라 번들 크기보다 의존성 유지 부담과 Next 16·React 19 서버 컴포넌트 호환이 더 중요하다.
-- 선택지
-  - a. **(추천)** 직접 SVG 컴포넌트(서버에서 그림). 새 의존성 0, 클라이언트 JS 0, 디자인 토큰을 그대로 씀. 마우스 올림 설명은 SVG `<title>`. 단점: 툴팁·애니메이션이 단순, 컴포넌트 3개 정도를 직접 유지.
-  - b. Recharts. 툴팁·범례·반응형이 다 있음. 클라이언트 컴포넌트만 가능, 의존성이 많고 번들이 큼(추정 100KB대 gzip).
-  - c. Chart.js + react-chartjs-2. 캔버스 기반, 비교적 가벼움(추정 70KB대 gzip). 클라이언트 전용, 표·접근성은 따로.
-- 바뀌는 문서: 기획서 13장 기술 구성(b·c일 때), `package.json`(b·c), 구조 문서.
-
-**D-21 1차 범위**
-
-- 배경: 요청 필수는 S2(월·연별)와 S3(이력서 버전별). 나머지는 "기타 등등"에서 제안한 것이다.
-- 선택지
-  - a. **(추천)** P1(S1~S4) + S5 깔때기 + S6 걸린 일수 + S7 요일별. 모두 지금 데이터로 계산되고 추가 입력이 없다. S8 재지원·S9 적합도는 데이터가 쌓인 뒤.
-  - b. P1만.
-  - c. P1 + P2 전부(S5~S9).
-- 바뀌는 문서: 기획서 새 7.10, 화면 문서 통계 절, 계획 Task 2·3, 와이어프레임 S-1의 P2 영역.
+없음. D-18~D-21은 결정되었다.
 
 ## 2. 사용자 검토
 
@@ -433,8 +305,13 @@ past-records 작업이 끝난 뒤, D-18~D-21 답을 반영해서 옮긴다.
 
 | D-번호 | 무엇을 | 멈춘 단계 | 답 | 재개 |
 |---|---|---|---|---|
+| D-18 | 무응답 처리, 서류 통과율 정의 | 설계 | a: 30일 지난 '지원'은 무응답으로 분모에 넣음. 대시보드 묶음도 같은 정의(c-1). 지난 기록은 서류 통과 9건 빼고 불합격으로 정리(사용자 데이터 작업) | 설계 확정(2026-11-19) |
+| D-19 | 화면 위치 | 설계 | a: 새 화면 `/stats` + 메뉴 + 대시보드 링크 | 설계 확정(2026-11-19) |
+| D-20 | 그래프 구현 | 설계 | a: 직접 SVG, 새 의존성 없음 | 설계 확정(2026-11-19) |
+| D-21 | 1차 범위 | 설계 | a에서 S6(걸린 일수) 제외: S1~S5 + S7 | 설계 확정(2026-11-19) |
 
 ## 5. 재설계
 
 | 회차 | 요청한 쪽 | 이유와 근거 | 바뀐 설계 | 사용자 검토 |
 |---|---|---|---|---|
+| 1 | 메인 세션(사용자 결정) | D-18~D-21 답. past-records Task 6이 대시보드 통과율을 먼저 바꿈 | 선택지 나눔을 없애고 추천안으로 확정. S6 제거(`firstPassDate`·`daysToPass`·TC 삭제). 자체 `reachedStage` 대신 Task 6의 `reachedStages`를 재사용하고, 이력 읽기를 `listReachedHistory`로 공용화. 대시보드 통과율은 Task 6 정의에 무응답을 더한 하나의 정의로 정리. 데이터 성격(불합격 일괄 정리)과 M1 기대값 갱신. 문서로 옮김 | 대기 |

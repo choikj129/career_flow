@@ -347,6 +347,8 @@ Task 2 다음에 해도 되고 Task 4와 나란히 해도 된다(파일이 겹�
 | 요약 줄의 전체 기록 수, 지원·불합격·지원취소 수 | 지금 상태 그대로 | 합계가 맞아야 한다(`src/app/page.tsx:110`) |
 | 서류 통과율 (사이트별·이력서별 묶음 머리) | 거친 단계 | `passed` = 서류합격을 거친 기록, `decided` = `passed` + 지금 상태 불합격(서류합격을 거치지 않은 것). 지금은 서류합격 뒤 불합격·지원취소가 "통과 못 함"으로 잘못 세진다 |
 
+- (2026-11-19, D-18) 묶음 서류 통과율은 통계 작업(`docs/plans/phase-2-stats.md` Task 4)에서 `Tally`로 바뀐다. 분모에 무응답(지원 후 30일 넘은 지원)이 더해진다. 거친 단계 규칙은 이 Task 그대로다.
+
 **Files:**
 - Create: `src/lib/applications/stages.ts`, `tests/stages.test.ts`
 - Modify: `src/lib/search/dashboard.ts`, `src/app/page.tsx`(요약 줄 숫자), `src/app/_components/DashboardFilters.tsx`(안내 문구), `tests/search.test.ts`
