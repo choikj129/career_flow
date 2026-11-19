@@ -151,7 +151,7 @@ export type StatItem = {
   applicationId: number; companyId: number; site: SiteId; appliedAt: string; status: ApplicationStatus;
   reached: ReachedStage[]; outcome: Outcome;
   baseVersionNo: number | null;                       // submitted_resume.kind === 'base'일 때 버전 번호
-  docs: Record<DocKind, string | null>;               // submitted_docs 파일 이름
+  docs: Record<DocKind, string | null>;               // submitted_docs 값: 파일 이름, 'none'(없음, 경력기술서·포트폴리오), null(모름)
 };
 export type StatsQuery = { site?: SiteId; from?: string; to?: string }; // 지원일 기준, 양끝 포함
 /** applications(site·기간 조건) + listReachedHistory + resume_versions. today = todayLocal(now) */
@@ -178,8 +178,8 @@ export function getStats(
 export type PeriodBucket = { key: string; label: string; partial: boolean; tally: Tally }; // key YYYY-MM 또는 YYYY
 /** range.from 없으면 가장 이른 지원일의 단위부터, range.to 없으면 today의 단위까지. 빈 단위도 0건으로 넣는다. items가 비면 [] */
 export function byPeriod(items: StatItem[], unit: 'month' | 'year', range: { from?: string; to?: string }, today: string): PeriodBucket[];
-export type DocBucket = { key: string; label: string; unknown: boolean; firstApplied: string | null; lastApplied: string | null; tally: Tally };
-/** resume: 기본 v{n}(번호 ↓) → 파일(날짜 ↓, 라벨 docLabel) → 모름. career·portfolio: 파일 → 모름. 0건 묶음은 없음 */
+export type DocBucket = { key: string; label: string; unknown: boolean; absent: boolean; firstApplied: string | null; lastApplied: string | null; tally: Tally };
+/** resume: 기본 v{n}(번호 ↓) → 파일(날짜 ↓, 라벨 docLabel) → 모름. career·portfolio: 파일 → 없음(key 'absent', absent true, 값 DOC_NONE) → 모름(key 'none', unknown true). 0건 묶음은 없음. (2026-11-20 "없음" 추가: 계획 phase-2-past-records Task 8) */
 export function byDocVersion(items: StatItem[], kind: DocKind): DocBucket[];
 export type SiteBucket = { site: SiteId; tally: Tally };
 export function bySite(items: StatItem[]): SiteBucket[]; // SITE_IDS 순서, 0건 제외
@@ -220,7 +220,7 @@ export function ticks(max: number, count?: number): number[];
 - [ ] **Step 1: 실패하는 테스트** (`tests/stats.test.ts`에 추가)
   - TC-STATS-04 `byPeriod` 월: 2026-01-10, 2026-03-05 기록, today 2026-03-20이면 01·02·03 세 칸이고 02는 total 0, 03만 partial. range `{from:'2025-12-01'}`이면 2025-12부터.
   - TC-STATS-05 `byPeriod` 년: 2024·2026 기록, today 2026-..이면 2024·2025·2026이고 2026만 partial.
-  - TC-STATS-06 `byDocVersion`: 기본 v1·v2, 이력서 파일 2개, 모름이 섞여 있으면 순서는 v2, v1, 이력서 2026-11-02, 이력서 2026-09-05, 모름. first/lastApplied가 맞고, `career`는 기본 버전을 무시한다.
+  - TC-STATS-06 `byDocVersion`: 기본 v1·v2, 이력서 파일 2개, 모름이 섞여 있으면 순서는 v2, v1, 이력서 2026-11-02, 이력서 2026-09-05, 모름. first/lastApplied가 맞고, `career`는 기본 버전을 무시한다. (Task 8 추가, TC-PAST-75) `career`에 파일 2개·없음·모름이 섞이면 경력기술서 2026-11-02, 2026-10-17, 없음(absent), 모름(unknown) 순.
   - TC-STATS-07 `bySite`: 순서와 0건 제외, 기타 포함.
   - TC-STATS-08 `funnel`: 통과 못 한 지원취소는 지원에서 뺀다. optional이 아닌 단계(지원·서류 통과·면접·최종합격) 수는 줄어들기만 한다. 앞 단계 0이면 ofPrev null. 과제 단계: 서류합격 3(그중 과제 1, 과제 없이 면접 2)이면 assignment count 1·ofPrev 1/3, interview count 2·ofPrev 2/3(서류 통과 대비), assignment만 optional true.
   - TC-STATS-09 `byWeekday`: 기록이 없어도 7칸이고, 라벨은 "월"~"일".

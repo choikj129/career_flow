@@ -220,10 +220,15 @@
 - 쓰는 파일은 `(이력서|경력기술서|포트폴리오)_YYYYMMDD.pdf` 형식만이다. **버전 날짜 = 파일 이름의 날짜.**
 - 보관: 파일은 앱 데이터 폴더 `data/documents/<resume|career|portfolio>/`에 원래 이름(`이력서_YYYYMMDD.pdf` 등)으로 복사해 둔다(2026-11-19 복사 완료). 앱은 데이터 폴더 밖(예: 사용자의 서류 폴더)을 읽지 않는다.
 - **등록 절차는 없다.** 앱은 이 폴더를 읽어 이름 규칙에 맞는 파일을 그대로 목록으로 쓴다. 새 파일은 폴더에 넣기만 하면 된다. 내용은 읽지 않는다(`claude` 호출 없음).
-- 지원 기록 연결: 지원 기록에 종류별 **파일 이름만** 저장한다(각각 선택). 지원일과 **같은 날이거나 앞선** 파일 중 가장 늦은 것이 기본값이다. 종류마다 가장 이른 파일보다 앞선 지원은 그 종류만 "모름"이다.
-  - 예: 2026-08-01 지원 → 이력서 모름, 경력기술서 모름, 포트폴리오 `포트폴리오_20260722.pdf`.
+- 지원 기록 연결: 지원 기록에 종류별 **파일 이름만** 저장한다(각각 선택). 지원일과 **같은 날이거나 앞선** 파일 중 가장 늦은 것이 기본값이다. 그 종류의 가장 이른 파일보다 앞선 지원은 종류에 따라 다르다(2026-11-20 사용자 확인: 경력기술서·포트폴리오는 가장 이른 파일 전에는 없었고, 그때까지는 이력서만 냈다).
+  - 이력서: **"모름"**(냈지만 어느 파일인지 모름).
+  - 경력기술서·포트폴리오: **"없음"**(내지 않음).
+  - 그 종류 파일이 폴더에 하나도 없으면 셋 다 "모름"이다(앱이 알 수 없음).
+  - 예: 2026-08-01 지원 → 이력서 모름, 경력기술서 없음, 포트폴리오 `포트폴리오_20260722.pdf`. 2026-07-01 지원 → 이력서 모름, 경력기술서 없음, 포트폴리오 없음.
+  - 직접 고를 때도 경력기술서·포트폴리오에는 "없음"이 있다. 이력서에는 "없음"이 없다(이력서는 늘 낸다).
+  - 저장: 제출 서류 칸의 종류 값이 파일 이름 / "없음" 표식 / 빈 값(모름) 셋 중 하나다. 칸은 늘지 않는다.
 - 보기: 지원 기록(대시보드의 기록만 행 펼침, 공고 상세 지원 기록 탭)에 종류별 [보기]를 두고, 누르면 앱이 그 폴더의 파일을 브라우저 새 탭에 PDF로 보여 준다. 이름 규칙과 종류 폴더 밖은 열지 않는다. 파일이 없어졌으면 "파일 없음".
-- 이관: 메모에 "제출 서류: …" 줄이 있는 기록은 [메모의 제출 서류 옮기기]로 날짜를 파일 이름으로 바꿔 제출 서류 칸에 넣고 그 줄을 지운다(메모 첫 줄은 남김). 폴더에 없는 파일이 있으면 그 기록은 건드리지 않는다.
+- 이관: 메모에 "제출 서류: …" 줄이 있는 기록은 [메모의 제출 서류 옮기기]로 날짜를 파일 이름으로 바꿔 제출 서류 칸에 넣고 그 줄을 지운다(메모 첫 줄은 남김). 폴더에 없는 파일이 있으면 그 기록은 건드리지 않는다. 메모의 "모름"은 위 규칙대로 옮긴다(경력기술서·포트폴리오가 가장 이른 파일보다 앞선 지원이면 "없음").
 - 대시보드 "이력서별" 보기: 앱 기본 이력서 버전이 없는 기록은 이력서 파일("이력서 2026-09-05")로 묶고, 둘 다 없으면 "모름".
 
 ### 7.10 통계 [결정 D-18·D-19·D-20·D-21]
@@ -323,7 +328,7 @@
 | `companies` | id, display_name, legal_name, aliases(JSON), normalized_keys, created_at |
 | `postings` | id, company_id, url(유일), site, site_note(기타일 때 출처 이름), position_title, raw_text, extracted(JSON: 공고 정보), fetched_at, deadline, status, created_at |
 | `analyses` | id, posting_id, resume_version_id, result(JSON), fit_score, created_at, job_id |
-| `applications` | id, posting_id(없을 수 있음: 가져온 기록), company_id, position_title, site, site_note, applied_at, submitted_resume(종류+id), submitted_docs(JSON: 종류별 서류 파일 이름, 7.9), applied_datetime(정렬 전용 한국 시간 일시, 화면에 안 보임, D-17), status, notes |
+| `applications` | id, posting_id(없을 수 있음: 가져온 기록), company_id, position_title, site, site_note, applied_at, submitted_resume(종류+id), submitted_docs(JSON: 종류별 서류 파일 이름, 경력기술서·포트폴리오는 `"none"`=없음 가능, 값 없음=모름, 7.9), applied_datetime(정렬 전용 한국 시간 일시, 화면에 안 보임, D-17), status, notes |
 | `status_events` | id, application_id, status, at, note |
 | `tailored_resumes` | id, posting_id, base_resume_version_id, created_at |
 | `tailored_revisions` | id, tailored_resume_id, rev_no, content(JSON), changes(JSON), site_guide(JSON), portfolio_tips(JSON), user_request, created_at |

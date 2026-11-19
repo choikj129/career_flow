@@ -12,8 +12,9 @@
   - 지원 기록에 **정렬 전용 일시** 칸을 더한다. 화면에는 보이지 않는다. 같은 지원일 안에서 순서를 정하는 데만 쓴다(D-17, Task 5).
   - 상태 필터 "서류합격"은 서류합격을 **거친** 기록을 모두 보여 준다(지금 상태와 관계없이). 면접·최종합격도 같다(Task 6).
   - 서류합격과 면접 사이에 **과제·코딩테스트** 상태를 하나 더한다(2026-11-20 요청, Task 7).
+  - 경력기술서·포트폴리오는 가장 이른 파일 전에는 **없었다**(그때까지 이력서만 냄). 그보다 앞선 지원은 "모름"이 아니라 **"없음"**이다. 이력서는 그대로 "모름"(2026-11-20 사용자 확인, Task 8).
 
-**Goal:** (1) 지난 지원 기록을 AI 없이 표에 직접 입력해 등록한다. (2) 지원 기록마다 낸 이력서·경력기술서·포트폴리오 **파일 이름**을 저장하고, 화면에서 그 파일을 열어 본다. 지원일로 파일을 자동으로 고르고, 종류마다 가장 이른 파일보다 앞선 지원은 그 종류만 "모름"이다. (3) 메인 세션이 넣은 기록의 메모 "제출 서류" 줄을 이 칸으로 옮긴다. (기획서 7.7·7.9, 화면 문서 1장·3.9·5.5·6장)
+**Goal:** (1) 지난 지원 기록을 AI 없이 표에 직접 입력해 등록한다. (2) 지원 기록마다 낸 이력서·경력기술서·포트폴리오 **파일 이름**을 저장하고, 화면에서 그 파일을 열어 본다. 지원일로 파일을 자동으로 고르고, 종류마다 가장 이른 파일보다 앞선 지원은 이력서면 "모름", 경력기술서·포트폴리오면 "없음"이다(Task 8). (3) 메인 세션이 넣은 기록의 메모 "제출 서류" 줄을 이 칸으로 옮긴다. (기획서 7.7·7.9, 화면 문서 1장·3.9·5.5·6장)
 
 **Architecture:** 버전 테이블을 두지 않는다. 서류 파일 목록은 `data/documents/<종류>/` 폴더를 읽어 **파일 이름 규칙**으로 바로 얻는다(종류·날짜가 이름에 다 있고, 종류·날짜 조합이 곧 파일 하나이므로 따로 저장할 정보가 없다). 지원 기록에는 `submitted_docs` JSON 칸(종류별 파일 이름)을 더한다. 파일 보기는 라우트 핸들러가 이름 규칙 검사 + 그 종류 폴더 안만 허용해서 PDF를 그대로 돌려준다. 기존 `submitted_resume`(앱 안 기본 이력서 내용 버전)은 그대로 둔다. 직접 입력은 기존 가져오기 검토 표를 AI 없이 빈 행으로 여는 방식이다. `claude` 호출은 0회다.
 
@@ -37,14 +38,15 @@
   | `career` | 경력기술서 | `data/documents/career/` | `경력기술서_YYYYMMDD.pdf` |
   | `portfolio` | 포트폴리오 | `data/documents/portfolio/` | `포트폴리오_YYYYMMDD.pdf` |
 
-- 파일 고르기: 지원일과 **같은 날이거나 앞선** 파일 중 날짜가 가장 늦은 것. 종류마다 따로 정하고, 없으면 그 종류만 `null`(모름).
+- 파일 고르기: 지원일과 **같은 날이거나 앞선** 파일 중 날짜가 가장 늦은 것. 종류마다 따로 정하고, 없으면 이력서는 `null`(모름), 경력기술서·포트폴리오는 `'none'`(없음, Task 8). 그 종류 파일이 폴더에 하나도 없으면 `null`.
 - 직접 입력 필수 칸: 사이트, 회사, 포지션, 지원일(D-16). 기존 화면 복사·캡처 가져오기의 필수 칸 규칙은 바꾸지 않는다(이미 같음).
 - 지원 기록 목록의 기본 정렬(모든 곳): **지원일 ↓ → 정렬용 일시 ↓(없으면 맨 뒤) → id ↓**. 정렬용 일시는 화면에 표시하지 않는다(D-17).
 
 ## Review Focus
 
 1. **경로 탈출** — 파일 보기와 저장은 이름 규칙(`/^(이력서|경력기술서|포트폴리오)_\d{8}\.pdf$/`, 실제 있는 날짜)과 종류 일치를 통과해야 하고, 최종 경로가 그 종류 폴더 안이어야 한다. `..`, `/`, `\`, `%2e`, 절대 경로, 다른 종류 폴더는 모두 거부. → Task 1 `rejects traversal`, Task 4 route 테스트.
-2. **날짜 경계** — 지원일 = 파일 날짜면 그 파일. 가장 이른 파일보다 앞서면 그 종류만 null. → Task 1 `pickDocFile`.
+2. **날짜 경계** — 지원일 = 파일 날짜면 그 파일. 가장 이른 파일보다 앞서면 이력서는 null, 경력기술서·포트폴리오는 `'none'`. → Task 1·8 `pickDocFile`.
+7. **"없음"을 파일 이름으로 다룸** — `'none'`이 파일 이름 자리에 들어가므로, 값을 파일로 쓰는 곳(보기 링크·파일 존재 확인·사용 건수·통계 파일 묶음·대시보드 라벨)은 모두 `docFileOf`를 거쳐야 한다. → Task 8.
 3. **파일이 나중에 없어짐** — 지원 기록에는 이름만 있으므로 파일이 지워지면 [보기] 대신 "파일 없음"을 보이고, 기록은 그대로 둔다. → Task 4.
 4. **메모 이관이 메모를 망가뜨림** — "제출 서류:" 줄만 지우고 첫 줄(`메일 가져오기(원티드)` 등)과 다른 메모는 남긴다. 폴더에 없는 날짜가 있으면 그 기록은 건드리지 않는다. → Task 3.
 5. **직접 입력이 중복을 만듦** — 같은 회사·같은 지원일·같은 포지션이 이미 있으면 "이미 있음"으로 체크 해제. → Task 2 `findExistingMatches`.
@@ -59,8 +61,9 @@ src/lib/
   documents/
     files.ts          DOC_KINDS, DOC_KIND_LABELS, docFileName, parseDocFileName, docLabel,
                       pickDocFile, pickDocs, formatDocsNote, parseDocsNote — 순수(클라이언트도 import)
+                      (Task 8) DOC_NONE, canBeNone, isDocNone, docFileOf, isValidDocValue, docValueText
     folder.ts         listDocFiles, resolveDocPath, docFileExists — 파일 시스템(서버 전용)
-    migrate.ts        migrateDocsFromNotes, countDocsNotesPending
+    migrate.ts        migrateDocsFromNotes, countDocsNotesPending, (Task 8) markDocsNoneBeforeFirst
   applications/
     import-rows.ts    (수정) ReviewRow에 notes·docs
     import-review.ts  (수정) findExistingMatches
@@ -87,6 +90,7 @@ src/lib/ (Task 5)
   applications/stages.ts         (새, Task 6) reachedStages, matchesStatusFilter (Task 7: isReachedStage, assignment)
   applications/backfill.ts       (새) 정렬용 일시 일회성 채우기
 scripts/backfill-applied-datetime.ts  (새, Task 5) 일회성 실행 스크립트
+scripts/mark-docs-none.ts             (새, Task 8) "없음" 일회성 채우기
 drizzle/0003_submitted_docs.sql  (npx drizzle-kit generate --name submitted_docs)
 drizzle/0004_applied_datetime.sql (npx drizzle-kit generate --name applied_datetime)
 tests/
@@ -451,11 +455,106 @@ Task 2 다음에 해도 되고 Task 4와 나란히 해도 된다(파일이 겹�
 
 ---
 
+### Task 8: 경력기술서·포트폴리오 "없음"
+
+사용자 말(2026-11-20): "포트폴리오, 경력기술서는 가장 이전버전 이전엔 없음임. 그 전까진 이력서만 제출함". 지금은 종류마다 가장 이른 파일보다 앞선 지원을 모두 "모름"(null)으로 둔다(`src/lib/documents/files.ts` `pickDocFile`). 이력서는 그대로 "모름"이 맞고, 경력기술서·포트폴리오는 "없음"(내지 않음)이어야 한다.
+
+**규칙**
+
+| 종류 | 지원일과 같거나 앞선 파일이 있음 | 앞선 파일이 없음(가장 이른 파일보다 앞섬) | 그 종류 파일이 폴더에 0개 | 지원일이 잘못됨 |
+|---|---|---|---|---|
+| 이력서 | 가장 늦은 파일 | `null`(모름) | `null` | `null` |
+| 경력기술서·포트폴리오 | 가장 늦은 파일 | **`'none'`(없음)** | `null`(앱이 알 수 없음) | `null` |
+
+- 이력서에는 "없음"이 없다(이력서는 늘 낸다). 화면 select에도, 서버 검증에도 없다.
+- 확정 7개 파일 기준 경계: 경력기술서 가장 이른 파일 2026-10-17, 포트폴리오 2026-07-22. 2026-10-16 지원 → 경력기술서 없음, 2026-10-17 → `경력기술서_20261017.pdf`.
+
+**DB**: 스키마·마이그레이션 변경 없음. `submitted_docs`는 JSON 칸이고(`src/lib/db/schema.ts:94`) 종류 값에 문자열 `'none'`을 넣는다. 파일 이름 규칙(`…_YYYYMMDD.pdf`)과 겹칠 수 없다.
+
+| 종류 값 | 뜻 | 화면 |
+|---|---|---|
+| 파일 이름(`경력기술서_20261017.pdf`) | 그 파일을 냄 | 날짜 + [보기] |
+| `'none'` | 내지 않음 (경력기술서·포트폴리오만) | "없음" |
+| `null` 또는 키 없음, 또는 `submitted_docs` 자체가 null | 모름 | "모름"(회색) |
+
+**Files:**
+- Modify: `src/lib/documents/files.ts`, `src/lib/documents/folder.ts`, `src/lib/documents/migrate.ts`, `src/lib/applications/import-rows.ts`, `src/lib/applications/repo.ts`, `src/lib/search/dashboard.ts`, `src/lib/stats/aggregate.ts`, `src/app/_components/SubmittedDocs.tsx`, `src/app/import/ImportReviewTable.tsx`, `src/app/stats/page.tsx`
+- Create: `scripts/mark-docs-none.ts`
+- Modify (테스트): `tests/documents.test.ts`, `tests/import-review.test.ts`, `tests/repos.test.ts`, `tests/stats.test.ts`, `tests/search.test.ts`, `tests/e2e/12-past-records.spec.ts`
+
+**Interfaces — `files.ts`** (순수)
+- `export const DOC_NONE = 'none' as const`
+- `type SubmittedDocs`는 그대로(`Partial<Record<DocKind, string | null>>`), 주석만 "파일 이름, `DOC_NONE`(없음), null(모름)"으로 고친다
+- `NONE_ALLOWED: Record<DocKind, boolean> = { resume: false, career: true, portfolio: true }`
+- `canBeNone(kind: DocKind): boolean` → `NONE_ALLOWED[kind]`
+- `isDocNone(v: string | null | undefined): boolean` → `v === DOC_NONE`
+- `docFileOf(v: string | null | undefined): string | null` — 파일 이름이면 그대로, `'none'`·null·undefined면 null. **값을 파일로 쓰는 곳은 모두 이것을 거친다**
+- `isValidDocValue(kind: DocKind, v: string | null | undefined): boolean` — `v == null` 또는 (`v === DOC_NONE` && `canBeNone(kind)`) 또는 `isDocsForKind(kind, v)`
+- `docValueText(v: string | null | undefined): string` — null·undefined → `'모름'`, `'none'` → `'없음'`, 규칙에 맞는 파일 → 날짜(`YYYY-MM-DD`), 규칙 밖 이름 → 이름 그대로
+- `pickDocFile(kind, appliedAt, files): string | null` — 지원일이 잘못되면 null. 같거나 앞선 파일이 있으면 가장 늦은 것. 없으면: `canBeNone(kind)`이고 그 종류 파일이 `files`에 1개 이상이면 `DOC_NONE`, 아니면 null. 반환 타입은 그대로(`'none'`도 string)
+- `pickDocs`는 그대로(`pickDocFile`을 부르므로 자동)
+- `parseDocsNote`·`formatDocsNote`는 그대로(메모의 "모름" → null. 규칙 적용은 `migrate.ts`에서)
+
+**Interfaces — 값을 쓰는 곳**
+- `folder.ts`: `docExistence`·`docExistenceIn`의 `has`가 `docFileOf(docs?.[k])`를 쓴다(`'none'` → false)
+- `migrate.ts`
+  - `countDocUsage`: `docFileOf`로 거른다(`'none'`은 세지 않음)
+  - `migrateDocsFromNotes`: 대상 조회에 `appliedAt`를 더한다. 시작할 때 `listDocFiles(dir).files`를 한 번 읽는다. 메모 날짜가 "모름"인 종류는 `pickDocFile(kind, appliedAt, files) === DOC_NONE`이면 `DOC_NONE`, 아니면 null. 메모에 날짜가 있으면 지금처럼 그 날짜 파일. (메모의 "모름"은 예전 규칙으로 만든 값이라 같은 경계를 다시 적용한다)
+  - 새 함수 `markDocsNoneBeforeFirst(dir = config.documentsDir, db = getDb(), opts: { dryRun?: boolean } = {}): { updated: number; byKind: { career: number; portfolio: number }; pendingNotes: number }`
+    - 경력기술서·포트폴리오 각각 폴더에서 가장 이른 파일 날짜를 구한다. 그 종류 파일이 0개면 그 종류는 건너뜀
+    - 대상: 모든 지원 기록 중 `appliedAt < 그 날짜`이고 그 종류 값이 null(키 없음, `submitted_docs` 자체 null 포함)인 것 → 그 종류를 `DOC_NONE`으로. `submitted_docs`가 null이면 `{ resume: null, career, portfolio }` 새 객체(해당 안 되는 종류는 null)
+    - 파일 이름이 이미 있는 값·`'none'`은 건드리지 않는다(다시 실행해도 안전, 두 번째 updated 0)
+    - **메모 이관 전인 기록은 건너뛴다**: `submitted_docs`가 null이고 `parseDocsNote(notes)`가 null이 아닌 기록. 여기에 값을 넣으면 `migrateDocsFromNotes`의 대상(`submitted_docs IS NULL`)에서 빠져 메모 줄이 영영 안 옮겨지기 때문이다. 건너뛴 수는 `pendingNotes`
+    - `byKind`는 바뀐 종류 값 수, `updated`는 바뀐 기록 수. `dryRun`이면 같은 수를 세고 저장하지 않는다. 한 트랜잭션
+- `import-rows.ts`: `checkedRowsSchema`의 docs refine을 `isValidDocValue(k, r.docs[k])`로. 메시지 그대로. `rowsToRegister`는 그대로(`'none'`만 있어도 truthy라 `submittedDocs` 저장)
+- `repo.ts` `assertDocsValid`: `name == null`이면 건너뜀, `name === DOC_NONE`이면 `canBeNone(k)`일 때 건너뜀(아니면 던짐 `서류 파일을 찾을 수 없습니다: none`), 나머지는 지금처럼 파일 확인
+- `dashboard.ts`: `resumeDocFile = docFileOf(a.submittedDocs?.resume)`(이력서는 `'none'`이 들어올 수 없지만 방어). 대시보드 "이력서별" 묶음은 이력서만 보므로 **바뀌는 것 없음**
+- `stats/aggregate.ts` `byDocVersion`
+  - `DocBucket`에 `absent: boolean` 추가(다른 묶음은 false)
+  - 파일 묶음은 `docFileOf(i.docs[kind]) != null`인 값만. 그 뒤 `i.docs[kind] === DOC_NONE`인 묶음 key `'absent'`, label `'없음'`, absent true, unknown false. 마지막 모름(`i.docs[kind] == null`) key `'none'`, label `'모름'`, unknown true(지금 그대로)
+  - 순서: 이력서 = 기본 v{n} → 파일 → 모름(그대로). 경력기술서·포트폴리오 = 파일(날짜 ↓) → 없음 → 모름
+- 화면
+  - `SubmittedDocs.tsx`: `allUnknown` = 셋 다 `== null`(`'none'`은 모름이 아님). 종류 줄: 파일이면 지금처럼, `'none'`이면 보통 글자 `없음`(링크 없음, `data-testid="doc-none-{kind}"`), null이면 회색 `모름`
+  - `ImportReviewTable.tsx` 서류 select: 이력서는 `이력서 모름`("") + 파일. 경력기술서·포트폴리오는 `{종류} 모름`("") + `{종류} 없음`(`'none'`) + 파일. 자동 선택은 `pickDocs` 그대로(규칙은 `files.ts`에서)
+  - `stats/page.tsx` 서류 버전별 보조 글자: `d.absent` → `"내지 않은 지원"`. `d.unknown` → 이력서면 `"버전 파일보다 앞선 지원"`, 경력기술서·포트폴리오면 `"제출 서류 기록 없음"`. "이 종류의 제출 서류 기록이 없습니다" 조건은 그대로(묶음이 모름 하나뿐일 때)
+- 지원 기록 수정 창(3.10)에서 서류 고치기는 여전히 범위 밖(3단계 Task 4). 그때 select 선택지는 위 직접 입력 표와 같다
+- 앞으로의 [지원 완료]는 지금처럼 `submitted_docs`를 저장하지 않는다(경력기술서·포트폴리오도 "모름"). 범위 밖 그대로
+
+**`scripts/mark-docs-none.ts`** — `npx tsx scripts/mark-docs-none.ts [--dry-run]`
+- `--dry-run`: `markDocsNoneBeforeFirst(..., { dryRun: true })` 결과(바뀔 기록 수, 종류별 수, 이관 전이라 건너뛴 수)만 출력. 회사·포지션은 출력하지 않는다
+- 실제 실행: 먼저 `db.$client.backup('data/backups/before-docs-none.db')`(Task 5 스크립트와 같은 방식). 이미 있으면 "백업 파일이 이미 있습니다. 지우거나 이름을 바꾸고 다시 실행하세요"로 멈춤 → 실행 → 결과 출력
+- `pendingNotes > 0`이면 마지막에 "메모의 제출 서류를 먼저 옮기고(기본 이력서 → 서류 파일 탭) 다시 실행하세요" 한 줄
+
+**기존 데이터 이관 (앱 코드 아님, 메인 세션이 처리)**
+1. 앱을 끈다.
+2. 서류 파일 탭에 [메모의 제출 서류 옮기기]가 보이면(이관 전 기록이 있으면) 먼저 누른다. Task 8 이후의 메모 이관은 "없음"까지 알아서 넣는다.
+3. `npx tsx scripts/mark-docs-none.ts --dry-run`으로 수를 본다. 메인 세션이 따로 센 수와 맞는지 확인한다: 지원일 2026-10-17 앞이고 경력기술서 값이 비어 있는 기록 수, 지원일 2026-07-22 앞이고 포트폴리오 값이 비어 있는 기록 수(파일 날짜는 0.1 기준, 이관 전 메모 기록 제외). 다르면 멈추고 사용자에게 알린다.
+4. 실제 실행(백업 `data/backups/before-docs-none.db`가 만들어진다).
+5. 확인: 통계 서류 버전별 경력기술서·포트폴리오에 "없음" 묶음, 대시보드 기록 펼침에 "경력기술서 없음". 다시 dry-run → 0. 결과 수를 작업 기록 7절에 적는다.
+
+- [ ] **Step 1: 실패하는 테스트**
+  - `tests/documents.test.ts` (TC-PAST-70·71·73·74·76)
+    - `pickDocFile`(확정 7개): 2026-08-01 → 이력서 null, 경력기술서 `'none'`, 포트폴리오 `포트폴리오_20260722.pdf`. 2026-07-21 → 이력서 null, 경력기술서·포트폴리오 `'none'`. 2026-10-16 → 경력기술서 `'none'`, 2026-10-17 → `경력기술서_20261017.pdf`. 경력기술서 파일이 0개인 목록 → 경력기술서 null. 지원일 `''` → 셋 다 null. **TC-PAST-01의 2026-08-01·07-21 기대값을 이것으로 바꾼다**
+    - `isValidDocValue`: (career, none) true, (portfolio, none) true, (resume, none) false, (career, `경력기술서_20261017.pdf`) true, (career, `이력서_20260905.pdf`) false, (resume, null) true. `docFileOf('none') === null`, `docFileOf('이력서_20260905.pdf')` 그대로. `docValueText`: null → 모름, none → 없음, 파일 → 날짜
+    - `migrateDocsFromNotes`: 지원일 2026-08-01 + 메모 `이력서 모름 / 경력기술서 모름 / 포트폴리오 2026-07-22` → `{ resume: null, career: 'none', portfolio: '포트폴리오_20260722.pdf' }`. 지원일 2026-10-20 + `경력기술서 모름` → career null(모름 그대로)
+    - `markDocsNoneBeforeFirst`(임시 DB·폴더): A 2026-08-01 `{resume: 파일, career: null, portfolio: '포트폴리오_20260722.pdf'}` → career none. B 2026-07-01 `submitted_docs` null(메모 없음) → `{resume: null, career: 'none', portfolio: 'none'}`. C 2026-07-01 `submitted_docs` null + 메모 "제출 서류:" 줄 → 그대로, pendingNotes 1. D 2026-10-20 career null → 그대로. E 2026-08-01 career `'none'` 이미 → 그대로. 결과 updated 2, byKind {career 2, portfolio 1}. dryRun → 같은 수, DB 그대로. 두 번째 실행 → updated 0. 포트폴리오 파일이 없는 폴더 → 포트폴리오는 바꾸지 않음
+    - `countDocUsage`: `'none'`은 세지 않음. `docExistence({career: 'none'})` → career false
+  - `tests/import-review.test.ts` (TC-PAST-72): `checkedRowsSchema`가 `docs.career = 'none'` 통과, `docs.resume = 'none'` 실패. `rowsToRegister`에 docs `{resume: null, career: 'none', portfolio: 'none'}` → `submittedDocs` 그대로 전달
+  - `tests/repos.test.ts` (TC-PAST-72): `bulkCreateApplications`가 career `'none'`을 파일 확인 없이 저장, resume `'none'`이면 던지고 아무것도 저장 안 됨
+  - `tests/stats.test.ts` (TC-PAST-75): `byDocVersion(items, 'career')`에 파일 2개·없음·모름이 섞이면 순서 `경력기술서 2026-11-02`, `경력기술서 2026-10-17`, `없음`(absent true, unknown false), `모름`(unknown true). `'none'`이 파일 묶음 라벨로 나오지 않는다. 이력서 묶음 순서는 TC-STATS-06 그대로
+  - `tests/search.test.ts` (TC-PAST-76): career `'none'`·resume 파일인 기록의 `resumeLabel`은 `이력서 {날짜}`, 이력서별 묶음 결과는 Task 4와 같다
+  - `tests/e2e/12-past-records.spec.ts` (TC-PAST-E2E-08): 직접 입력에서 지원일 2026-08-01 → 경력기술서 select가 "경력기술서 없음", 포트폴리오 2026-07-22, 이력서 select에 "없음" 선택지가 없음. 등록 → 대시보드 기록 펼침에 "경력기술서 없음"([보기] 없음)과 "이력서 모름". 통계 서류 버전별 경력기술서에 "없음" 막대와 "내지 않은 지원"
+- [ ] **Step 2:** FAIL. **Step 3:** 구현 + 스크립트. **Step 4:** `npm test`, `npm run test:e2e`, `npm run lint`, `npx next typegen && npx tsc --noEmit`, `npm run build` 모두 실패 0.
+- [ ] **Step 5:** 커밋 `feat: none value for career and portfolio before first file`.
+- [ ] **Step 6:** `docs/test/test-cases.md`에 TC-PAST-70~76·E2E-08·M3, TC-PAST-01·TC-STATS-06 기대값 갱신. `docs/guide/usage.md`의 서류 파일 안내에 "경력기술서·포트폴리오는 가장 이른 파일보다 앞선 지원이면 '없음'" 한 줄. 커밋 `docs: none document value test cases`.
+
+---
+
 ## 테스트 케이스
 
 | ID | 대상 | 기대 결과 | 종류 | 위치 |
 |---|---|---|---|---|
-| TC-PAST-01 | `pickDocFile` | 같은 날 포함, 종류마다 따로, 가장 이른 파일 앞은 그 종류만 null (2026-08-01 → 이력서·경력기술서 모름, 포트폴리오 07-22) | 단위 | documents |
+| TC-PAST-01 | `pickDocFile` | 같은 날 포함, 종류마다 따로, 가장 이른 파일 앞은 이력서 null·경력기술서·포트폴리오 `'none'` (2026-08-01 → 이력서 모름, 경력기술서 없음, 포트폴리오 07-22. Task 8에서 갱신) | 단위 | documents |
 | TC-PAST-02 | `parseDocFileName` | `(이력서\|경력기술서\|포트폴리오)_YYYYMMDD.pdf`만 통과. 접미사·날짜 없음·pdf 아님·대문자 확장자·없는 날짜·자기소개서 거부 | 단위 | documents |
 | TC-PAST-03 | `listDocFiles` | 맞는 파일만 목록, 폴더와 이름 종류가 다르면 무시 목록, 폴더 없으면 빈 목록 | 통합 | documents |
 | TC-PAST-04 | `resolveDocPath` | `..`·절대 경로·구분자 섞인 이름 거부, 정상 이름은 그 종류 폴더 안 경로 | 단위 | documents |
@@ -484,6 +583,15 @@ Task 2 다음에 해도 되고 Task 4와 나란히 해도 된다(파일이 겹�
 | TC-PAST-66 | 가져오기(과제) | 검토 행이 `assignment`를 받음, 가져오기 프롬프트에 모든 상태 ID가 있음 | 단위 | import-review |
 | TC-PAST-E2E-07 | 과제 상태 변경·보드 | 차수 칸 없음·placeholder, 저장 후 배지·이력, 보드 과제 칸으로 끌기, 필터 안내 문구 | E2E | 12-past-records |
 | TC-PAST-M2 | 기존 기록 이관(D-22) | "코딩테스트 단계까지 진행" 메모 기록 1건이 과제·코딩테스트로 바뀌고 서류합격 수는 그대로 | 수동 | 실제 개인 데이터 |
+| TC-PAST-70 | `pickDocFile`(없음) | 가장 이른 파일 앞: 이력서 null, 경력기술서·포트폴리오 `'none'`. 경계 10-16/10-17. 그 종류 파일 0개면 null. 잘못된 지원일 null | 단위 | documents |
+| TC-PAST-71 | 값 도우미 | `isValidDocValue`(이력서 none 거부), `docFileOf`(none → null), `docValueText` | 단위 | documents |
+| TC-PAST-72 | 저장 검증 | 행 스키마·`bulkCreateApplications`가 경력기술서·포트폴리오 none은 받고 이력서 none은 거부(전체 롤백) | 통합 | import-review, repos |
+| TC-PAST-73 | 메모 이관(없음) | 메모 "모름" + 가장 이른 파일 앞 지원 → 경력기술서·포트폴리오 none, 뒤 지원은 null, 이력서 모름은 null | 통합 | documents |
+| TC-PAST-74 | `markDocsNoneBeforeFirst` | 비어 있는 값만 none으로(기록 칸 null 포함), 이관 전 메모 기록 건너뜀, 파일·none은 안 바꿈, dry-run 저장 안 함, 재실행 0, 파일 0개 종류는 건너뜀 | 통합 | documents |
+| TC-PAST-75 | 통계 서류 묶음(없음) | 경력기술서·포트폴리오: 파일 → 없음 → 모름, none이 파일 라벨로 안 나옴 | 단위 | stats |
+| TC-PAST-76 | 대시보드·파일 확인(없음) | 이력서 라벨·이력서별 묶음 그대로, `countDocUsage`·파일 존재 확인이 none을 파일로 보지 않음 | 통합 | search, documents |
+| TC-PAST-E2E-08 | 없음 선택·표시 | 직접 입력 자동 "없음", 이력서에 없음 선택지 없음, 기록 펼침 "없음", 통계 "없음" 막대 | E2E | 12-past-records |
+| TC-PAST-M3 | 기존 기록 "없음" 채우기 | dry-run 수 = 메인 세션이 센 수, 실행 뒤 통계·기록 펼침 확인, 다시 dry-run 0 | 수동 | 실제 개인 데이터 |
 | TC-PAST-M1 | 실제 데이터 채우기 | dry-run에서 메일 452·그룹바이 17건 모두 맞음, 실행 뒤 대시보드 같은 날 순서 확인 | 수동 | 실제 개인 데이터라 자동 불가 |
 | TC-PAST-E2E-01 | 직접 입력 열기 | 사이트 미선택·"모름"이면 비활성, 그룹바이 → 빈 행 1개(사이트 그룹바이) | E2E | 12-past-records |
 | TC-PAST-E2E-02 | 직접 입력 등록 | 회사·포지션·지원일을 채워야 등록 가능, 하나라도 비면 "… 필요"로 막힘, 등록 후 대시보드에 나옴 | E2E | 12-past-records |
@@ -501,6 +609,7 @@ Task 2 다음에 해도 되고 Task 4와 나란히 해도 된다(파일이 겹�
 | 10장 `applied_datetime`(정렬 전용) | Task 5 |
 | 7.2 상태 필터 = 거친 단계 | Task 6 |
 | 7.4 과제·코딩테스트 상태 | Task 7 |
+| 7.9 경력기술서·포트폴리오 "없음" | Task 8 |
 | 메일 지난 기록 | **범위 밖**. 메인 세션이 한 번 DB에 넣음(0.2) |
 | 앱에서 서류 PDF 올리기 | **범위 밖**. 폴더에 넣으면 바로 목록에 나온다 |
 | 지원 기록 수정 창(3.10)에서 제출 서류 고치기 | **범위 밖**. 3단계 Task 4(제출 이력서 수정)와 함께 다룬다 |

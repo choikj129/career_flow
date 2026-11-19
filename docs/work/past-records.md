@@ -182,6 +182,63 @@
     - a. 바꾼다. 이력에 한 줄 남기고 원래 메모는 둔다 (추천)
     - b. 그대로 둔다
 
+### 추가 설계 (2026-11-20): Task 8 경력기술서·포트폴리오 "없음"
+
+요청(사용자 원문): "포트폴리오, 경력기술서는 가장 이전버전 이전엔 없음임. 그 전까진 이력서만 제출함". 지금은 종류마다 가장 이른 파일보다 앞선 지원을 모두 "모름"(null)으로 둔다(`src/lib/documents/files.ts` `pickDocFile`). 계획 본문: [Task 8](../plans/phase-2-past-records.md).
+
+**검토할 것 (5줄)**
+
+1. 경력기술서·포트폴리오는 그 종류의 가장 이른 파일보다 앞선 지원이면 **"없음"**(내지 않음), 이력서는 그대로 **"모름"**. 그 종류 파일이 폴더에 하나도 없으면 "모름".
+2. 직접 입력 표의 경력기술서·포트폴리오 select에 "없음"이 생기고, 지원일을 넣으면 자동으로 골라진다. 이력서 select에는 "없음"이 없다.
+3. 화면: 기록 펼침·공고 상세에 "경력기술서 없음"(보통 글자, [보기] 없음). 통계 서류 버전별은 경력기술서·포트폴리오에서 파일 → **없음** → 모름 순으로, "없음"에도 막대와 통과율이 나온다(냈을 때와 비교). 대시보드 이력서별 묶음은 이력서만 보므로 그대로.
+4. DB 칸은 늘지 않는다. 제출 서류 칸 값에 "없음" 표식만 더한다.
+5. 기존 기록: 메인 세션이 백업 → 미리 보기(수 확인) → 실행으로 한 번 바꾼다. 경력기술서 2026-10-17 전, 포트폴리오 2026-07-22 전 지원 중 값이 비어 있는 것만. 메모에서 아직 안 옮긴 기록은 먼저 옮긴다(옮길 때도 같은 규칙).
+
+**목표와 범위**
+- 값 표식 `DOC_NONE = 'none'`을 `submitted_docs` 종류 값에 쓴다. 파일 이름 규칙과 겹치지 않는다. 스키마·마이그레이션 없음(`src/lib/db/schema.ts:94` JSON 칸).
+- 자동 선택(`pickDocFile`), 저장 검증(`checkedRowsSchema`·`assertDocsValid`), 메모 이관(`migrateDocsFromNotes`), 표시(`SubmittedDocs`, 통계 `byDocVersion`), 값을 파일로 쓰는 곳(`docExistence`, `countDocUsage`, 대시보드 `resumeDocFile`)을 `docFileOf`로 정리.
+- 일회성 `markDocsNoneBeforeFirst` + `scripts/mark-docs-none.ts`(`--dry-run`, 백업 `before-docs-none.db`).
+- 확인한 사실: `SubmittedDocs.tsx`는 지금 값이 있어도 이름 규칙에 안 맞으면 "모름"을 보인다(`src/app/_components/SubmittedDocs.tsx:19`·`:23`) → 고치지 않으면 "없음"이 "모름"으로 보인다. `checkedRowsSchema` refine(`src/lib/applications/import-rows.ts:79`)과 `assertDocsValid`(`src/lib/applications/repo.ts:102`)는 `'none'`을 거부한다. `byDocVersion`(`src/lib/stats/aggregate.ts:76`)은 null 아닌 값을 모두 파일 묶음으로 만들어 `'none'` 라벨 막대가 생긴다. `countDocUsage`(`src/lib/documents/migrate.ts:64`)는 `'none'`을 이름으로 센다(화면 영향은 없지만 정리).
+- 메모 이관(`migrateDocsFromNotes`)은 메모의 "모름"을 null로만 넣는다(`src/lib/documents/files.ts` `parseDocsNote`, `migrate.ts:33`). Task 8 뒤에는 지원일로 같은 경계를 적용해 경력기술서·포트폴리오를 "없음"으로 넣는다. 실제 DB에서 이관을 이미 했는지는 확인하지 못했다(DB를 읽지 않음) → 절차 2단계에서 서류 파일 탭 버튼으로 확인.
+
+**만들지 않는 것**
+- 이력서 "없음". 종류별 "없음" 날짜를 사용자가 정하는 설정(규칙은 폴더의 가장 이른 파일 날짜).
+- 지원 기록 수정 창에서 서류 고치기(3단계 Task 4, 그때 같은 선택지).
+- 앞으로의 [지원 완료]에 서류 파일·"없음" 기록(지금처럼 모름).
+- 메모 줄 형식에 "없음" 낱말 추가(이관 대상 메모는 이미 만들어져 있고 새로 만들지 않는다).
+
+**바뀐 문서**
+
+| 문서 | 절 |
+|---|---|
+| `docs/plans/phase-2-past-records.md` | 머리 결정 목록·Goal, Global Constraints 파일 고르기, Review Focus 2·7, File Structure, **Task 8 새로**, 테스트 표(TC-PAST-01 갱신, 70~76·E2E-08·M3), Spec 대비 범위 |
+| `docs/spec/product.md` | 7.9 지원 기록 연결·예·이관, 10장 `applications.submitted_docs` |
+| `docs/spec/screens.md` | 5.5 제출 서류 표시, 6.2 서류 칸·서류 파일 0개, 10.3 서류 버전별, 10.4 파일 기록 없음 |
+| `docs/plans/phase-2-stats.md` | `StatItem.docs` 주석, `DocBucket.absent`·`byDocVersion` 순서, TC-STATS-06 추가 줄 |
+| `docs/plans/phase-3-tailored-resume.md` | Task 4 수정 창 서류 select에 "없음" |
+| `docs/spec/architecture.md` | `files.ts`·`migrate.ts` 설명, `scripts/mark-docs-none.ts` |
+
+와이어프레임 `stats.html`의 서류 버전별은 이력서 탭이라 바꿀 것 없음.
+
+**테스트 케이스**
+
+| ID | 기대 결과 |
+|---|---|
+| TC-PAST-01 (갱신) | 2026-08-01 → 이력서 모름, 경력기술서 없음, 포트폴리오 07-22 |
+| TC-PAST-70 | `pickDocFile`: 가장 이른 파일 앞 이력서 null·경력기술서·포트폴리오 none, 10-16/10-17 경계, 파일 0개 종류 null |
+| TC-PAST-71 | `isValidDocValue`(이력서 none 거부), `docFileOf`, `docValueText` |
+| TC-PAST-72 | 행 스키마·일괄 저장이 경력기술서·포트폴리오 none 받음, 이력서 none 거부(롤백) |
+| TC-PAST-73 | 메모 이관: "모름" + 경계 앞 지원 → none, 뒤 지원 → null |
+| TC-PAST-74 | `markDocsNoneBeforeFirst`: 빈 값만 none, 이관 전 메모 기록 건너뜀, dry-run, 재실행 0, 파일 0개 종류 건너뜀 |
+| TC-PAST-75 | 통계 경력기술서·포트폴리오 묶음 순서 파일 → 없음 → 모름 |
+| TC-PAST-76 | 대시보드 이력서 라벨·묶음 그대로, 파일 존재·사용 건수가 none을 파일로 안 봄 |
+| TC-PAST-E2E-08 | 직접 입력 자동 "없음", 이력서에 없음 선택지 없음, 기록 펼침·통계 "없음" |
+| TC-PAST-M3 | 실제 기록: dry-run 수 = 따로 센 수, 실행 후 확인, 재 dry-run 0 |
+
+**정할 것 초안**
+
+없음. 사용자 말이 규칙을 정했고, 나머지(표식 값, 파일 0개면 모름, 통계 묶음 이름·순서, 보조 문구)는 되돌리기 쉬운 구현 선택이다.
+
 ## 2. 사용자 검토
 
 | 날짜 | 결과 | 고칠 점 |
@@ -232,6 +289,7 @@
 | 2 | 메인 세션(사용자 결정) | D-17 답 "일시 컬럼, 화면엔 안 보임, 정렬 기준으로만, 그룹바이는 작성 순서" | `applications.applied_datetime` 추가, 공용 정렬 `applicationOrder`, [지원 완료]·일괄 등록에서 값 채우기, 일회성 채우기 함수·스크립트(메일 수신 시각, 그룹바이 표 순서)와 실행 절차(계획 Task 5) | 대기 |
 | 3 | 메인 세션(사용자 요청) | "서류합격으로 조회하면 서류 합격된 목록이 다 나와야 됨" | 상태 필터를 거친 단계 기준으로(계획 Task 6), 요약 줄 세 숫자·서류 통과율도 같은 기준, 보드 칸은 지금 상태 유지 | 대기 |
 | 4 | 메인 세션(사용자 요청, 2026-11-20) | "상태 변경 시 면접, 코딩테스트 등등 일자 등록도 되는지?" → "코딩테스트/과제 단계는 합쳐서" | 상태 "과제·코딩테스트"(`assignment`)를 서류합격과 면접 사이에 추가(계획 Task 7). 거친 단계에 넣고 서류합격을 함께 거친 것으로 봄. 보드 6칸, 색 청람. 통계 계획의 단계별 흐름에 곁가지 줄. 기존 1건 이관은 D-22 | 대기 |
+| 5 | 메인 세션(사용자 말, 2026-11-20) | "포트폴리오, 경력기술서는 가장 이전버전 이전엔 없음임. 그 전까진 이력서만 제출함" | 경력기술서·포트폴리오의 가장 이른 파일 앞 지원을 "모름"에서 "없음"(`'none'`)으로. 자동 선택·직접 입력 select·저장 검증·메모 이관·제출 서류 표시·통계 묶음(파일 → 없음 → 모름) 수정, 기존 기록 일회성 채우기(계획 Task 8). 스키마 변경 없음 | 대기 |
 
 ## 6. 실패 (해결하지 못했을 때만)
 
