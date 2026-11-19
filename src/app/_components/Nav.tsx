@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 
 const LINKS = [
   { href: "/", label: "대시보드" },
+  { href: "/stats", label: "통계" },
   { href: "/postings/new", label: "공고 등록" },
   { href: "/postings/analyzed", label: "분석한 공고" },
   { href: "/resume", label: "기본 이력서" },

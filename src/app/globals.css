@@ -438,3 +438,28 @@ textarea.in-sm { height: auto; min-height: 64px; padding: 8px 10px; }
 .pill-row { display: flex; gap: 8px; flex-wrap: wrap; }
 .tl-note { color: var(--sub); font-size: 13px; margin-left: 8px; }
 .pager-note { color: var(--sub); font-size: 13px; margin-top: 6px; }
+
+/* 통계 화면 */
+.stat-cards { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 10px; }
+.stat-card { padding: 12px 14px; }
+.stat-big { font-size: 24px; font-weight: 700; font-variant-numeric: tabular-nums; margin: 2px 0; }
+.stat-panel { padding: 16px 18px; margin-top: 16px; min-width: 0; }
+.stat-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+.stat-head h2 { font-size: 16px; margin: 0; }
+.stat-toggles { display: flex; gap: 8px; flex-wrap: wrap; }
+.stat-grid2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.stat-grid2 .stat-panel { margin-top: 16px; }
+.stat-legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--sub); margin-top: 8px; }
+.stat-legend .sw { display: inline-block; width: 10px; height: 10px; margin-right: 4px; vertical-align: -1px; }
+.seg { display: inline-flex; border: 1px solid var(--line-strong); border-radius: 8px; overflow: hidden; }
+.seg a { padding: 4px 12px; font-size: 13px; color: var(--sub); font-weight: 600; }
+.seg a + a { border-left: 1px solid var(--line-strong); }
+.seg a.on { background: var(--accent-tint); color: var(--accent); }
+.stats-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-variant-numeric: tabular-nums; }
+.stats-table th, .stats-table td { border-bottom: 1px solid var(--line); padding: 5px 6px; text-align: right; font-size: 13px; }
+.stats-table th:first-child, .stats-table td:first-child { text-align: left; }
+.stats-table th { color: var(--sub); font-weight: 500; }
+.st-badge { display: inline-block; margin-left: 6px; border: 1px solid var(--line-strong); border-radius: 4px; padding: 0 6px; font-size: 11px; color: var(--sub); }
+.stat-terms { margin-top: 18px; font-size: 13px; color: var(--sub); }
+.stat-terms summary { cursor: pointer; }
+@media (max-width: 1000px) { .stat-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } .stat-grid2 { grid-template-columns: 1fr; } }
