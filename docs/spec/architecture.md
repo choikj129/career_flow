@@ -53,6 +53,9 @@ src/lib/
 ├─ companies/repo.ts         회사·별칭·매칭·합치기
 ├─ postings/repo.ts          공고 등록·조회·분석 결과 저장
 ├─ applications/repo.ts      지원 기록·상태 이력·중복 조회·일괄 등록·제출 이력서
+├─ documents/
+│  ├─ pick.ts                서류 종류, 파일 이름 규칙, 지원일로 버전 고르기, 메모 "제출 서류" 줄 (순수)
+│  └─ repo.ts                서류 버전 목록·폴더 찾기·삭제·메모 이관
 ├─ search/dashboard.ts       대시보드 검색·필터·요약 지표
 ├─ tailored/repo.ts          맞춤 이력서·리비전
 ├─ interview/
@@ -90,6 +93,7 @@ src/lib/
 | 단계 | 생기는 파일 |
 |---|---|
 | 1 | config, settings, backup, db/*, domain/*, resume/schema·repo, companies, postings, applications, search, extract/*, ai/runner·claude-cli·health·queue·prompt, ai/tasks/index·schemas·analyze-posting·import-resume·import-applications |
+| 2 추가 | documents/* (`docs/plans/phase-2-past-records.md`) |
 | 3 | resume/diff·fabrication, tailored/repo, pdf/*, ai/session, ai/tasks/tailor-* |
 | 4 | interview/*, ai/tasks/interview-schemas·prepare-interview |
 | 5 | sync/repo, ai/tasks/site-sync-* |
@@ -113,7 +117,8 @@ src/app/
 │  ├─ applications.ts        지원 완료, 상태 변경, 메모
 │  ├─ postings.ts            공고 등록, 본문 붙여넣기, 다시 분석, 회사 연결·별칭
 │  ├─ resume.ts              이력서 가져오기·저장, 희망 조건
-│  ├─ import.ts              지원 내역 추출·일괄 등록
+│  ├─ import.ts              지원 내역 추출·일괄 등록·직접 입력 중복 확인
+│  ├─ documents.ts           서류 버전 폴더 찾기·삭제·메모 이관
 │  ├─ settings.ts            모델·시간 제한, 로그인 확인, 사이트 로그인 창, 백업, 데이터 폴더 열기
 │  ├─ tailored.ts            맞춤 이력서 생성·다듬기        (3단계)
 │  ├─ interview.ts           면접 준비 생성·추가 요청        (4단계)
@@ -136,7 +141,8 @@ src/app/
 ├─ resume/
 │  ├─ page.tsx               기본 이력서
 │  ├─ ResumeEditor.tsx
-│  └─ PreferencesForm.tsx
+│  ├─ PreferencesForm.tsx
+│  └─ DocVersions.tsx        서류 버전 탭
 ├─ import/
 │  ├─ page.tsx               지원 내역 가져오기
 │  └─ ImportReviewTable.tsx
@@ -219,6 +225,7 @@ scripts/
 data/                       git 제외. 위치는 CAREER_FLOW_DATA_DIR로 바꿀 수 있음
 ├─ career-flow.db           SQLite
 ├─ uploads/                 올린 이력서·캡처 원본 (resume/, import/)
+├─ documents/               서류 버전 PDF 복사본 (resume/, career/, portfolio/ 아래 <종류>_YYYYMMDD.pdf)
 ├─ ai-work/<jobId>/         작업별 Claude Code 작업 폴더 (입력 파일)
 ├─ browser-profile/         Playwright 영구 프로필 (사이트 로그인 유지)
 └─ backups/                 DB 백업 (자동 30개, 수동 10개)
