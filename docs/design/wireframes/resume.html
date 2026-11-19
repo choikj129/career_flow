@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>와이어프레임 — 기본 이력서</title><style>
+/* 와이어프레임 공용 스타일 — 디자인이 아니라 배치·문구 확인용. 색은 회색만 쓴다. */
+:root {
+  --bg: #F2F2F2; --box: #FFFFFF; --line: #9A9A9A; --soft: #D6D6D6; --text: #222; --sub: #6B6B6B; --note: #5A5A5A;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 system-ui, "Malgun Gothic", sans-serif; }
+a { color: inherit; }
+.page-title { max-width: 1240px; margin: 28px auto 6px; padding: 0 20px; font-size: 20px; font-weight: 700; }
+.page-desc { max-width: 1240px; margin: 0 auto 8px; padding: 0 20px; color: var(--sub); }
+.toc { max-width: 1240px; margin: 0 auto 8px; padding: 0 20px; display: flex; gap: 6px 14px; flex-wrap: wrap; }
+
+/* 프레임 = 화면 하나 */
+.frame { max-width: 1240px; margin: 26px auto 0; padding: 0 20px; }
+.frame-name { font-weight: 700; margin: 0 0 6px; }
+.frame-name small { font-weight: 400; color: var(--sub); margin-left: 6px; }
+.screen { background: var(--box); border: 1px solid var(--line); min-height: 200px; }
+.notes { margin: 8px 0 0; padding-left: 18px; color: var(--note); font-size: 13px; }
+
+/* 상단 내비게이션 */
+.nav { display: flex; align-items: center; gap: 18px; height: 52px; padding: 0 20px; border-bottom: 1px solid var(--line); }
+.nav .logo { font-weight: 700; margin-right: 12px; }
+.nav .cur { font-weight: 700; text-decoration: underline; text-underline-offset: 6px; }
+.nav .right { margin-left: auto; color: var(--sub); }
+.cnt { display: inline-block; min-width: 18px; padding: 0 5px; border: 1px solid var(--line); border-radius: 9px; font-size: 11px; text-align: center; margin-left: 3px; }
+
+.body { padding: 20px; }
+.row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.row.between { justify-content: space-between; }
+.grow { flex: 1; }
+.gap { height: 14px; }
+.h1 { font-size: 20px; font-weight: 700; }
+.h2 { font-size: 16px; font-weight: 700; margin: 0 0 8px; }
+.sub { color: var(--sub); }
+.small { font-size: 12px; }
+
+/* 입력 요소 */
+.btn { display: inline-flex; align-items: center; justify-content: center; height: 32px; padding: 0 12px; border: 1px solid var(--line); background: #fff; white-space: nowrap; }
+.btn.primary { border-width: 2px; border-color: #333; font-weight: 700; }
+.btn.off { color: #AAA; border-style: dashed; }
+.btn.sm { height: 26px; font-size: 12px; padding: 0 8px; }
+.input { display: flex; align-items: center; height: 34px; padding: 0 10px; border: 1px solid var(--line); color: var(--sub); background: #fff; }
+.input.big { height: 42px; font-size: 16px; }
+.area { border: 1px solid var(--line); color: var(--sub); padding: 8px 10px; min-height: 80px; background: #fff; }
+.select::after { content: " ▾"; }
+.check::before { content: "☐ "; }
+.check.on::before { content: "☑ "; }
+.radio::before { content: "○ "; }
+.radio.on::before { content: "● "; }
+
+/* 묶음 */
+.box { border: 1px solid var(--line); padding: 12px; }
+.box.dash { border-style: dashed; }
+.banner { border: 2px solid #555; padding: 10px 12px; }
+.banner.soft { border: 1px dashed var(--line); }
+.placeholder { display: grid; place-items: center; background: repeating-linear-gradient(45deg, #F4F4F4, #F4F4F4 8px, #EAEAEA 8px, #EAEAEA 16px); border: 1px solid var(--soft); color: var(--sub); }
+.cols { display: grid; gap: 16px; }
+.c2 { grid-template-columns: 1fr 1fr; }
+.c-main-side { grid-template-columns: 1fr 300px; }
+.c-side-main { grid-template-columns: 200px 1fr; }
+.c4 { grid-template-columns: repeat(4, 1fr); }
+.tabs { display: flex; gap: 0; border-bottom: 1px solid var(--line); }
+.tabs span { padding: 8px 14px; border: 1px solid transparent; border-bottom: 0; margin-bottom: -1px; color: var(--sub); }
+.tabs span.cur { border-color: var(--line); background: #fff; color: var(--text); font-weight: 700; }
+.chip { display: inline-block; padding: 2px 10px; border: 1px solid var(--line); border-radius: 12px; }
+.chip.cur { border-width: 2px; border-color: #333; font-weight: 700; }
+.badge { display: inline-block; padding: 0 6px; border: 1px solid var(--line); font-size: 12px; }
+
+/* 표 */
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; font-weight: 600; color: var(--sub); border-bottom: 1px solid var(--line); padding: 7px 8px; }
+td { border-bottom: 1px solid var(--soft); padding: 8px; vertical-align: top; }
+td.r, th.r { text-align: right; }
+tr.open td { background: #F7F7F7; }
+ul.plain { margin: 0; padding-left: 18px; }
+
+/* 미정(사용자 결정 필요) 표시 */
+.tbd { outline: 2px dashed #999; outline-offset: 2px; position: relative; }
+.tbd::after { content: "미정"; position: absolute; top: -10px; right: -6px; background: #fff; border: 1px solid #999; font-size: 10px; padding: 0 4px; color: #555; }
+
+/* 모달 */
+.overlay { background: rgba(0,0,0,.18); padding: 40px 20px; display: grid; place-items: center; }
+.modal { background: #fff; border: 1px solid #555; width: 440px; max-width: 100%; padding: 16px; }
+.field { display: grid; grid-template-columns: 110px 1fr; gap: 8px; align-items: center; margin-bottom: 10px; }
+
+@media (max-width: 860px) {
+  .c2, .c-main-side, .c-side-main, .c4 { grid-template-columns: 1fr; }
+  .nav { overflow-x: auto; }
+}
+</style></head>
+<body>
+<div class="page-title">5. 기본 이력서 <span class="sub" style="font-weight:400">/resume</span></div>
+<div class="page-desc">모든 분석과 맞춤 이력서의 기준이 되는 이력서. 상단 하위 탭: 이력서 / 버전 기록 / 희망 조건. <a href="index.html">목록으로</a></div>
+
+<section class="frame">
+  <p class="frame-name">5-1 처음 등록 <small>이력서가 없을 때</small></p>
+  <div class="screen">
+    <nav class="nav"><span class="logo">Career Flow</span><a>대시보드</a><a>공고 등록</a><a>분석한 공고</a><a class="cur">기본 이력서</a><a>가져오기</a><a>사이트 반영</a><a>설정</a></nav>
+    <div class="body" style="max-width:720px;margin:0 auto;padding:40px 20px">
+      <div class="h1">기존 이력서를 올려 시작하세요</div>
+      <div class="sub">이력서, 경력기술서, 포트폴리오를 함께 올리면 항목별로 정리합니다. 저장하기 전에 내용을 확인하고 고칠 수 있습니다.</div>
+      <div class="gap"></div>
+      <div class="placeholder" style="height:120px">파일을 끌어다 놓거나 [파일 선택] — PDF, DOCX, TXT, MD (파일당 20MB까지)</div>
+      <div class="gap"></div>
+      <div class="box small">이력서_2026.pdf　1.2MB　<a>빼기</a><br>경력기술서.docx　340KB　<a>빼기</a><br><span class="sub">포트폴리오.zip — 지원하지 않는 형식이라 제외됩니다</span></div>
+      <div class="gap"></div>
+      <div class="small sub">또는 텍스트 붙여넣기</div>
+      <div class="area"></div>
+      <div class="gap"></div>
+      <div class="row between"><a>직접 입력으로 시작</a><span class="btn primary">가져오기</span></div>
+    </div>
+  </div>
+  <ul class="notes"><li>[가져오기] → 진행 표시("이력서를 항목별로 정리 중…") → 끝나면 5-2 편집 화면이 "저장 전 검토" 상태로 열린다.</li></ul>
+</section>
+
+<section class="frame">
+  <p class="frame-name">5-2 이력서 편집 <small>저장 전 검토 상태 안내가 함께 보이는 예</small></p>
+  <div class="screen">
+    <nav class="nav"><span class="logo">Career Flow</span><a>대시보드</a><a>공고 등록</a><a>분석한 공고</a><a class="cur">기본 이력서</a><a>가져오기</a><a>사이트 반영</a><a>설정</a></nav>
+    <div class="body">
+      <div class="row between">
+        <div><span class="h1">기본 이력서</span>　<span class="sub">v3　2026-11-16 저장</span></div>
+        <div class="row"><span class="btn select">PDF 받기</span><span class="btn primary">저장</span></div>
+      </div>
+      <div class="gap"></div>
+      <div class="tabs"><span class="cur">이력서</span><span>버전 기록</span><span>희망 조건</span></div>
+      <div class="gap"></div>
+      <div class="banner">아직 저장되지 않았습니다. 가져온 내용을 확인하고 [기본 이력서로 저장]을 누르세요.</div>
+      <div class="gap"></div>
+      <div class="cols c-side-main">
+        <div class="box small">
+          <div><b>기본 정보</b></div><div>한 줄 소개</div><div>경력 (2)</div><div>프로젝트 (4)</div><div>기술 스택</div><div>학력</div><div>자격증·수상·교육</div><div>경력기술서</div><div>포트폴리오 (2)</div>
+        </div>
+        <div>
+          <div class="h2">기본 정보</div>
+          <div class="cols c2"><span class="input">이름</span><span class="input">이메일</span><span class="input">전화</span><span></span></div>
+          <div class="row" style="margin-top:8px"><span class="input" style="width:140px">GitHub</span><span class="input grow">https://github.com/…</span><span class="btn sm">삭제</span></div>
+          <div style="margin-top:6px"><span class="btn sm">+ 링크 추가</span></div>
+          <div class="gap"></div>
+          <div class="h2">한 줄 소개</div>
+          <div class="area" style="min-height:52px"></div>
+          <div class="gap"></div>
+          <div class="row between"><span class="h2" style="margin:0">경력</span><span class="btn sm">+ 경력 추가</span></div>
+          <div class="box" style="margin-top:6px">
+            <div class="row between"><span><b>A사</b>　결제플랫폼팀 / 선임</span><span class="row"><span class="btn sm">↑</span><span class="btn sm">↓</span><span class="btn sm">삭제</span></span></div>
+            <div class="cols c2" style="margin-top:8px"><span class="input">회사</span><span class="input">직무/직급</span><span class="input">시작 2021-03</span><span class="row"><span class="input grow">종료</span><span class="check on">재직 중</span></span></div>
+            <div class="small sub" style="margin-top:8px">담당 업무</div><div class="area" style="min-height:44px"></div>
+            <div class="small sub" style="margin-top:8px">성과</div>
+            <div class="row"><span class="input grow">결제 승인 API 처리량 3배 개선</span><span class="btn sm">↑</span><span class="btn sm">↓</span><span class="btn sm">삭제</span></div>
+            <div style="margin-top:6px"><span class="btn sm">+ 성과 추가</span></div>
+          </div>
+          <div class="box" style="border-top:0"><b>B사</b>　… (접힘)</div>
+          <div class="gap"></div>
+          <div class="sub">프로젝트, 기술 스택(분류 + 기술 목록), 학력, 자격증, 경력기술서(긴 본문), 포트폴리오(제목, 링크 또는 파일, 요약)도 같은 방식</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <ul class="notes">
+    <li>[저장] → 작은 창: "변경 메모 (선택)" 입력 + [저장]. 내용이 이전 버전과 같으면 "바뀐 내용이 없습니다".</li>
+    <li>저장 후 내용이 바뀌었으면 알림: "4개 사이트에 반영할 내용을 정리하고 있습니다" + [사이트 반영 보기] (5단계).</li>
+    <li>저장 전 검토 상태에서는 [저장] 버튼 문구가 [기본 이력서로 저장]이 된다. 저장하지 않고 떠나면 확인 창.</li>
+    <li>[PDF 받기] 메뉴: 이력서+경력기술서 / 이력서만 / 경력기술서만 (3단계).</li>
+  </ul>
+</section>
+
+<section class="frame">
+  <p class="frame-name">5-3 버전 기록 <small>왼쪽 목록, 오른쪽 선택한 버전</small></p>
+  <div class="screen"><div class="body">
+    <div class="tabs"><span>이력서</span><span class="cur">버전 기록</span><span>희망 조건</span></div>
+    <div class="gap"></div>
+    <div class="cols c-side-main">
+      <table><tbody>
+        <tr><td><b>v3</b> (현재)<div class="small sub">2026-11-16 · B 프로젝트 성과 추가</div></td></tr>
+        <tr class="open"><td><b>v2</b><div class="small sub">2026-11-10 · 요약 수정</div></td></tr>
+        <tr><td><b>v1</b><div class="small sub">2026-11-02 · 처음 등록</div></td></tr>
+      </tbody></table>
+      <div>
+        <div class="row between"><span class="h2" style="margin:0">v2 (읽기 전용)</span><span class="row"><span class="chip">내용</span><span class="chip cur">직전 버전과 비교</span></span></div>
+        <div class="gap"></div>
+        <div class="box"><div class="small sub">한 줄 소개</div><div><s>백엔드 개발자 …</s></div><div><b>결제 백엔드 개발자 …</b></div></div>
+      </div>
+    </div>
+  </div></div>
+</section>
+
+<section class="frame">
+  <p class="frame-name">5-4 희망 조건 <small>모두 선택 입력</small></p>
+  <div class="screen"><div class="body" style="max-width:720px">
+    <div class="tabs"><span>이력서</span><span>버전 기록</span><span class="cur">희망 조건</span></div>
+    <div class="gap"></div>
+    <div class="sub small">비워 두면 분석에서 "희망 조건" 항목이 빠집니다.</div>
+    <div class="gap"></div>
+    <div class="field"><span>희망 연봉</span><span class="row"><span class="input" style="width:120px">6000</span> ~ <span class="input" style="width:120px">7500</span> 만원</span></div>
+    <div class="field"><span>근무 지역</span><span class="row"><span class="chip">서울 ×</span><span class="input grow">입력 후 Enter</span></span></div>
+    <div class="field"><span>근무 방식</span><span class="row"><span class="radio on">상관없음</span><span class="radio">원격</span><span class="radio">하이브리드</span><span class="radio">출근</span></span></div>
+    <div class="field"><span>회사 규모</span><span class="row"><span class="check">스타트업</span><span class="check on">중견</span><span class="check on">대기업</span></span></div>
+    <div class="field"><span>선호 산업</span><span class="row"><span class="chip">핀테크 ×</span><span class="input grow">입력 후 Enter</span></span></div>
+    <div class="field"><span>기피 산업</span><span class="input">입력 후 Enter</span></div>
+    <div class="field"><span>기타 메모</span><span class="area" style="min-height:52px"></span></div>
+    <div class="row" style="justify-content:flex-end"><span class="btn primary">희망 조건 저장</span></div>
+  </div></div>
+</section>
+<div style="height:40px"></div>
+</body></html>

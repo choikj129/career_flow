@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>와이어프레임 — 공고 등록, 분석한 공고</title><style>
+/* 와이어프레임 공용 스타일 — 디자인이 아니라 배치·문구 확인용. 색은 회색만 쓴다. */
+:root {
+  --bg: #F2F2F2; --box: #FFFFFF; --line: #9A9A9A; --soft: #D6D6D6; --text: #222; --sub: #6B6B6B; --note: #5A5A5A;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 system-ui, "Malgun Gothic", sans-serif; }
+a { color: inherit; }
+.page-title { max-width: 1240px; margin: 28px auto 6px; padding: 0 20px; font-size: 20px; font-weight: 700; }
+.page-desc { max-width: 1240px; margin: 0 auto 8px; padding: 0 20px; color: var(--sub); }
+.toc { max-width: 1240px; margin: 0 auto 8px; padding: 0 20px; display: flex; gap: 6px 14px; flex-wrap: wrap; }
+
+/* 프레임 = 화면 하나 */
+.frame { max-width: 1240px; margin: 26px auto 0; padding: 0 20px; }
+.frame-name { font-weight: 700; margin: 0 0 6px; }
+.frame-name small { font-weight: 400; color: var(--sub); margin-left: 6px; }
+.screen { background: var(--box); border: 1px solid var(--line); min-height: 200px; }
+.notes { margin: 8px 0 0; padding-left: 18px; color: var(--note); font-size: 13px; }
+
+/* 상단 내비게이션 */
+.nav { display: flex; align-items: center; gap: 18px; height: 52px; padding: 0 20px; border-bottom: 1px solid var(--line); }
+.nav .logo { font-weight: 700; margin-right: 12px; }
+.nav .cur { font-weight: 700; text-decoration: underline; text-underline-offset: 6px; }
+.nav .right { margin-left: auto; color: var(--sub); }
+.cnt { display: inline-block; min-width: 18px; padding: 0 5px; border: 1px solid var(--line); border-radius: 9px; font-size: 11px; text-align: center; margin-left: 3px; }
+
+.body { padding: 20px; }
+.row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.row.between { justify-content: space-between; }
+.grow { flex: 1; }
+.gap { height: 14px; }
+.h1 { font-size: 20px; font-weight: 700; }
+.h2 { font-size: 16px; font-weight: 700; margin: 0 0 8px; }
+.sub { color: var(--sub); }
+.small { font-size: 12px; }
+
+/* 입력 요소 */
+.btn { display: inline-flex; align-items: center; justify-content: center; height: 32px; padding: 0 12px; border: 1px solid var(--line); background: #fff; white-space: nowrap; }
+.btn.primary { border-width: 2px; border-color: #333; font-weight: 700; }
+.btn.off { color: #AAA; border-style: dashed; }
+.btn.sm { height: 26px; font-size: 12px; padding: 0 8px; }
+.input { display: flex; align-items: center; height: 34px; padding: 0 10px; border: 1px solid var(--line); color: var(--sub); background: #fff; }
+.input.big { height: 42px; font-size: 16px; }
+.area { border: 1px solid var(--line); color: var(--sub); padding: 8px 10px; min-height: 80px; background: #fff; }
+.select::after { content: " ▾"; }
+.check::before { content: "☐ "; }
+.check.on::before { content: "☑ "; }
+.radio::before { content: "○ "; }
+.radio.on::before { content: "● "; }
+
+/* 묶음 */
+.box { border: 1px solid var(--line); padding: 12px; }
+.box.dash { border-style: dashed; }
+.banner { border: 2px solid #555; padding: 10px 12px; }
+.banner.soft { border: 1px dashed var(--line); }
+.placeholder { display: grid; place-items: center; background: repeating-linear-gradient(45deg, #F4F4F4, #F4F4F4 8px, #EAEAEA 8px, #EAEAEA 16px); border: 1px solid var(--soft); color: var(--sub); }
+.cols { display: grid; gap: 16px; }
+.c2 { grid-template-columns: 1fr 1fr; }
+.c-main-side { grid-template-columns: 1fr 300px; }
+.c-side-main { grid-template-columns: 200px 1fr; }
+.c4 { grid-template-columns: repeat(4, 1fr); }
+.tabs { display: flex; gap: 0; border-bottom: 1px solid var(--line); }
+.tabs span { padding: 8px 14px; border: 1px solid transparent; border-bottom: 0; margin-bottom: -1px; color: var(--sub); }
+.tabs span.cur { border-color: var(--line); background: #fff; color: var(--text); font-weight: 700; }
+.chip { display: inline-block; padding: 2px 10px; border: 1px solid var(--line); border-radius: 12px; }
+.chip.cur { border-width: 2px; border-color: #333; font-weight: 700; }
+.badge { display: inline-block; padding: 0 6px; border: 1px solid var(--line); font-size: 12px; }
+
+/* 표 */
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; font-weight: 600; color: var(--sub); border-bottom: 1px solid var(--line); padding: 7px 8px; }
+td { border-bottom: 1px solid var(--soft); padding: 8px; vertical-align: top; }
+td.r, th.r { text-align: right; }
+tr.open td { background: #F7F7F7; }
+ul.plain { margin: 0; padding-left: 18px; }
+
+/* 미정(사용자 결정 필요) 표시 */
+.tbd { outline: 2px dashed #999; outline-offset: 2px; position: relative; }
+.tbd::after { content: "미정"; position: absolute; top: -10px; right: -6px; background: #fff; border: 1px solid #999; font-size: 10px; padding: 0 4px; color: #555; }
+
+/* 모달 */
+.overlay { background: rgba(0,0,0,.18); padding: 40px 20px; display: grid; place-items: center; }
+.modal { background: #fff; border: 1px solid #555; width: 440px; max-width: 100%; padding: 16px; }
+.field { display: grid; grid-template-columns: 110px 1fr; gap: 8px; align-items: center; margin-bottom: 10px; }
+
+@media (max-width: 860px) {
+  .c2, .c-main-side, .c-side-main, .c4 { grid-template-columns: 1fr; }
+  .nav { overflow-x: auto; }
+}
+</style></head>
+<body>
+<div class="page-title">2. 공고 등록 <span class="sub" style="font-weight:400">/postings/new</span>　4. 분석한 공고 <span class="sub" style="font-weight:400">/postings/analyzed</span></div>
+<div class="page-desc"><a href="index.html">목록으로</a></div>
+
+<section class="frame">
+  <p class="frame-name">2-1 공고 등록 <small>본문 붙여넣기를 펼친 상태</small></p>
+  <div class="screen">
+    <nav class="nav"><span class="logo">Career Flow</span><a>대시보드</a><a class="cur">공고 등록</a><a>분석한 공고</a><a>기본 이력서</a><a>가져오기</a><a>사이트 반영<span class="cnt">3</span></a><a>설정</a></nav>
+    <div class="body" style="max-width:720px;margin:0 auto;padding:40px 20px">
+      <div class="h1">공고 등록</div>
+      <div class="sub">공고 링크를 넣으면 바로 분석을 시작합니다. 보통 1~2분 걸립니다.</div>
+      <div class="gap"></div>
+      <div class="small sub">공고 링크</div>
+      <span class="input big">https://www.wanted.co.kr/wd/12345</span>
+      <div class="small sub" style="margin-top:4px">리멤버, 원티드, 그룹바이, 잡코리아는 주소로 사이트를 알아봅니다. 그 밖의 주소는 "기타"로 등록합니다.</div>
+      <div class="gap"></div>
+      <div>▾ 링크로 안 열리면 공고 본문 붙여넣기</div>
+      <div class="area" style="min-height:140px;margin-top:6px">공고 페이지에서 본문을 복사해 붙여넣으세요. 링크 없이 본문만 넣어도 됩니다.</div>
+      <div class="gap"></div>
+      <div class="small sub">출처 이름 (기타 사이트일 때만 보임, 선택)</div>
+      <span class="input">예: 회사 채용 페이지, 지인 추천 — 전에 쓴 이름 자동완성</span>
+      <div class="gap"></div>
+      <div class="row" style="justify-content:flex-end"><span class="btn primary">등록하고 분석</span></div>
+    </div>
+  </div>
+  <ul class="notes">
+    <li>링크와 본문이 둘 다 비면 [등록하고 분석] 비활성.</li>
+    <li>누르면 공고 상세(3-2 진행 표시)로 이동. 이미 등록된 링크면 그 공고로 이동하고 알림 "이미 등록된 공고입니다".</li>
+    <li>기본 이력서가 없으면 버튼 위에 경고: "기본 이력서가 없어 분석할 수 없습니다. 먼저 등록하세요." + [기본 이력서 등록].</li>
+    <li>출처 이름 칸은 주소가 4개 사이트가 아니거나 본문만 넣을 때 나타난다 (D-03).</li>
+  </ul>
+</section>
+
+<section class="frame">
+  <p class="frame-name">4-1 분석한 공고</p>
+  <div class="screen">
+    <nav class="nav"><span class="logo">Career Flow</span><a>대시보드</a><a>공고 등록</a><a class="cur">분석한 공고</a><a>기본 이력서</a><a>가져오기</a><a>사이트 반영<span class="cnt">3</span></a><a>설정</a></nav>
+    <div class="body">
+      <div class="row between"><span class="h1">분석한 공고</span><span class="btn primary">+ 공고 등록</span></div>
+      <div class="sub">분석만 하고 아직 지원하지 않은 공고입니다. 지원하면 지원 기록으로 옮겨집니다.</div>
+      <div class="gap"></div>
+      <table>
+        <thead><tr><th>회사</th><th>포지션</th><th>사이트</th><th class="r">적합도</th><th>마감일</th><th>등록일</th></tr></thead>
+        <tbody>
+          <tr><td>모빌페이</td><td>서버 개발자 (정산)</td><td>원티드</td><td class="r">82</td><td>2026-12-01</td><td>2026-11-16</td></tr>
+          <tr><td>(분석 중)</td><td>—</td><td>리멤버</td><td class="r">분석 중</td><td>—</td><td>2026-11-16</td></tr>
+          <tr><td>코어뱅크</td><td>시니어 백엔드</td><td>잡코리아</td><td class="r">실패</td><td>—</td><td>2026-11-15</td></tr>
+          <tr style="color:#999"><td>루미에듀</td><td>API 개발자</td><td>원티드</td><td class="r">69</td><td>2026-11-10 (마감)</td><td>2026-11-02</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <ul class="notes"><li>행 클릭 → 공고 상세. 마감이 지난 공고는 흐리게 표시.</li><li>비어 있으면 "분석만 하고 지원하지 않은 공고가 없습니다."</li></ul>
+</section>
+<div style="height:40px"></div>
+</body></html>

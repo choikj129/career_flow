@@ -1,0 +1,390 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>와이어프레임 — 공고 상세</title><style>
+/* 와이어프레임 공용 스타일 — 디자인이 아니라 배치·문구 확인용. 색은 회색만 쓴다. */
+:root {
+  --bg: #F2F2F2; --box: #FFFFFF; --line: #9A9A9A; --soft: #D6D6D6; --text: #222; --sub: #6B6B6B; --note: #5A5A5A;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.5 system-ui, "Malgun Gothic", sans-serif; }
+a { color: inherit; }
+.page-title { max-width: 1240px; margin: 28px auto 6px; padding: 0 20px; font-size: 20px; font-weight: 700; }
+.page-desc { max-width: 1240px; margin: 0 auto 8px; padding: 0 20px; color: var(--sub); }
+.toc { max-width: 1240px; margin: 0 auto 8px; padding: 0 20px; display: flex; gap: 6px 14px; flex-wrap: wrap; }
+
+/* 프레임 = 화면 하나 */
+.frame { max-width: 1240px; margin: 26px auto 0; padding: 0 20px; }
+.frame-name { font-weight: 700; margin: 0 0 6px; }
+.frame-name small { font-weight: 400; color: var(--sub); margin-left: 6px; }
+.screen { background: var(--box); border: 1px solid var(--line); min-height: 200px; }
+.notes { margin: 8px 0 0; padding-left: 18px; color: var(--note); font-size: 13px; }
+
+/* 상단 내비게이션 */
+.nav { display: flex; align-items: center; gap: 18px; height: 52px; padding: 0 20px; border-bottom: 1px solid var(--line); }
+.nav .logo { font-weight: 700; margin-right: 12px; }
+.nav .cur { font-weight: 700; text-decoration: underline; text-underline-offset: 6px; }
+.nav .right { margin-left: auto; color: var(--sub); }
+.cnt { display: inline-block; min-width: 18px; padding: 0 5px; border: 1px solid var(--line); border-radius: 9px; font-size: 11px; text-align: center; margin-left: 3px; }
+
+.body { padding: 20px; }
+.row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.row.between { justify-content: space-between; }
+.grow { flex: 1; }
+.gap { height: 14px; }
+.h1 { font-size: 20px; font-weight: 700; }
+.h2 { font-size: 16px; font-weight: 700; margin: 0 0 8px; }
+.sub { color: var(--sub); }
+.small { font-size: 12px; }
+
+/* 입력 요소 */
+.btn { display: inline-flex; align-items: center; justify-content: center; height: 32px; padding: 0 12px; border: 1px solid var(--line); background: #fff; white-space: nowrap; }
+.btn.primary { border-width: 2px; border-color: #333; font-weight: 700; }
+.btn.off { color: #AAA; border-style: dashed; }
+.btn.sm { height: 26px; font-size: 12px; padding: 0 8px; }
+.input { display: flex; align-items: center; height: 34px; padding: 0 10px; border: 1px solid var(--line); color: var(--sub); background: #fff; }
+.input.big { height: 42px; font-size: 16px; }
+.area { border: 1px solid var(--line); color: var(--sub); padding: 8px 10px; min-height: 80px; background: #fff; }
+.select::after { content: " ▾"; }
+.check::before { content: "☐ "; }
+.check.on::before { content: "☑ "; }
+.radio::before { content: "○ "; }
+.radio.on::before { content: "● "; }
+
+/* 묶음 */
+.box { border: 1px solid var(--line); padding: 12px; }
+.box.dash { border-style: dashed; }
+.banner { border: 2px solid #555; padding: 10px 12px; }
+.banner.soft { border: 1px dashed var(--line); }
+.placeholder { display: grid; place-items: center; background: repeating-linear-gradient(45deg, #F4F4F4, #F4F4F4 8px, #EAEAEA 8px, #EAEAEA 16px); border: 1px solid var(--soft); color: var(--sub); }
+.cols { display: grid; gap: 16px; }
+.c2 { grid-template-columns: 1fr 1fr; }
+.c-main-side { grid-template-columns: 1fr 300px; }
+.c-side-main { grid-template-columns: 200px 1fr; }
+.c4 { grid-template-columns: repeat(4, 1fr); }
+.tabs { display: flex; gap: 0; border-bottom: 1px solid var(--line); }
+.tabs span { padding: 8px 14px; border: 1px solid transparent; border-bottom: 0; margin-bottom: -1px; color: var(--sub); }
+.tabs span.cur { border-color: var(--line); background: #fff; color: var(--text); font-weight: 700; }
+.chip { display: inline-block; padding: 2px 10px; border: 1px solid var(--line); border-radius: 12px; }
+.chip.cur { border-width: 2px; border-color: #333; font-weight: 700; }
+.badge { display: inline-block; padding: 0 6px; border: 1px solid var(--line); font-size: 12px; }
+
+/* 표 */
+table { width: 100%; border-collapse: collapse; }
+th { text-align: left; font-weight: 600; color: var(--sub); border-bottom: 1px solid var(--line); padding: 7px 8px; }
+td { border-bottom: 1px solid var(--soft); padding: 8px; vertical-align: top; }
+td.r, th.r { text-align: right; }
+tr.open td { background: #F7F7F7; }
+ul.plain { margin: 0; padding-left: 18px; }
+
+/* 미정(사용자 결정 필요) 표시 */
+.tbd { outline: 2px dashed #999; outline-offset: 2px; position: relative; }
+.tbd::after { content: "미정"; position: absolute; top: -10px; right: -6px; background: #fff; border: 1px solid #999; font-size: 10px; padding: 0 4px; color: #555; }
+
+/* 모달 */
+.overlay { background: rgba(0,0,0,.18); padding: 40px 20px; display: grid; place-items: center; }
+.modal { background: #fff; border: 1px solid #555; width: 440px; max-width: 100%; padding: 16px; }
+.field { display: grid; grid-template-columns: 110px 1fr; gap: 8px; align-items: center; margin-bottom: 10px; }
+
+@media (max-width: 860px) {
+  .c2, .c-main-side, .c-side-main, .c4 { grid-template-columns: 1fr; }
+  .nav { overflow-x: auto; }
+}
+</style></head>
+<body>
+<div class="page-title">3. 공고 상세 <span class="sub" style="font-weight:400">/postings/[id]</span></div>
+<div class="page-desc">공고 하나에 관한 분석, 맞춤 이력서, 면접 준비, 원문, 지원 기록을 한 화면에 모은다. <a href="index.html">목록으로</a></div>
+<div class="toc"><a href="#d1">3-1 분석 결과</a><a href="#d2">3-2 진행·실패</a><a href="#d3">3-3 지원 완료</a><a href="#d4">3-4 지원 후 상단·상태 변경</a><a href="#d5">3-5 맞춤 이력서</a><a href="#d6">3-6 면접 준비</a><a href="#d7">3-7 공고 원문</a><a href="#d8">3-8 지원 기록</a></div>
+
+<section class="frame" id="d1">
+  <p class="frame-name">3-1 상단 + 분석 탭 <small>지원 전, 같은 회사 지원 기록 2건</small></p>
+  <div class="screen">
+    <nav class="nav"><span class="logo">Career Flow</span><a>대시보드</a><a>공고 등록</a><a>분석한 공고</a><a>기본 이력서</a><a>가져오기</a><a>사이트 반영<span class="cnt">3</span></a><a>설정</a></nav>
+    <div class="body">
+      <div class="sub small">대시보드 &gt; 모빌페이</div>
+      <div class="gap"></div>
+      <div class="row between" style="align-items:flex-start">
+        <div>
+          <div class="row"><span>모빌페이</span><a class="small">회사 연결 변경</a></div>
+          <div class="h1">서버 개발자 (정산)</div>
+          <div class="row sub"><span>원티드</span><span>마감 2026-12-01</span><span>등록 2026-11-16</span><a>원본 공고 열기 ↗</a></div>
+        </div>
+        <div class="row"><span class="btn">공고 삭제</span><span class="btn primary">지원 완료</span></div>
+      </div>
+      <div class="gap"></div>
+      <div class="banner">
+        <b>이 회사에 지원한 기록이 2건 있습니다.</b>
+        <ul class="plain"><li><a>2026-11-10 원티드 '서버 개발자 (결제)' — 서류합격</a></li><li><a>2026-03-02 잡코리아 '플랫폼 엔지니어' — 불합격</a></li></ul>
+      </div>
+      <div class="gap"></div>
+      <div class="tabs"><span class="cur">분석</span><span>맞춤 이력서</span><span>면접 준비</span><span>공고 원문</span><span>지원 기록</span></div>
+      <div class="gap"></div>
+      <div class="cols c-main-side">
+        <div>
+          <div class="box">
+            <div class="row" style="align-items:flex-end;gap:16px"><span style="font-size:40px;font-weight:700;line-height:1">82</span><span class="sub">/ 100　기본 이력서 v3 기준, 2026-11-16 14:02 분석</span></div>
+            <div class="gap"></div>
+            <table>
+              <tr><td>필수 요건</td><td class="r">88</td><td class="sub">필수 4개 모두 이력서 근거 있음</td></tr>
+              <tr><td>우대 사항</td><td class="r">70</td><td class="sub">Kafka 운영, Kotlin 실무가 약함</td></tr>
+              <tr><td>경력 연차</td><td class="r">90</td><td class="sub">요구 3년 이상, 보유 5년</td></tr>
+              <tr><td>기술 스택</td><td class="r">80</td><td class="sub">Java·Spring·MySQL 일치, Kotlin 없음</td></tr>
+              <tr><td>도메인</td><td class="r">76</td><td class="sub">정산 2년 경험</td></tr>
+              <tr><td>희망 조건</td><td class="r">85</td><td class="sub">근무지만 다름</td></tr>
+            </table>
+          </div>
+          <div class="gap"></div>
+          <div class="h2">잘 맞는 점</div>
+          <ul class="plain"><li>대용량 결제 트랜잭션 처리 <span class="sub">— 근거: A사 결제 승인 API 처리량 3배 개선</span></li><li>RDBMS 설계와 쿼리 튜닝 <span class="sub">— 근거: B사 정산 배치 40분 → 6분</span></li><li>정산 도메인 경험(우대) <span class="sub">— 근거: B사 정산 시스템 2년</span></li></ul>
+          <div class="gap"></div>
+          <div class="cols c2">
+            <div><div class="h2">이력서에서 보완 가능</div><ul class="plain"><li>Kafka 운영 경험 <div class="sub">'주문 이벤트 파이프라인' 프로젝트에 있으나 경력란에 안 드러남 → 맞춤 이력서에서 강조</div></li></ul></div>
+            <div><div class="h2">실제로 부족</div><ul class="plain"><li>Kotlin 실무 경험(우대) <div class="sub">면접에서 학습 계획으로 답변 준비</div></li></ul></div>
+          </div>
+          <div class="gap"></div>
+          <div class="h2">희망 조건과 다른 점</div>
+          <div>근무지가 판교입니다(희망: 서울).</div>
+          <div class="gap"></div>
+          <div class="box dash row between"><span><b>맞춤 이력서 조언</b>　Kafka 경험을 경력 성과로 올린 맞춤본을 권합니다.</span><span class="btn">맞춤 이력서 만들기</span></div>
+        </div>
+        <aside>
+          <div class="box">
+            <div class="h2">공고 요약</div>
+            <div class="small">경력 3년 이상 / 정규직 / 판교 / 연봉 정보 없음</div>
+            <div class="gap"></div>
+            <div class="small sub">주요 업무</div><ul class="plain small"><li>정산 시스템 설계·운영</li><li>…</li></ul>
+            <div class="small sub">필수 요건</div><ul class="plain small"><li>Java·Spring 3년 이상</li><li>…</li></ul>
+            <div class="small sub">우대 사항</div><ul class="plain small"><li>Kafka, Kotlin</li><li>…</li></ul>
+            <div class="small sub">기술 스택</div><div class="small">Java, Spring, MySQL, Kafka, Kotlin</div>
+          </div>
+          <div class="gap"></div>
+          <div class="box">
+            <div class="row between"><span class="h2" style="margin:0">분석 기록</span><span class="btn sm">다시 분석</span></div>
+            <div class="gap"></div>
+            <div class="small"><b>2026-11-16　82점　v3</b>　(현재)</div>
+            <div class="small"><a>2026-11-10　76점　v2</a></div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </div>
+  <ul class="notes">
+    <li>[지원 완료]는 분석이 끝나기 전에는 비활성("분석이 끝난 뒤 누를 수 있습니다").</li>
+    <li>중복 경고 배너의 각 줄은 그 공고로 이동한다. 같은 회사(별칭·법인명 포함) 기록이 없으면 배너 자체가 없다.</li>
+    <li>현재 기본 이력서가 분석 기준보다 새 버전이면 점수 상자 아래에 "기본 이력서가 v4로 바뀌었습니다. 다시 분석하면 반영됩니다." 한 줄.</li>
+    <li>[공고 삭제]는 지원 기록이 없는 공고에만 보인다. 확인 창 후 분석·맞춤 이력서·면접 준비까지 지운다 (D-02).</li>
+    <li>[회사 연결 변경] 창: 기존 회사 검색해 연결 바꾸기 / 별칭 추가 / 다른 회사와 합치기(합칠 회사 검색 → "공고 n건, 지원 기록 n건이 모입니다" 확인) (D-04).</li>
+  </ul>
+</section>
+
+<section class="frame" id="d2">
+  <p class="frame-name">3-2 분석 탭 — 진행 중과 실패 <small>탭 내용 자리만 표시. 모든 AI 작업에 같은 모양 사용</small></p>
+  <div class="cols c2">
+    <div class="screen"><div class="body">
+      <div class="h2">분석 중</div>
+      <div class="box">분석 중… 보통 1~2분 걸립니다.　<b>0:47</b><div class="gap"></div><div class="placeholder" style="height:8px"></div></div>
+      <div class="gap"></div>
+      <div class="h2">대기 중</div>
+      <div class="box">앞의 작업이 끝나면 시작합니다. (대기 2번째)</div>
+    </div></div>
+    <div class="screen"><div class="body">
+      <div class="h2">본문 추출 실패</div>
+      <div class="box">
+        공고 본문을 읽지 못했습니다. 공고 페이지 내용을 복사해 붙여넣어 주세요.
+        <div class="sub small">로그인이 필요한 사이트라면 <a>설정 &gt; 사이트 로그인</a>에서 한 번 로그인해 두면 다음부터 자동으로 읽습니다.</div>
+        <div class="gap"></div>
+        <div class="area">공고 본문 붙여넣기</div>
+        <div class="gap"></div>
+        <div class="row"><span class="btn primary">이 내용으로 분석</span></div>
+      </div>
+      <div class="gap"></div>
+      <div class="h2">그 밖의 실패 (예: 로그인 필요)</div>
+      <div class="box">Claude Code 로그인이 필요합니다. 터미널에서 <code>claude</code>를 실행해 로그인한 뒤 다시 시도하세요.<div class="gap"></div><span class="btn">다시 시도</span></div>
+    </div></div>
+  </div>
+  <ul class="notes"><li>실패 문구는 종류별로 다르다: 사용 한도(Claude Code 메시지 원문), 시간 초과(설정 링크), 결과 형식 오류([원문 보기] 펼침), 앱 재시작으로 중단.</li></ul>
+</section>
+
+<section class="frame" id="d3">
+  <p class="frame-name">3-3 지원 완료 창 <small>[지원 완료]를 누르면 화면 가운데에 뜬다</small></p>
+  <div class="screen overlay">
+    <div class="modal">
+      <div class="h2">지원 완료로 기록</div>
+      <div class="sub small">실제 사이트에서 지원한 뒤 기록하세요.</div>
+      <div class="gap"></div>
+      <div class="field"><span>지원일</span><span class="input">2026-11-16</span></div>
+      <div class="field"><span>지원 사이트</span><span class="btn select" style="justify-content:flex-start">원티드</span></div>
+      <div class="field"><span class="sub">출처 이름</span><span class="sub small">사이트가 기타일 때만 보임 (예: 지인 추천)</span></div>
+      <div class="field"><span>제출한 이력서</span><span class="btn select" style="justify-content:flex-start">맞춤 이력서 r3 (11/16 14:20)</span></div>
+      <div class="field"><span>메모</span><span class="input">선택</span></div>
+      <div class="row" style="justify-content:flex-end"><span class="btn">취소</span><span class="btn primary">저장</span></div>
+    </div>
+  </div>
+  <ul class="notes"><li>"제출한 이력서" 선택지: 이 공고의 맞춤 리비전들 + 기본 이력서 버전들. 기본값은 최신 맞춤본, 없으면 기본 이력서 현재 버전(3단계부터).</li><li>저장하면 알림 "지원 완료로 기록했습니다", 상단이 3-4 모양으로 바뀐다.</li></ul>
+</section>
+
+<section class="frame" id="d4">
+  <p class="frame-name">3-4 지원 후 상단 + 상태 변경 창</p>
+  <div class="screen">
+    <div class="body">
+      <div class="row between" style="align-items:flex-start">
+        <div><div class="row"><span>한빛커머스</span><a class="small">회사 연결 변경</a></div><div class="h1">백엔드 개발자</div><div class="row sub"><span>리멤버</span><span>마감 상시</span><a>원본 공고 열기 ↗</a></div></div>
+        <div class="row"><span class="badge">면접 2차</span><span class="sub small">2026-11-12부터</span><span class="btn primary">상태 변경</span></div>
+      </div>
+    </div>
+    <div class="overlay">
+      <div class="modal">
+        <div class="h2">상태 변경</div>
+        <div class="field"><span>새 상태</span><span class="row small"><span class="radio">지원</span><span class="radio">서류합격</span><span class="radio on">면접</span><span class="radio">최종합격</span><span class="radio">불합격</span><span class="radio">지원취소</span></span></div>
+        <div class="field"><span>면접 차수</span><span class="input" style="width:80px">3</span></div>
+        <div class="field"><span>날짜</span><span class="input">2026-11-16</span></div>
+        <div class="field"><span>메모</span><span class="input">선택</span></div>
+        <div class="row" style="justify-content:flex-end"><span class="btn">취소</span><span class="btn primary">저장</span></div>
+      </div>
+    </div>
+  </div>
+  <ul class="notes"><li>"면접 차수"는 면접을 고를 때만 보인다(기본: 지금 차수 + 1).</li><li>면접으로 저장하면 알림에 "면접 준비 탭에서 준비 자료를 만들 수 있습니다" 링크(4단계).</li></ul>
+</section>
+
+<section class="frame" id="d5">
+  <p class="frame-name">3-5 맞춤 이력서 탭 <small>위: 아직 없음 / 아래: 결과</small></p>
+  <div class="screen"><div class="body">
+    <div class="tabs"><span>분석</span><span class="cur">맞춤 이력서</span><span>면접 준비</span><span>공고 원문</span><span>지원 기록</span></div>
+    <div class="gap"></div>
+    <div class="box" style="text-align:center;padding:28px">
+      <div>이 공고에 맞춰 기본 이력서의 표현·순서·강조를 조정한 사본을 만듭니다. 기본 이력서는 바뀌지 않습니다.</div>
+      <div class="gap"></div><span class="btn primary">맞춤 이력서 만들기</span>
+      <div class="sub small" style="margin-top:6px">보통 1~3분 걸립니다.</div>
+    </div>
+  </div></div>
+  <div class="gap"></div>
+  <div class="screen"><div class="body">
+    <div class="tabs"><span>분석</span><span class="cur">맞춤 이력서</span><span>면접 준비</span><span>공고 원문</span><span>지원 기록</span></div>
+    <div class="gap"></div>
+    <div class="row between"><span class="btn select">r3　11/16 14:20　"요약을 3줄로"</span><span class="btn select">PDF 받기</span></div>
+    <div class="gap"></div>
+    <div class="banner"><b>확인 필요 2건</b> — 기본 이력서에 없는 내용일 수 있습니다. 사실과 다르면 아래 다듬기로 고치세요.<ul class="plain"><li>새 수치: "응답 시간 40% 개선"</li><li>새 기술: Kotlin</li></ul></div>
+    <div class="gap"></div>
+    <div class="banner soft row between"><span>이 맞춤본은 기본 이력서 v2 기준입니다(현재 v3).</span><span class="btn">최신 기준으로 다시 만들기</span></div>
+    <div class="gap"></div>
+    <div class="cols c2">
+      <div>
+        <div class="h2">변경 내역 (5)</div>
+        <div class="box">
+          <div class="small sub">한 줄 소개</div>
+          <div><s>백엔드 개발자로서 …</s></div><div><b>결제·정산 도메인 백엔드 개발자로서 …</b></div>
+          <div class="small sub">이유: 공고의 정산 도메인 강조</div>
+        </div>
+        <div class="box" style="border-top:0"><div class="small sub">경력 &gt; A사 &gt; 성과</div><div>…</div></div>
+        <div class="box" style="border-top:0"><div class="small sub">프로젝트 순서</div><div>주문 이벤트 파이프라인 ↑　사내 어드민 ↓</div></div>
+        <div class="gap"></div>
+        <div class="h2">원티드 이력서 수정 안내</div>
+        <table><thead><tr><th>항목</th><th>할 일</th><th>제안 문구</th><th>이유</th></tr></thead>
+          <tbody><tr><td>한 줄 소개</td><td>수정</td><td>"결제·정산 백엔드 5년 …" <span class="btn sm">복사</span></td><td class="sub">정산 강조</td></tr>
+          <tr><td>경력 &gt; 주요 성과</td><td>추가</td><td>"Kafka 기반 주문 이벤트 …" <span class="btn sm">복사</span></td><td class="sub">우대 사항</td></tr></tbody></table>
+        <div class="gap"></div>
+        <div class="h2">포트폴리오 활용</div>
+        <ul class="plain"><li>주문 이벤트 파이프라인을 첫 장에, Kafka 설계 그림 강조</li><li>…</li></ul>
+        <div class="gap"></div>
+        <div class="h2">참고 메모</div><div class="sub">…</div>
+      </div>
+      <div>
+        <div class="h2">미리보기</div>
+        <div class="placeholder" style="height:520px">A4 이력서 미리보기 (PDF와 같은 모양)</div>
+      </div>
+    </div>
+    <div class="gap"></div>
+    <div class="box">
+      <div class="h2">다듬기</div>
+      <div class="row"><span class="area grow" style="min-height:52px">예: "A사 경력의 두 번째 성과는 빼줘"</span><span class="btn primary">수정 요청</span></div>
+    </div>
+  </div></div>
+  <ul class="notes"><li>[PDF 받기] 메뉴: 이력서+경력기술서 / 이력서만 / 경력기술서만 (선택한 리비전 기준).</li><li>확인 필요 경고, 기준 이력서 바뀜 안내는 해당할 때만 보인다.</li><li>[수정 요청]을 누르면 새 리비전 작업이 시작되고, 이 탭 위쪽에 3-2의 진행 표시가 뜬다. 진행 중엔 입력창 비활성.</li></ul>
+</section>
+
+<section class="frame" id="d6">
+  <p class="frame-name">3-6 면접 준비 탭 <small>결과</small></p>
+  <div class="screen"><div class="body">
+    <div class="tabs"><span>분석</span><span>맞춤 이력서</span><span class="cur">면접 준비</span><span>공고 원문</span><span>지원 기록</span></div>
+    <div class="gap"></div>
+    <div class="row between">
+      <div class="row"><span class="chip cur">1차</span><span class="chip">2차 임원</span><span class="btn sm">+ 새 차수</span></div>
+      <div class="row"><span class="btn select">r2　"Kafka 질문 더"</span><span class="btn">인쇄용 보기 ↗</span></div>
+    </div>
+    <div class="sub small">기준 이력서: 맞춤 이력서 r2 (지원 시 제출)</div>
+    <div class="gap"></div>
+    <div class="cols c-side-main">
+      <div class="box small">
+        <div><b>회사 개요</b></div><div>팀의 과제·기여할 점</div><div>예상 질문 (18)</div><div>부족한 점 대응</div><div>역질문</div><div>체크리스트</div><div>출처 (9)</div>
+      </div>
+      <div>
+        <div class="h2">회사 개요</div>
+        <div>사업·주요 제품 …</div>
+        <div class="cols c2 small" style="margin-top:6px"><div><span class="sub">규모</span> 직원 약 300명, 시리즈 C</div><div><span class="sub">기술 스택</span> Java, Kotlin, Kafka …</div></div>
+        <div class="small sub" style="margin-top:6px">최근 뉴스</div>
+        <ul class="plain small"><li>2026-10-21 정산 자동화 서비스 출시 — 요약 … <a>기사 ↗</a></li></ul>
+        <div class="small sub">기술 블로그</div><ul class="plain small"><li><a>정산 배치 개선기 ↗</a></li></ul>
+        <div class="gap"></div>
+        <div class="h2">팀의 과제 / 내가 기여할 점</div>
+        <div class="cols c2"><ul class="plain"><li>…</li></ul><ul class="plain"><li>…</li></ul></div>
+        <div class="gap"></div>
+        <div class="h2">예상 질문</div>
+        <div class="tabs"><span class="cur">기술 (7)</span><span>경력·프로젝트 (5)</span><span>인성·협업 (3)</span><span>회사·지원동기 (3)</span></div>
+        <div class="box" style="border-top:0">
+          <div>▾ Kafka 파티션 수는 어떻게 정했나요?</div>
+          <div class="small" style="padding-left:16px"><span class="sub">나올 이유</span> 우대 사항, 이력서의 파이프라인 프로젝트<br><span class="sub">답변 소재</span> 처리량 목표, 소비자 수 …<br><span class="sub">관련 이력서 항목</span> 프로젝트 '주문 이벤트 파이프라인'</div>
+          <div>▸ 정산 배치를 40분에서 6분으로 줄인 방법은?</div>
+          <div>▸ …</div>
+        </div>
+        <div class="gap"></div>
+        <div class="cols c2">
+          <div><div class="h2">부족한 점 대응</div><ul class="plain"><li>Kotlin 실무 — …</li></ul></div>
+          <div><div class="h2">역질문</div><ul class="plain"><li>…</li></ul></div>
+        </div>
+        <div class="gap"></div>
+        <div class="h2">체크리스트</div><div class="check">최근 투자 뉴스 읽기</div><div class="check on">기술 블로그 정산 글 2편</div>
+        <div class="gap"></div>
+        <div class="h2">출처</div><ul class="plain small"><li><a>기사 제목 ↗</a></li><li>…</li></ul>
+      </div>
+    </div>
+    <div class="gap"></div>
+    <div class="box"><div class="h2">추가 요청</div><div class="row"><span class="area grow" style="min-height:52px">예: "기술 질문을 Kafka 중심으로 더"</span><span class="btn primary">요청</span></div></div>
+  </div></div>
+  <ul class="notes"><li>준비가 아직 없으면: 설명 + 차수 입력(기본 "1차") + [면접 준비 만들기] (보통 3~8분).</li><li>왼쪽 목록은 섹션 바로가기. 찾은 정보가 없는 섹션은 "찾은 정보가 없습니다".</li><li>[+ 새 차수]: 차수 이름 입력 → [만들기]. 같은 이름이 있으면 그 차수로 이동.</li></ul>
+</section>
+
+<section class="frame" id="d7">
+  <p class="frame-name">3-7 공고 원문 탭</p>
+  <div class="screen"><div class="body">
+    <div class="tabs"><span>분석</span><span>맞춤 이력서</span><span>면접 준비</span><span class="cur">공고 원문</span><span>지원 기록</span></div>
+    <div class="gap"></div>
+    <div class="row between"><span class="sub small">https://www.wanted.co.kr/wd/12345　2026-11-16 14:01 자동 추출</span><span class="btn">본문 다시 붙여넣기</span></div>
+    <div class="gap"></div>
+    <div class="placeholder" style="height:220px">저장된 공고 본문 텍스트 (공고가 내려가도 남음)</div>
+  </div></div>
+  <ul class="notes"><li>[본문 다시 붙여넣기]: 3-2의 붙여넣기 입력창이 열리고, 저장하면 다시 분석한다.</li></ul>
+</section>
+
+<section class="frame" id="d8">
+  <p class="frame-name">3-8 지원 기록 탭 <small>지원 후</small></p>
+  <div class="screen"><div class="body">
+    <div class="tabs"><span>분석</span><span>맞춤 이력서</span><span>면접 준비</span><span>공고 원문</span><span class="cur">지원 기록</span></div>
+    <div class="gap"></div>
+    <div class="row" style="gap:28px"><span><span class="sub">지원일</span> 2026-11-04</span><span><span class="sub">사이트</span> 리멤버</span><span><span class="sub">제출한 이력서</span> <a>맞춤 이력서 r2</a></span><span class="grow"></span><span class="btn">기록 수정</span><span class="btn">기록 삭제</span></div>
+    <div class="gap"></div>
+    <div class="cols c2">
+      <div>
+        <div class="h2">진행 기록</div>
+        <table><tbody>
+          <tr><td>2026-11-12</td><td><span class="badge">면접 2차</span></td><td class="sub">CTO 면접 일정 11/19</td></tr>
+          <tr><td>2026-11-08</td><td><span class="badge">면접 1차</span></td><td></td></tr>
+          <tr><td>2026-11-06</td><td><span class="badge">서류합격</span></td><td></td></tr>
+          <tr><td>2026-11-04</td><td><span class="badge">지원</span></td><td></td></tr>
+        </tbody></table>
+      </div>
+      <div><div class="h2">메모</div><div class="area">2차는 정산 설계 질문 예상</div><div class="gap"></div><span class="btn">메모 저장</span></div>
+    </div>
+  </div></div>
+  <ul class="notes"><li>지원 전이면: "아직 지원하지 않은 공고입니다." + [지원 완료].</li></ul>
+</section>
+<div style="height:40px"></div>
+</body></html>
