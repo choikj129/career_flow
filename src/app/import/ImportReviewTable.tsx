@@ -64,6 +64,8 @@ export function ImportReviewTable({
           siteNote: r.siteNote,
           appliedAt: r.appliedAt,
           status: r.status,
+          notes: r.notes,
+          docs: r.docs,
           checked: r.checked,
         }))));
   }

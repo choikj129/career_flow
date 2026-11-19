@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { bulkCreateApplications } from '@/lib/applications/repo';
-import { markExistingRows } from '@/lib/applications/import-review';
-import { missingFields, rowsToRegister, type ReviewRow } from '@/lib/applications/import-rows';
+import { findExistingMatches, markExistingRows } from '@/lib/applications/import-review';
+import { checkedRowsSchema, missingFields, rowsToRegister, type ReviewRow } from '@/lib/applications/import-rows';
 import { makeTestDb } from './helpers/db';
 
 const row = (o: Partial<ReviewRow> = {}): ReviewRow => ({
@@ -11,6 +11,8 @@ const row = (o: Partial<ReviewRow> = {}): ReviewRow => ({
   siteNote: '',
   appliedAt: '2026-10-03',
   status: 'applied',
+  notes: '',
+  docs: { resume: null, career: null, portfolio: null },
   ...o,
 });
 
@@ -54,6 +56,16 @@ describe('rowsToRegister', () => {
       { companyName: '토스', positionTitle: 'Server', site: 'wanted', siteNote: undefined, appliedAt: '2026-10-03', status: 'applied' },
     ]);
   });
+  test('passes notes and docs, omits empty ones', () => {
+    const [a, b] = rowsToRegister([
+      { ...row({ notes: ' 메모 ', docs: { resume: '이력서_20261102.pdf', career: null, portfolio: null } }), checked: true },
+      { ...row(), checked: true },
+    ]);
+    expect(a.notes).toBe('메모');
+    expect(a.submittedDocs).toEqual({ resume: '이력서_20261102.pdf', career: null, portfolio: null });
+    expect('notes' in b).toBe(false);
+    expect('submittedDocs' in b).toBe(false);
+  });
   test('throws when a checked row is incomplete', () => {
     expect(() => rowsToRegister([{ ...row({ companyName: '' }), checked: true }])).toThrow();
   });
@@ -88,4 +100,46 @@ test('TC-IMP-V3 validDate 공용 함수', async () => {
   expect(validDate('2028-02-29')).toBe(true);
   expect(validDate('2026-02-29')).toBe(false);
   expect(validDate('2026-13-45')).toBe(false);
+});
+
+describe('checkedRowsSchema docs (TC-PAST-11)', () => {
+  const ok = { ...row(), checked: true };
+  test('accepts matching kinds and nulls', () => {
+    const r = checkedRowsSchema.safeParse([
+      { ...ok, docs: { resume: '이력서_20261102.pdf', career: '경력기술서_20261102.pdf', portfolio: null } },
+    ]);
+    expect(r.success).toBe(true);
+  });
+  test('rejects wrong kind and non-rule names', () => {
+    expect(checkedRowsSchema.safeParse([{ ...ok, docs: { resume: '경력기술서_20261102.pdf', career: null, portfolio: null } }]).success).toBe(false);
+    expect(checkedRowsSchema.safeParse([{ ...ok, docs: { resume: '../x.pdf', career: null, portfolio: null } }]).success).toBe(false);
+  });
+  test('required fields rule unchanged', () => {
+    expect(missingFields(row({ companyName: '' }))).toEqual(['companyName']);
+  });
+});
+
+describe('findExistingMatches (TC-PAST-10)', () => {
+  test('same / same_day / none', () => {
+    const db = makeTestDb();
+    bulkCreateApplications(
+      [
+        { companyName: '(주)토스', positionTitle: 'Server Dev', site: 'wanted', appliedAt: '2026-10-03', status: 'applied' },
+        { companyName: '당근', positionTitle: '(포지션 미상)', site: 'wanted', appliedAt: '2026-10-03', status: 'applied' },
+      ],
+      db,
+    );
+    const r = findExistingMatches(
+      [
+        { companyName: '토스', positionTitle: 'server-dev', appliedAt: '2026-10-03' },
+        { companyName: '토스', positionTitle: 'Frontend', appliedAt: '2026-10-03' },
+        { companyName: '토스', positionTitle: 'Server Dev', appliedAt: '2026-10-04' },
+        { companyName: '당근', positionTitle: 'Anything', appliedAt: '2026-10-03' },
+        { companyName: '', positionTitle: 'x', appliedAt: '2026-10-03' },
+        { companyName: '토스', positionTitle: 'x', appliedAt: '' },
+      ],
+      db,
+    );
+    expect(r).toEqual(['same', 'same_day', 'none', 'same', 'none', 'none']);
+  });
 });

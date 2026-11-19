@@ -4,6 +4,8 @@ import { applications, statusEvents } from '@/lib/db/schema';
 import { monthsAgoLocal, todayLocal } from '@/lib/domain/dates';
 import type { ApplicationStatus, SiteId } from '@/lib/domain/types';
 import { findOrCreateCompany } from '@/lib/companies/repo';
+import { DOC_KINDS, isDocsForKind, type SubmittedDocs } from '@/lib/documents/files';
+import { docFileExists } from '@/lib/documents/folder';
 import { getPosting } from '@/lib/postings/repo';
 import { getLatestResume } from '@/lib/resume/repo';
 
@@ -88,6 +90,18 @@ export function getPriorApplications(
     }));
 }
 
+/** 종류와 이름 규칙이 맞고 폴더에 실제 있는 파일만 허용한다. 아니면 던진다(저장 전에 확인하므로 아무것도 저장되지 않는다). */
+function assertDocsValid(docs: SubmittedDocs | undefined, docsDir?: string): void {
+  if (!docs) return;
+  for (const k of DOC_KINDS) {
+    const name = docs[k];
+    if (name == null) continue;
+    if (!isDocsForKind(k, name) || !docFileExists(name, docsDir)) {
+      throw new Error(`서류 파일을 찾을 수 없습니다: ${name}`);
+    }
+  }
+}
+
 export function bulkCreateApplications(
   rows: {
     companyName: string;
@@ -96,9 +110,13 @@ export function bulkCreateApplications(
     siteNote?: string;
     appliedAt: string;
     status: ApplicationStatus;
+    notes?: string;
+    submittedDocs?: SubmittedDocs;
   }[],
   db: Db = getDb(),
+  docsDir?: string,
 ): number {
+  for (const r of rows) assertDocsValid(r.submittedDocs, docsDir);
   return db.transaction((tx) => {
     for (const r of rows) {
       const companyId = findOrCreateCompany({ displayName: r.companyName }, tx as unknown as Db);
@@ -113,7 +131,9 @@ export function bulkCreateApplications(
           siteNote: site === 'other' ? (r.siteNote?.trim() || null) : null,
           appliedAt: r.appliedAt,
           submittedResume: { kind: 'imported' },
+          submittedDocs: r.submittedDocs ?? null,
           status: r.status,
+          notes: r.notes?.trim() || null,
           createdAt: now(),
         })
         .returning({ id: applications.id })

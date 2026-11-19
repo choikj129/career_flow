@@ -1,4 +1,5 @@
 import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import type { SubmittedDocs } from '@/lib/documents/files';
 import type { SiteId, ApplicationStatus, JobType, JobStatus, AiErrorKind } from '@/lib/domain/types';
 
 export const resumeVersions = sqliteTable('resume_versions', {
@@ -82,6 +83,8 @@ export const applications = sqliteTable('applications', {
   submittedResume: text('submitted_resume', { mode: 'json' })
     .$type<{ kind: 'base'; versionId: number } | { kind: 'imported' }>()
     .notNull(),
+  /** 낸 이력서·경력기술서·포트폴리오 파일 이름(종류별, null = 모름). 기존 행은 null. */
+  submittedDocs: text('submitted_docs', { mode: 'json' }).$type<SubmittedDocs>(),
   status: text('status').$type<ApplicationStatus>().notNull(),
   interviewRound: integer('interview_round'),
   notes: text('notes'),

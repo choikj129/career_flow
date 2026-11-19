@@ -120,6 +120,8 @@ async function ImportLoader({ searchParams }: { searchParams: PageProps<"/import
     siteNote: "",
     appliedAt: r.appliedAt ?? "",
     status: r.status ?? "applied",
+    notes: "",
+    docs: { resume: null, career: null, portfolio: null },
     checked: !existing[i],
   }));
 

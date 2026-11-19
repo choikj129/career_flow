@@ -20,6 +20,11 @@ export function normalizeCompanyName(name: string): string {
   return s.replace(/[^\p{L}\p{N}]/gu, '');
 }
 
+/** 포지션 비교용: NFKC, 소문자, 글자·숫자 외 제거 */
+export function normalizePosition(s: string): string {
+  return s.normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]/gu, '');
+}
+
 export const INVALID_POSTING_URL_MESSAGE = '올바른 공고 주소가 아닙니다. https://로 시작하는 전체 주소를 넣어 주세요.';
 
 /** 공고 주소는 http:, https: 만 허용한다. 아니면 한국어 오류를 던진다. 검사 함수는 이것 하나만 쓴다. */
