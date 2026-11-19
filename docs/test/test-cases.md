@@ -545,11 +545,11 @@ AI 작업이 끝나면 `data/ai-work/<번호>/`를 바로 지운다. 올린 이�
 | TC-PAST-51~54 | 상태 필터, 보드 칸, 요약 줄, 서류 통과율 | `tests/search.test.ts` |
 | TC-PAST-M1 | 실제 데이터 채우기(수동): dry-run 메일 452·그룹바이 17건 모두 맞음, 실행 뒤 같은 날 순서 확인 | 수동 |
 | TC-PAST-E2E-01~06 | 직접 입력 열기·등록·서류 자동 선택·제출 서류 보기·서류 파일 탭·메모 이관 | `tests/e2e/12-past-records.spec.ts` (작성만, 검증 단계에서 실행) |
-| TC-PAST-60·61 | 상태 순서·표시명, 과제·코딩테스트가 서류합격을 함의하고 면접·최종합격은 과제를 함의하지 않음,  |  |
-| TC-PAST-62~64 | 과제 필터, 상태별 보드 6칸, ·서류 통과율 |  |
-| TC-PAST-65 |  차수 null, 같은 상태 두 번 저장하면 이력 두 줄 |  |
-| TC-PAST-66 | 가져오기 행 스키마가 assignment 허용, 프롬프트에 모든 상태 ID |  |
-| TC-PAST-E2E-07 | 과제·코딩테스트 상태 저장(차수 칸 없음, 메모 안내), 보드 칸, 필터 안내 |  (작성만, 검증 단계에서 실행) |
+| TC-PAST-60·61 | 상태 순서·표시명, 과제·코딩테스트가 서류합격을 함의하고 면접·최종합격은 과제를 함의하지 않음, `isReachedStage` | `tests/stages.test.ts` |
+| TC-PAST-62~64 | 과제 필터, 상태별 보드 6칸, `reachedCounts.assignment`·서류 통과율 | `tests/search.test.ts` |
+| TC-PAST-65 | `changeStatus('assignment')` 차수 null, 같은 상태 두 번 저장하면 이력 두 줄 | `tests/repos.test.ts` |
+| TC-PAST-66 | 가져오기 행 스키마가 assignment 허용, 프롬프트에 모든 상태 ID | `tests/import-review.test.ts` |
+| TC-PAST-E2E-07 | 과제·코딩테스트 상태 저장(차수 칸 없음, 메모 안내), 보드 칸, 필터 안내 | `tests/e2e/12-past-records.spec.ts` (작성만, 검증 단계에서 실행) |
 | TC-PAST-M2 | 기존 1건(메모 "코딩테스트 단계까지 진행") 상태 이관 후 대시보드 확인(수동, D-22) | 수동 |
 
 ## 11. 통계 화면 (브랜치 `feat/stats-dashboard`)
