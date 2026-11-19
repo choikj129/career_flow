@@ -53,6 +53,7 @@ if (!dryRun) {
   const backup = join(config.backupDir, 'before-applied-datetime.db');
   if (existsSync(backup)) {
     console.error(`백업 파일이 이미 있어 멈춥니다(덮어쓰지 않음): ${backup}`);
+    console.error('이미 한 번 실행했다면 그대로 두세요(채워진 값은 다시 덮어쓰지 않습니다). 처음부터 다시 하려면 이 파일을 지우거나 이름을 바꾼 뒤 다시 실행하세요.');
     process.exit(1);
   }
   await db.$client.backup(backup);

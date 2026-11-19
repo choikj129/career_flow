@@ -2,6 +2,7 @@ import { and, desc, eq, gte, inArray, like, lte } from 'drizzle-orm';
 import { getDb, type Db } from '@/lib/db/client';
 import { analyses, applications, companies, companyKeys, resumeVersions, statusEvents } from '@/lib/db/schema';
 import { monthLocal } from '@/lib/domain/dates';
+import { listRecordExtras } from '@/lib/applications/repo';
 import { applicationOrder } from '@/lib/applications/sort';
 import { matchesStatusFilter, reachedStages, REACHED_STAGES, type ReachedStage } from '@/lib/applications/stages';
 import { docLabel } from '@/lib/documents/files';
@@ -46,7 +47,7 @@ export type SearchQuery = {
 };
 
 /** 서류합격·면접·최종합격이 상태 이력에 있는 지원 기록별 상태 목록. */
-function readReached(db: Db): Map<number, ApplicationStatus[]> {
+export function readReached(db: Db): Map<number, ApplicationStatus[]> {
   const map = new Map<number, ApplicationStatus[]>();
   for (const e of db
     .select({ applicationId: statusEvents.applicationId, status: statusEvents.status })
@@ -60,7 +61,11 @@ function readReached(db: Db): Map<number, ApplicationStatus[]> {
   return map;
 }
 
-export function searchApplications(q: SearchQuery, db: Db = getDb()): DashboardRow[] {
+export function searchApplications(
+  q: SearchQuery,
+  db: Db = getDb(),
+  reachedById: Map<number, ApplicationStatus[]> = readReached(db),
+): DashboardRow[] {
   const conds = [];
   if (q.site) conds.push(eq(applications.site, q.site));
   if (q.from) conds.push(gte(applications.appliedAt, q.from));
@@ -74,7 +79,6 @@ export function searchApplications(q: SearchQuery, db: Db = getDb()): DashboardR
     .orderBy(...applicationOrder)
     .all();
 
-  const reachedById = readReached(db);
   const reachedOf = (a: { id: number; status: ApplicationStatus }) => reachedStages(a.status, reachedById.get(a.id) ?? []);
 
   const text = q.text?.trim();
@@ -191,6 +195,7 @@ export function groupDashboardRows(rows: DashboardRow[], by: 'site' | 'status' |
 export function getDashboardStats(
   now: Date = new Date(),
   db: Db = getDb(),
+  reachedById: Map<number, ApplicationStatus[]> = readReached(db),
 ): {
   appliedThisMonth: number;
   byStatus: Record<ApplicationStatus, number>;
@@ -203,7 +208,6 @@ export function getDashboardStats(
   const byStatus = Object.fromEntries(APPLICATION_STATUSES.map((s) => [s, 0])) as Record<ApplicationStatus, number>;
   const bySite = Object.fromEntries(SITE_IDS.map((s) => [s, 0])) as Record<SiteId, number>;
   const reachedCounts: Record<ReachedStage, number> = { document_passed: 0, interview: 0, final_passed: 0 };
-  const reachedById = readReached(db);
   let appliedThisMonth = 0;
   for (const a of db.select().from(applications).all()) {
     byStatus[a.status] += 1;
@@ -212,4 +216,22 @@ export function getDashboardStats(
     if (a.appliedAt.startsWith(month)) appliedThisMonth += 1;
   }
   return { appliedThisMonth, byStatus, bySite, analyzedNotApplied: listAnalyzedNotApplied(db).length, reachedCounts };
+}
+
+export type RecordExtra = ReturnType<typeof listRecordExtras> extends Map<number, infer V> ? V : never;
+
+/**
+ * 대시보드 한 번 열기: 목록, 요약 통계, 공고 없는 기록의 메모·제출 서류·상태 이력.
+ * 조회 횟수는 기록 수와 관계없이 일정하다(상태 이력 조회를 목록과 통계가 함께 쓴다).
+ */
+export function loadDashboard(
+  q: SearchQuery,
+  now: Date = new Date(),
+  db: Db = getDb(),
+): { rows: DashboardRow[]; stats: ReturnType<typeof getDashboardStats>; extras: Map<number, RecordExtra> } {
+  const reachedById = readReached(db);
+  const rows = searchApplications(q, db, reachedById);
+  const stats = getDashboardStats(now, db, reachedById);
+  const extras = listRecordExtras(rows.filter((r) => r.postingId == null).map((r) => r.applicationId), db);
+  return { rows, stats, extras };
 }

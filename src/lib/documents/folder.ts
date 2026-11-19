@@ -58,3 +58,16 @@ export function docExistence(
   };
   return { resume: has('resume'), career: has('career'), portfolio: has('portfolio') };
 }
+
+/** 폴더를 한 번만 읽어 둔 파일 이름 집합. 여러 기록의 파일 존재를 확인할 때 쓴다. */
+export function existingDocNames(dir?: string): Set<string> {
+  return new Set(listDocFiles(dir).files.map((f) => f.fileName));
+}
+
+export function docExistenceIn(docs: SubmittedDocs | null | undefined, names: Set<string>): Record<DocKind, boolean> {
+  const has = (k: DocKind) => {
+    const n = docs?.[k];
+    return n ? names.has(n) : false;
+  };
+  return { resume: has('resume'), career: has('career'), portfolio: has('portfolio') };
+}

@@ -17,7 +17,7 @@ export type BackfillEntry = {
 };
 
 /**
- * 줄마다 `UTC시각|회사|포지션`. 시각은 ISO(`2026-03-03T16:30:00Z`) 또는 `2026-03-03 16:30:00`(UTC로 본다).
+ * 줄마다 `UTC시각|회사|포지션`. 시각은 ISO(`2026-03-03T16:30:00Z`), `2026-03-03 16:30:00`, 초 없는 `2026-11-06T05:44`(초는 :00) 모두 UTC로 본다.
  * 모양이 다른 줄은 던지지 않고 건너뛰며 그 줄 번호(1부터)를 skipped에 담는다. 빈 줄은 무시한다.
  */
 export function parseMailTimeLinesDetailed(
@@ -35,8 +35,8 @@ export function parseMailTimeLinesDetailed(
     }
     const [time, company, ...rest] = parts.map((x) => x.trim());
     const position = rest.join('|').trim();
-    const m = /^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2}:\d{2})(\.\d+)?(Z|\+00:00)?$/.exec(time);
-    const d = m ? new Date(`${m[1]}T${m[2]}${m[3] ?? ''}Z`) : null;
+    const m = /^(\d{4}-\d{2}-\d{2})[T ](\d{2}:\d{2})(:\d{2}(?:\.\d+)?)?(Z|\+00:00)?$/.exec(time);
+    const d = m ? new Date(`${m[1]}T${m[2]}${m[3] ?? ':00'}Z`) : null;
     if (!d || Number.isNaN(d.getTime()) || !company || !position) {
       skipped.push(i + 1);
       return;

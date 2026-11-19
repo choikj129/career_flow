@@ -1,4 +1,4 @@
-import { and, eq, gte, or } from 'drizzle-orm';
+import { and, eq, gte, inArray, or } from 'drizzle-orm';
 import { getDb, type Db } from '@/lib/db/client';
 import { applications, statusEvents } from '@/lib/db/schema';
 import { monthsAgoLocal, syntheticKstIso, toKstIso, todayLocal } from '@/lib/domain/dates';
@@ -268,4 +268,31 @@ export function deleteApplication(id: number, db: Db = getDb()): void {
     tx.delete(statusEvents).where(eq(statusEvents.applicationId, id)).run();
     tx.delete(applications).where(eq(applications.id, id)).run();
   });
+}
+
+/** 기록 여러 건의 메모·제출 서류·상태 이력을 한 번에 읽는다(IN 조회, 500건씩). */
+export function listRecordExtras(
+  ids: number[],
+  db: Db = getDb(),
+): Map<number, { notes: string | null; submittedDocs: SubmittedDocs | null; events: StatusEvent[] }> {
+  const out = new Map<number, { notes: string | null; submittedDocs: SubmittedDocs | null; events: StatusEvent[] }>();
+  for (let i = 0; i < ids.length; i += 500) {
+    const chunk = ids.slice(i, i + 500);
+    for (const a of db
+      .select({ id: applications.id, notes: applications.notes, submittedDocs: applications.submittedDocs })
+      .from(applications)
+      .where(inArray(applications.id, chunk))
+      .all()) {
+      out.set(a.id, { notes: a.notes, submittedDocs: a.submittedDocs, events: [] });
+    }
+    for (const e of db
+      .select()
+      .from(statusEvents)
+      .where(inArray(statusEvents.applicationId, chunk))
+      .orderBy(statusEvents.id)
+      .all()) {
+      out.get(e.applicationId)?.events.push(e);
+    }
+  }
+  return out;
 }

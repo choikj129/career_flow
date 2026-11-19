@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { checkExistingAction, checkExistingMatchesAction, commitApplicationImportAction } from "@/app/_actions/import";
@@ -136,6 +137,12 @@ export function ImportReviewTable({
           처음부터
         </button>
       </div>
+
+      {docFiles.length === 0 && (
+        <p className="muted small" style={{ margin: "10px 0 0" }}>
+          서류 파일이 없어 서류는 모두 &apos;모름&apos;입니다 → <Link href="/resume?tab=docs">서류 파일</Link>
+        </p>
+      )}
 
       <table className="review" style={{ marginTop: 12 }}>
         <thead>

@@ -2,6 +2,14 @@ import { DOC_KINDS, DOC_KIND_LABELS, parseDocFileName, type DocKind, type Submit
 
 /** 제출 서류 세 줄: 종류, 날짜, [보기]. 파일이 없어졌으면 "파일 없음", 기록에 없으면 "모름". docs/spec/screens.md 5.5 */
 export function SubmittedDocs({ docs, exists }: { docs: Docs | null; exists: Record<DocKind, boolean> }) {
+  const allUnknown = DOC_KINDS.every((k) => !docs?.[k]);
+  if (allUnknown) {
+    return (
+      <div data-testid="submitted-docs" style={{ fontSize: 13.5 }}>
+        <b>제출 서류</b> <span className="muted" style={{ marginLeft: 12 }}>모름</span>
+      </div>
+    );
+  }
   return (
     <div data-testid="submitted-docs">
       <b style={{ fontSize: 13.5 }}>제출 서류</b>

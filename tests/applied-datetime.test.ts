@@ -166,6 +166,16 @@ describe('one-time backfill (TC-PAST-43)', () => {
     expect(parseMailTimeLines('wanted', text)).toHaveLength(2);
   });
 
+  test('parseMailTimeLines accepts times without seconds (real mail line shape)', () => {
+    const r = parseMailTimeLinesDetailed('remember', '2026-11-06T05:44|토스|Server\n2026-11-06 05:45|당근|Front\n2026-11-06T05:46:07.5|네이버|X');
+    expect(r.skipped).toEqual([]);
+    expect(r.entries.map((e) => e.appliedDatetime)).toEqual([
+      '2026-11-06T14:44:00.000+09:00',
+      '2026-11-06T14:45:00.000+09:00',
+      '2026-11-06T14:46:07.500+09:00',
+    ]);
+  });
+
   test('backfillAppliedDatetime: fills matches, ignores (주), keeps existing, reports unmatched/ambiguous', () => {
     const db = makeTestDb();
     bulkCreateApplications(
