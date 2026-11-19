@@ -61,3 +61,24 @@ export function pickDocs(appliedAt: string, files: DocFile[]): Record<DocKind, s
 export function isDocsForKind(kind: DocKind, fileName: string): boolean {
   return parseDocFileName(fileName)?.kind === kind;
 }
+
+const NOTE_RE =
+  /^제출 서류:\s*이력서 (\d{4}-\d{2}-\d{2}|모름) \/ 경력기술서 (\d{4}-\d{2}-\d{2}|모름) \/ 포트폴리오 (\d{4}-\d{2}-\d{2}|모름)\s*$/;
+
+export function formatDocsNote(dates: Record<DocKind, string | null>): string {
+  const f = (k: DocKind) => dates[k] ?? '모름';
+  return `제출 서류: 이력서 ${f('resume')} / 경력기술서 ${f('career')} / 포트폴리오 ${f('portfolio')}`;
+}
+
+/** 메모에서 "제출 서류:" 줄을 찾는다. 없으면 null. rest는 그 줄을 뺀 나머지(줄 순서 유지, 앞뒤 빈 줄 정리). */
+export function parseDocsNote(
+  notes: string,
+): { dates: Record<DocKind, string | null>; rest: string } | null {
+  const lines = notes.split(/\r?\n/);
+  const idx = lines.findIndex((l) => NOTE_RE.test(l));
+  if (idx < 0) return null;
+  const m = NOTE_RE.exec(lines[idx])!;
+  const v = (s: string) => (s === '모름' ? null : s);
+  const rest = lines.filter((_, i) => i !== idx).join('\n').replace(/^\n+|\n+$/g, '');
+  return { dates: { resume: v(m[1]), career: v(m[2]), portfolio: v(m[3]) }, rest };
+}
