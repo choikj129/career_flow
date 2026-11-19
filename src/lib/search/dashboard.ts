@@ -1,7 +1,11 @@
-import { and, desc, eq, gte, like, lte } from 'drizzle-orm';
+import { and, desc, eq, gte, inArray, like, lte } from 'drizzle-orm';
 import { getDb, type Db } from '@/lib/db/client';
-import { analyses, applications, companies, companyKeys, resumeVersions } from '@/lib/db/schema';
+import { analyses, applications, companies, companyKeys, resumeVersions, statusEvents } from '@/lib/db/schema';
 import { monthLocal } from '@/lib/domain/dates';
+import { listRecordExtras } from '@/lib/applications/repo';
+import { applicationOrder } from '@/lib/applications/sort';
+import { matchesStatusFilter, reachedStages, REACHED_STAGES, type ReachedStage } from '@/lib/applications/stages';
+import { docLabel } from '@/lib/documents/files';
 import { normalizeCompanyName } from '@/lib/domain/normalize';
 import {
   APPLICATION_STATUSES,
@@ -28,6 +32,10 @@ export type DashboardRow = {
   fitScore: number | null;
   resumeLabel: string | null;
   resumeBaseVersionNo: number | null;
+  /** 낸 이력서 파일 이름(기록에 있으면). 기본 이력서 버전이 없을 때 라벨로 쓴다 */
+  resumeDocFile: string | null;
+  /** 거친 단계(상태 이력 기준). 지금 상태가 지원이면 비어 있다 */
+  reached: ReachedStage[];
 };
 
 export type SearchQuery = {
@@ -38,9 +46,27 @@ export type SearchQuery = {
   to?: string;
 };
 
-export function searchApplications(q: SearchQuery, db: Db = getDb()): DashboardRow[] {
+/** 서류합격·면접·최종합격이 상태 이력에 있는 지원 기록별 상태 목록. */
+export function readReached(db: Db): Map<number, ApplicationStatus[]> {
+  const map = new Map<number, ApplicationStatus[]>();
+  for (const e of db
+    .select({ applicationId: statusEvents.applicationId, status: statusEvents.status })
+    .from(statusEvents)
+    .where(inArray(statusEvents.status, REACHED_STAGES))
+    .all()) {
+    const list = map.get(e.applicationId);
+    if (list) list.push(e.status);
+    else map.set(e.applicationId, [e.status]);
+  }
+  return map;
+}
+
+export function searchApplications(
+  q: SearchQuery,
+  db: Db = getDb(),
+  reachedById: Map<number, ApplicationStatus[]> = readReached(db),
+): DashboardRow[] {
   const conds = [];
-  if (q.status) conds.push(eq(applications.status, q.status));
   if (q.site) conds.push(eq(applications.site, q.site));
   if (q.from) conds.push(gte(applications.appliedAt, q.from));
   if (q.to) conds.push(lte(applications.appliedAt, q.to));
@@ -50,8 +76,10 @@ export function searchApplications(q: SearchQuery, db: Db = getDb()): DashboardR
     .from(applications)
     .innerJoin(companies, eq(applications.companyId, companies.id))
     .where(conds.length ? and(...conds) : undefined)
-    .orderBy(desc(applications.appliedAt), desc(applications.id))
+    .orderBy(...applicationOrder)
     .all();
+
+  const reachedOf = (a: { id: number; status: ApplicationStatus }) => reachedStages(a.status, reachedById.get(a.id) ?? []);
 
   const text = q.text?.trim();
   let matchedCompanyIds: Set<number> | null = null;
@@ -71,7 +99,8 @@ export function searchApplications(q: SearchQuery, db: Db = getDb()): DashboardR
   const lowered = text?.toLowerCase();
   const filtered = base.filter(
     ({ a }) =>
-      !text || matchedCompanyIds!.has(a.companyId) || a.positionTitle.toLowerCase().includes(lowered!),
+      (!q.status || matchesStatusFilter(q.status, a.status, reachedOf(a))) &&
+      (!text || matchedCompanyIds!.has(a.companyId) || a.positionTitle.toLowerCase().includes(lowered!)),
   );
 
   const fitByPosting = new Map<number, number>();
@@ -89,6 +118,7 @@ export function searchApplications(q: SearchQuery, db: Db = getDb()): DashboardR
   return filtered.map(({ a, companyName }) => {
     const sr = a.submittedResume;
     const versionNo = sr && sr.kind === 'base' ? (versionNoById.get(sr.versionId) ?? null) : null;
+    const resumeDocFile = a.submittedDocs?.resume ?? null;
     return {
       applicationId: a.id,
       postingId: a.postingId,
@@ -101,8 +131,10 @@ export function searchApplications(q: SearchQuery, db: Db = getDb()): DashboardR
       status: a.status,
       interviewRound: a.interviewRound,
       fitScore: a.postingId != null ? (fitByPosting.get(a.postingId) ?? null) : null,
-      resumeLabel: versionNo != null ? `기본 v${versionNo}` : null,
+      resumeLabel: versionNo != null ? `기본 v${versionNo}` : resumeDocFile ? docLabel(resumeDocFile) : null,
       resumeBaseVersionNo: versionNo,
+      resumeDocFile,
+      reached: [...reachedOf(a)],
     };
   });
 }
@@ -115,16 +147,15 @@ export type DashboardGroup = {
   decided: number;
 };
 
-const PASSED: ApplicationStatus[] = ['document_passed', 'interview', 'final_passed'];
-const UNDECIDED: ApplicationStatus[] = ['applied', 'withdrawn'];
-
 function makeGroup(key: string, label: string, rows: DashboardRow[]): DashboardGroup {
+  const passed = rows.filter((r) => r.reached.includes('document_passed')).length;
   return {
     key,
     label,
     rows,
-    passed: rows.filter((r) => PASSED.includes(r.status)).length,
-    decided: rows.filter((r) => !UNDECIDED.includes(r.status)).length,
+    passed,
+    // 서류를 통과했거나, 통과하지 못하고 지금 불합격인 기록
+    decided: passed + rows.filter((r) => !r.reached.includes('document_passed') && r.status === 'rejected').length,
   };
 }
 
@@ -150,7 +181,13 @@ export function groupDashboardRows(rows: DashboardRow[], by: 'site' | 'status' |
   const groups = versions.map((v) =>
     makeGroup(`v${v}`, `기본 v${v}`, rows.filter((r) => r.resumeBaseVersionNo === v)),
   );
-  const unknown = rows.filter((r) => r.resumeBaseVersionNo == null);
+  const files = [
+    ...new Set(rows.filter((r) => r.resumeBaseVersionNo == null).map((r) => r.resumeDocFile).filter((f): f is string => f != null)),
+  ].sort((a, b) => (a < b ? 1 : a > b ? -1 : 0)); // 파일 이름의 날짜(YYYYMMDD)가 늦은 순
+  for (const f of files) {
+    groups.push(makeGroup(`doc:${f}`, docLabel(f), rows.filter((r) => r.resumeBaseVersionNo == null && r.resumeDocFile === f)));
+  }
+  const unknown = rows.filter((r) => r.resumeBaseVersionNo == null && r.resumeDocFile == null);
   if (unknown.length > 0) groups.push(makeGroup('none', '모름', unknown));
   return groups;
 }
@@ -158,20 +195,43 @@ export function groupDashboardRows(rows: DashboardRow[], by: 'site' | 'status' |
 export function getDashboardStats(
   now: Date = new Date(),
   db: Db = getDb(),
+  reachedById: Map<number, ApplicationStatus[]> = readReached(db),
 ): {
   appliedThisMonth: number;
   byStatus: Record<ApplicationStatus, number>;
   bySite: Record<SiteId, number>;
   analyzedNotApplied: number;
+  /** 거친 단계별 기록 수(서류합격·면접·최종합격 필터 결과 수와 같다). byStatus는 지금 상태 기준 */
+  reachedCounts: Record<ReachedStage, number>;
 } {
   const month = monthLocal(now);
   const byStatus = Object.fromEntries(APPLICATION_STATUSES.map((s) => [s, 0])) as Record<ApplicationStatus, number>;
   const bySite = Object.fromEntries(SITE_IDS.map((s) => [s, 0])) as Record<SiteId, number>;
+  const reachedCounts: Record<ReachedStage, number> = { document_passed: 0, interview: 0, final_passed: 0 };
   let appliedThisMonth = 0;
   for (const a of db.select().from(applications).all()) {
     byStatus[a.status] += 1;
+    for (const r of reachedStages(a.status, reachedById.get(a.id) ?? [])) reachedCounts[r] += 1;
     bySite[a.site] += 1;
     if (a.appliedAt.startsWith(month)) appliedThisMonth += 1;
   }
-  return { appliedThisMonth, byStatus, bySite, analyzedNotApplied: listAnalyzedNotApplied(db).length };
+  return { appliedThisMonth, byStatus, bySite, analyzedNotApplied: listAnalyzedNotApplied(db).length, reachedCounts };
+}
+
+export type RecordExtra = ReturnType<typeof listRecordExtras> extends Map<number, infer V> ? V : never;
+
+/**
+ * 대시보드 한 번 열기: 목록, 요약 통계, 공고 없는 기록의 메모·제출 서류·상태 이력.
+ * 조회 횟수는 기록 수와 관계없이 일정하다(상태 이력 조회를 목록과 통계가 함께 쓴다).
+ */
+export function loadDashboard(
+  q: SearchQuery,
+  now: Date = new Date(),
+  db: Db = getDb(),
+): { rows: DashboardRow[]; stats: ReturnType<typeof getDashboardStats>; extras: Map<number, RecordExtra> } {
+  const reachedById = readReached(db);
+  const rows = searchApplications(q, db, reachedById);
+  const stats = getDashboardStats(now, db, reachedById);
+  const extras = listRecordExtras(rows.filter((r) => r.postingId == null).map((r) => r.applicationId), db);
+  return { rows, stats, extras };
 }

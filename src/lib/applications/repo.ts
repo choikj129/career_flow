@@ -1,9 +1,12 @@
-import { and, desc, eq, gte, or } from 'drizzle-orm';
+import { and, eq, gte, inArray, or } from 'drizzle-orm';
 import { getDb, type Db } from '@/lib/db/client';
 import { applications, statusEvents } from '@/lib/db/schema';
-import { monthsAgoLocal, todayLocal } from '@/lib/domain/dates';
+import { monthsAgoLocal, syntheticKstIso, toKstIso, todayLocal } from '@/lib/domain/dates';
 import type { ApplicationStatus, SiteId } from '@/lib/domain/types';
 import { findOrCreateCompany } from '@/lib/companies/repo';
+import { DOC_KINDS, isDocsForKind, type SubmittedDocs } from '@/lib/documents/files';
+import { docFileExists } from '@/lib/documents/folder';
+import { applicationOrder } from './sort';
 import { getPosting } from '@/lib/postings/repo';
 import { getLatestResume } from '@/lib/resume/repo';
 
@@ -35,6 +38,7 @@ export function markApplied(
         site,
         siteNote,
         appliedAt,
+        appliedDatetime: toKstIso(new Date()),
         submittedResume: { kind: 'base', versionId: resume.id },
         status: 'applied',
         notes: input.notes ?? null,
@@ -76,7 +80,7 @@ export function getPriorApplications(
     .select()
     .from(applications)
     .where(eq(applications.companyId, companyId))
-    .orderBy(desc(applications.appliedAt), desc(applications.id))
+    .orderBy(...applicationOrder)
     .all()
     .filter((a) => opts.excludePostingId == null || a.postingId !== opts.excludePostingId)
     .map((a) => ({
@@ -88,6 +92,18 @@ export function getPriorApplications(
     }));
 }
 
+/** 종류와 이름 규칙이 맞고 폴더에 실제 있는 파일만 허용한다. 아니면 던진다(저장 전에 확인하므로 아무것도 저장되지 않는다). */
+function assertDocsValid(docs: SubmittedDocs | undefined, docsDir?: string): void {
+  if (!docs) return;
+  for (const k of DOC_KINDS) {
+    const name = docs[k];
+    if (name == null) continue;
+    if (!isDocsForKind(k, name) || !docFileExists(name, docsDir)) {
+      throw new Error(`서류 파일을 찾을 수 없습니다: ${name}`);
+    }
+  }
+}
+
 export function bulkCreateApplications(
   rows: {
     companyName: string;
@@ -96,11 +112,19 @@ export function bulkCreateApplications(
     siteNote?: string;
     appliedAt: string;
     status: ApplicationStatus;
+    notes?: string;
+    submittedDocs?: SubmittedDocs;
   }[],
   db: Db = getDb(),
+  docsDir?: string,
 ): number {
+  for (const r of rows) assertDocsValid(r.submittedDocs, docsDir);
+  // 같은 지원일 행끼리 위에서부터 rank 0, 1, 2… (위 행이 더 최근)
+  const rankByDay = new Map<string, number>();
   return db.transaction((tx) => {
     for (const r of rows) {
+      const rank = rankByDay.get(r.appliedAt) ?? 0;
+      rankByDay.set(r.appliedAt, rank + 1);
       const companyId = findOrCreateCompany({ displayName: r.companyName }, tx as unknown as Db);
       const site = r.site;
       const id = tx
@@ -112,8 +136,11 @@ export function bulkCreateApplications(
           site,
           siteNote: site === 'other' ? (r.siteNote?.trim() || null) : null,
           appliedAt: r.appliedAt,
+          appliedDatetime: syntheticKstIso(r.appliedAt, rank),
           submittedResume: { kind: 'imported' },
+          submittedDocs: r.submittedDocs ?? null,
           status: r.status,
+          notes: r.notes?.trim() || null,
           createdAt: now(),
         })
         .returning({ id: applications.id })
@@ -130,7 +157,7 @@ export function listApplicationsForPosting(postingId: number, db: Db = getDb()):
     .select()
     .from(applications)
     .where(eq(applications.postingId, postingId))
-    .orderBy(desc(applications.appliedAt), desc(applications.id))
+    .orderBy(...applicationOrder)
     .all();
 }
 
@@ -172,7 +199,7 @@ export function getRecentApplications(
     .select()
     .from(applications)
     .where(and(where, gte(applications.appliedAt, since)))
-    .orderBy(desc(applications.appliedAt), desc(applications.id))
+    .orderBy(...applicationOrder)
     .all()
     .map((a) => ({
       id: a.id,
@@ -241,4 +268,31 @@ export function deleteApplication(id: number, db: Db = getDb()): void {
     tx.delete(statusEvents).where(eq(statusEvents.applicationId, id)).run();
     tx.delete(applications).where(eq(applications.id, id)).run();
   });
+}
+
+/** 기록 여러 건의 메모·제출 서류·상태 이력을 한 번에 읽는다(IN 조회, 500건씩). */
+export function listRecordExtras(
+  ids: number[],
+  db: Db = getDb(),
+): Map<number, { notes: string | null; submittedDocs: SubmittedDocs | null; events: StatusEvent[] }> {
+  const out = new Map<number, { notes: string | null; submittedDocs: SubmittedDocs | null; events: StatusEvent[] }>();
+  for (let i = 0; i < ids.length; i += 500) {
+    const chunk = ids.slice(i, i + 500);
+    for (const a of db
+      .select({ id: applications.id, notes: applications.notes, submittedDocs: applications.submittedDocs })
+      .from(applications)
+      .where(inArray(applications.id, chunk))
+      .all()) {
+      out.set(a.id, { notes: a.notes, submittedDocs: a.submittedDocs, events: [] });
+    }
+    for (const e of db
+      .select()
+      .from(statusEvents)
+      .where(inArray(statusEvents.applicationId, chunk))
+      .orderBy(statusEvents.id)
+      .all()) {
+      out.get(e.applicationId)?.events.push(e);
+    }
+  }
+  return out;
 }

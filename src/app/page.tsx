@@ -1,12 +1,10 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { connection } from "next/server";
-import { getApplication, listStatusEvents } from "@/lib/applications/repo";
 import { SITE_IDS, STATUS_LABELS } from "@/lib/domain/types";
-import { getCompany } from "@/lib/companies/repo";
 import { listSiteNotes } from "@/lib/postings/repo";
 import { getLatestResume } from "@/lib/resume/repo";
-import { getDashboardStats, searchApplications } from "@/lib/search/dashboard";
+import { loadDashboard } from "@/lib/search/dashboard";
 import {
   dashboardHref,
   parseDashboardParams,
@@ -14,6 +12,7 @@ import {
   type DashboardParams,
   type DashboardView,
 } from "@/lib/search/dashboard-params";
+import { docExistenceIn, existingDocNames } from "@/lib/documents/folder";
 import { DashboardFilters } from "./_components/DashboardFilters";
 import { DashboardViews } from "./_components/DashboardViews";
 import type { RecordDetail } from "./_components/RecordPanel";
@@ -74,28 +73,30 @@ export default function Home({ searchParams }: PageProps<"/">) {
 async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searchParams"] }) {
   await connection();
   const params = parseDashboardParams(await searchParams);
-  const rows = searchApplications(toSearchQuery(params));
-  const stats = getDashboardStats();
+  const { rows, stats, extras } = loadDashboard(toSearchQuery(params));
   const hasResume = getLatestResume() != null;
   const siteNotes = listSiteNotes();
 
-  // 공고 없이 기록만 있는 행은 그 자리에서 펼쳐 쓰므로 상세를 미리 읽어 둔다.
+  // 공고 없이 기록만 있는 행은 그 자리에서 펼쳐 쓰므로 상세를 한 번에 모아 읽어 둔다(기록 수와 관계없이 조회 횟수 일정).
+  const docNames = existingDocNames();
   const details: Record<number, RecordDetail> = {};
   for (const r of rows) {
     if (r.postingId != null) continue;
-    const app = getApplication(r.applicationId);
-    if (!app) continue;
+    const x = extras.get(r.applicationId);
+    if (!x) continue;
     details[r.applicationId] = {
-      applicationId: app.id,
-      companyName: getCompany(app.companyId)?.displayName ?? r.companyName,
-      positionTitle: app.positionTitle,
-      site: app.site,
-      siteNote: app.siteNote,
-      appliedAt: app.appliedAt,
-      status: app.status,
-      interviewRound: app.interviewRound,
-      notes: app.notes,
-      events: listStatusEvents(app.id).map((e) => ({
+      applicationId: r.applicationId,
+      companyName: r.companyName,
+      positionTitle: r.positionTitle,
+      site: r.site,
+      siteNote: r.siteNote ?? null,
+      appliedAt: r.appliedAt,
+      status: r.status,
+      interviewRound: r.interviewRound,
+      notes: x.notes,
+      submittedDocs: x.submittedDocs,
+      docExists: docExistenceIn(x.submittedDocs, docNames),
+      events: x.events.map((e) => ({
         id: e.id,
         status: e.status,
         interviewRound: e.interviewRound,
@@ -145,22 +146,22 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
           <span>
             이번 달 지원<b>{stats.appliedThisMonth}</b>
           </span>
-          {stats.byStatus.document_passed > 0 && (
+          {stats.reachedCounts.document_passed > 0 && (
             <span>
               {STATUS_LABELS.document_passed}
-              <b>{stats.byStatus.document_passed}</b>
+              <b>{stats.reachedCounts.document_passed}</b>
             </span>
           )}
-          {stats.byStatus.interview > 0 && (
+          {stats.reachedCounts.interview > 0 && (
             <span>
               {STATUS_LABELS.interview}
-              <b>{stats.byStatus.interview}</b>
+              <b>{stats.reachedCounts.interview}</b>
             </span>
           )}
-          {stats.byStatus.final_passed > 0 && (
+          {stats.reachedCounts.final_passed > 0 && (
             <span>
               {STATUS_LABELS.final_passed}
-              <b>{stats.byStatus.final_passed}</b>
+              <b>{stats.reachedCounts.final_passed}</b>
             </span>
           )}
           <span className="sites">

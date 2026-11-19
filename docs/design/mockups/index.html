@@ -82,6 +82,7 @@ h1, h2, h3 { font-family: var(--font-head); font-weight: var(--head-weight); let
 .st.go { background: var(--accent-tint); color: var(--accent); }
 .st.ok { background: var(--good-tint); color: var(--good); }
 .st.pass { background: #E6F2F8; color: #0369A1; }
+.st.asg { background: #E8EEF7; color: #1F5FAD; }
 .st.no { background: transparent; color: var(--faint); font-weight: 500; padding: 0; }
 .st.warn { background: var(--mark-tint); color: var(--mark); }
 
@@ -297,7 +298,7 @@ details summary { cursor: pointer; font-weight: 600; margin: 22px 0 10px; }
 .res-tag { font-size: 12.5px; font-weight: 600; color: var(--sub); border: 1px solid var(--line-strong); border-radius: 5px; padding: 1px 6px; white-space: nowrap; }
 .res-tag.tailored { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 35%, white); }
 /* 상태별 보드 */
-.board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(200px, 1fr); gap: 12px; overflow-x: auto; padding-bottom: 8px; }
+.board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(180px, 1fr); gap: 12px; overflow-x: auto; padding-bottom: 8px; }
 .col { border-radius: var(--r); padding: 10px; background: color-mix(in srgb, var(--cc) 6%, var(--bg)); min-height: 220px; }
 .col-head { display: flex; align-items: center; gap: 8px; padding: 2px 4px 10px; }
 .col-head .label-chip { --c: var(--cc); }
@@ -414,7 +415,7 @@ textarea.in { height: auto; min-height: 70px; padding: 10px 12px; resize: vertic
   </div>
   <div class="search-row">
     <label class="search"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><input id="q" placeholder="회사나 포지션으로 찾기" aria-label="회사·포지션 검색"></label>
-    <select class="select" aria-label="상태"><option>상태: 전체</option><option>진행 중</option><option>서류합격</option><option>면접</option><option>최종합격</option><option>불합격</option><option>지원취소</option></select>
+    <select class="select" aria-label="상태"><option>상태: 전체</option><option>진행 중</option><option>서류합격</option><option>과제·코딩테스트</option><option>면접</option><option>최종합격</option><option>불합격</option><option>지원취소</option></select>
     <select class="select" aria-label="사이트"><option>사이트: 전체</option><option>리멤버</option><option>원티드</option><option>그룹바이</option><option>잡코리아</option><option>기타</option></select>
     <select class="select" aria-label="기간"><option>기간: 전체</option><option>이번 달</option><option>최근 3개월</option><option>최근 1년</option></select>
   </div>
@@ -888,10 +889,10 @@ const rows = [
 const SITE_KEY = { "리멤버": "remember", "원티드": "wanted", "그룹바이": "groupby", "잡코리아": "jobkorea", "기타": "other" };
 const SITES = ["리멤버", "원티드", "그룹바이", "잡코리아", "기타"];
 const STAGES = [
-  { k: "applied", name: "지원", c: "#5B6475" }, { k: "passed", name: "서류합격", c: "#0369A1" },
+  { k: "applied", name: "지원", c: "#5B6475" }, { k: "passed", name: "서류합격", c: "#0369A1" }, { k: "asg", name: "과제·코딩테스트", c: "#1F5FAD" },
   { k: "interview", name: "면접", c: "#2342C8" }, { k: "final", name: "최종합격", c: "#15803D" }, { k: "closed", name: "불합격·지원취소", c: "#98A0AE" },
 ];
-const ST_CLS = { applied: "plain", passed: "pass", interview: "go", final: "ok", closed: "no" };
+const ST_CLS = { applied: "plain", passed: "pass", asg: "asg", interview: "go", final: "ok", closed: "no" };
 const norm = s => s.replace(/\(주\)|㈜|주식회사|\s/g, "").toLowerCase();
 let view = "all";
 const openGroups = new Set(["원티드", "v3"]);

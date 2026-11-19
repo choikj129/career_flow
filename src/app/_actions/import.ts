@@ -4,9 +4,9 @@ import { redirect } from 'next/navigation';
 import { SITE_IDS } from '@/lib/domain/types';
 import { enqueueJob } from '@/lib/ai/queue';
 import { bulkCreateApplications } from '@/lib/applications/repo';
-import { markExistingRows } from '@/lib/applications/import-review';
+import { findExistingMatches, markExistingRows, type ExistingMatch } from '@/lib/applications/import-review';
 import { validDate } from '@/lib/domain/dates';
-import { checkedRowsSchema, existingRowsSchema, rowsToRegister, type CheckedRow } from '@/lib/applications/import-rows';
+import { checkedRowsSchema, existingMatchRowsSchema, existingRowsSchema, rowsToRegister, type CheckedRow } from '@/lib/applications/import-rows';
 import { saveUploads } from '@/lib/uploads/store';
 import { run } from './run';
 import type { ActionResult } from './types';
@@ -46,6 +46,15 @@ export async function checkExistingAction(rows: { companyName: string; appliedAt
   const parsed = existingRowsSchema.safeParse(rows);
   if (!parsed.success) return Array.isArray(rows) ? rows.map(() => false) : [];
   return markExistingRows(parsed.data.map((r) => ({ ...r, appliedAt: validDate(r.appliedAt) ? r.appliedAt : '' })));
+}
+
+/** 직접 입력 표에서 회사·포지션·지원일을 고친 뒤 같은 기록이 있는지 다시 판단한다. */
+export async function checkExistingMatchesAction(
+  rows: { companyName: string; positionTitle: string; appliedAt: string }[],
+): Promise<ExistingMatch[]> {
+  const parsed = existingMatchRowsSchema.safeParse(rows);
+  if (!parsed.success) return Array.isArray(rows) ? rows.map(() => 'none' as const) : [];
+  return findExistingMatches(parsed.data.map((r) => ({ ...r, appliedAt: validDate(r.appliedAt) ? r.appliedAt : '' })));
 }
 
 export async function commitApplicationImportAction(rows: CheckedRow[]): Promise<ActionResult> {

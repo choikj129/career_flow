@@ -14,6 +14,7 @@ import {
 } from "@/lib/applications/repo";
 import { getCompany, getCompanyUsage } from "@/lib/companies/repo";
 import { eventDate, formatDateTime } from "@/lib/domain/dates";
+import { docExistence } from "@/lib/documents/folder";
 import { isHttpUrl } from "@/lib/domain/normalize";
 import { getLatestAnalysis, getPosting, listAnalyses, listSiteNotes } from "@/lib/postings/repo";
 import { getLatestResume, getResumeVersion } from "@/lib/resume/repo";
@@ -22,6 +23,7 @@ import { DuplicateBanner, type PriorApplication } from "../../_components/Duplic
 import { JobStatus } from "../../_components/JobStatus";
 import { SiteBadge } from "../../_components/SiteBadge";
 import { StatusBadge } from "../../_components/StatusBadge";
+import { SubmittedDocs } from "../../_components/SubmittedDocs";
 import { ApplyForm } from "./ApplyForm";
 import { CompanyLink } from "./CompanyLink";
 import { DeletePostingButton } from "./DeletePostingButton";
@@ -492,6 +494,11 @@ function RecordItem({
           />
         </span>
       </div>
+      {app.submittedDocs && (
+        <div className="card" style={{ padding: "14px 22px", marginTop: 12 }}>
+          <SubmittedDocs docs={app.submittedDocs} exists={docExistence(app.submittedDocs)} />
+        </div>
+      )}
       <h2 style={{ fontSize: 18, margin: "24px 0 10px" }}>진행 기록</h2>
       <div className="card" style={{ padding: "4px 18px" }}>
         <ul className="history">

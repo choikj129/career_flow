@@ -350,3 +350,41 @@ test('TC-CO-F4 setPostingCompany 는 지원 기록의 회사도 함께 바꾼다
   expect(getPosting(postingId, db)!.companyId).toBe(other);
   expect(getApplicationForPosting(postingId, db)!.companyId).toBe(other);
 });
+
+test('TC-PAST-12 bulkCreateApplications stores notes and document file names', async () => {
+  const { mkdtempSync, mkdirSync, writeFileSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const { applications } = await import('@/lib/db/schema');
+  const dir = mkdtempSync(join(tmpdir(), 'cf-docs-'));
+  mkdirSync(join(dir, 'resume'), { recursive: true });
+  writeFileSync(join(dir, 'resume', '이력서_20261102.pdf'), 'x');
+  const db = makeTestDb();
+  const base = { companyName: '토스', positionTitle: 'A', site: 'wanted' as const, appliedAt: '2026-11-05', status: 'applied' as const };
+  bulkCreateApplications(
+    [{ ...base, notes: '메모', submittedDocs: { resume: '이력서_20261102.pdf', career: null, portfolio: null } }],
+    db,
+    dir,
+  );
+  const a = db.select().from(applications).get()!;
+  expect(a.notes).toBe('메모');
+  expect(a.submittedDocs).toEqual({ resume: '이력서_20261102.pdf', career: null, portfolio: null });
+});
+
+test('TC-PAST-12 bulkCreateApplications rolls back when a document file is missing', async () => {
+  const { mkdtempSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const { applications } = await import('@/lib/db/schema');
+  const dir = mkdtempSync(join(tmpdir(), 'cf-docs-'));
+  const db = makeTestDb();
+  const base = { companyName: '토스', positionTitle: 'A', site: 'wanted' as const, appliedAt: '2026-11-05', status: 'applied' as const };
+  expect(() =>
+    bulkCreateApplications(
+      [base, { ...base, companyName: '당근', submittedDocs: { resume: '이력서_20261102.pdf' } }],
+      db,
+      dir,
+    ),
+  ).toThrow('서류 파일을 찾을 수 없습니다: 이력서_20261102.pdf');
+  expect(db.select().from(applications).all()).toHaveLength(0);
+});

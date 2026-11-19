@@ -13,7 +13,7 @@ career_flow/
 ├─ CLAUDE.md                 Claude Code용 프로젝트 안내 (개요·구조·문서 링크만)
 ├─ .claude/
 │  ├─ rules/                 작업 규칙 (경로별로 자동 적용)
-│  ├─ agents/                서브에이전트 (product-planner, developer, code-reviewer)
+│  ├─ agents/                서브에이전트 (product-planner, developer, 검증 에이전트(reviewer-ui·logic·quality))
 │  └─ skills/                프로젝트 전용 스킬 (feature-workflow: 기능 워크플로우, project-status: 현황 보고)
 ├─ docs/                     모든 문서 (기획·화면·구조·계획·디자인·사용 안내)
 ├─ prompts/                  Claude Code에 보내는 작업별 프롬프트 (.md)
@@ -52,8 +52,22 @@ src/lib/
 │  └─ fabrication.ts         지어낸 내용 검사
 ├─ companies/repo.ts         회사·별칭·매칭·합치기
 ├─ postings/repo.ts          공고 등록·조회·분석 결과 저장
-├─ applications/repo.ts      지원 기록·상태 이력·중복 조회·일괄 등록·제출 이력서
-├─ search/dashboard.ts       대시보드 검색·필터·요약 지표
+├─ applications/repo.ts      지원 기록·상태 이력·중복 조회·일괄 등록·제출 이력서, 거친 단계 이력 읽기(listReachedHistory)
+├─ applications/sort.ts      지원 기록 기본 정렬(지원일 → 정렬용 일시 → id)
+├─ applications/stages.ts    거친 단계 계산, 상태 필터 판정 (순수)
+├─ applications/backfill.ts  정렬용 일시 일회성 채우기
+├─ documents/
+│  ├─ files.ts               서류 종류, 파일 이름 규칙, 지원일로 파일 고르기, 메모 "제출 서류" 줄 (순수)
+│  ├─ folder.ts              data/documents 폴더 읽기, 안전한 경로 풀기
+│  └─ migrate.ts             메모 "제출 서류" 줄 → 지원 기록 제출 서류 칸
+├─ search/dashboard.ts       대시보드 검색·필터·요약 지표, 묶음(서류 통과율은 stats/rates의 Tally)
+├─ stats/
+│  ├─ outcome.ts             결과 분류(서류 통과·불합격·무응답·대기·지원취소), NO_RESPONSE_DAYS (순수)
+│  ├─ rates.ts               Tally, 서류 통과율, 표본 수준 (순수)
+│  ├─ aggregate.ts           기간별·서류 버전별·사이트별·단계별·요일별 집계 (순수)
+│  ├─ load.ts                지원 기록 읽기 → StatItem, getStats
+│  ├─ params.ts              /stats 주소 파라미터
+│  └─ chart-scale.ts         그래프 축 최대값·눈금 (순수)
 ├─ tailored/repo.ts          맞춤 이력서·리비전
 ├─ interview/
 │  ├─ repo.ts                면접 준비·리비전·요청
@@ -90,6 +104,7 @@ src/lib/
 | 단계 | 생기는 파일 |
 |---|---|
 | 1 | config, settings, backup, db/*, domain/*, resume/schema·repo, companies, postings, applications, search, extract/*, ai/runner·claude-cli·health·queue·prompt, ai/tasks/index·schemas·analyze-posting·import-resume·import-applications |
+| 2 추가 | documents/*, applications/sort·stages·backfill (`docs/plans/phase-2-past-records.md`) / stats/* (`docs/plans/phase-2-stats.md`) |
 | 3 | resume/diff·fabrication, tailored/repo, pdf/*, ai/session, ai/tasks/tailor-* |
 | 4 | interview/*, ai/tasks/interview-schemas·prepare-interview |
 | 5 | sync/repo, ai/tasks/site-sync-* |
@@ -108,18 +123,21 @@ src/app/
 │  ├─ StatusBadge.tsx
 │  ├─ SiteBadge.tsx
 │  ├─ DuplicateBanner.tsx    중복 지원 경고
+│  ├─ RateText.tsx           서류 통과율 문구 + 표본 표시 (대시보드 묶음·통계)
 │  └─ AnalysisView.tsx       분석 결과 표시
 ├─ _actions/                 서버 액션 — 영역별 파일, lib 함수를 부르는 얇은 래퍼
 │  ├─ applications.ts        지원 완료, 상태 변경, 메모
 │  ├─ postings.ts            공고 등록, 본문 붙여넣기, 다시 분석, 회사 연결·별칭
 │  ├─ resume.ts              이력서 가져오기·저장, 희망 조건
-│  ├─ import.ts              지원 내역 추출·일괄 등록
+│  ├─ import.ts              지원 내역 추출·일괄 등록·직접 입력 중복 확인
+│  ├─ documents.ts           메모의 제출 서류 이관
 │  ├─ settings.ts            모델·시간 제한, 로그인 확인, 사이트 로그인 창, 백업, 데이터 폴더 열기
 │  ├─ tailored.ts            맞춤 이력서 생성·다듬기        (3단계)
 │  ├─ interview.ts           면접 준비 생성·추가 요청        (4단계)
 │  └─ sync.ts                사이트 반영 완료·다시 만들기    (5단계)
 ├─ api/
 │  ├─ jobs/[id]/route.ts     작업 상태 조회 (JobStatus가 폴링)
+│  ├─ documents/[name]/route.ts  제출 서류 PDF 보기 (이름 규칙 + 종류 폴더 안만)
 │  └─ pdf/
 │     ├─ tailored/[revisionId]/route.ts   맞춤 이력서 PDF   (3단계)
 │     └─ base/[versionId]/route.ts        기본 이력서 PDF   (3단계)
@@ -136,10 +154,19 @@ src/app/
 ├─ resume/
 │  ├─ page.tsx               기본 이력서
 │  ├─ ResumeEditor.tsx
-│  └─ PreferencesForm.tsx
+│  ├─ PreferencesForm.tsx
+│  └─ DocFiles.tsx           서류 파일 탭
 ├─ import/
 │  ├─ page.tsx               지원 내역 가져오기
 │  └─ ImportReviewTable.tsx
+├─ stats/                    통계 (`docs/plans/phase-2-stats.md`)
+│  ├─ page.tsx               요약 카드·그래프·표 배치 (서버)
+│  ├─ StatsFilters.tsx       기간·사이트 선택 (클라이언트)
+│  ├─ SummaryCards.tsx
+│  ├─ StackedBarChart.tsx    기간별 누적 막대 (SVG, 서버)
+│  ├─ HBarChart.tsx          서류 버전·사이트·단계별 가로 막대 (SVG, 서버)
+│  ├─ ColumnChart.tsx        요일별 세로 막대 (SVG, 서버)
+│  └─ StatsTable.tsx
 ├─ sync/page.tsx             사이트 반영 체크리스트 (5단계)
 └─ settings/page.tsx         설정
 ```
@@ -161,7 +188,7 @@ src/app/
 | 작업 기록 | `docs/work/` | 기능 워크플로우의 작업마다 한 파일. 설계·검토·회차·결정·재설계·실패·결과 |
 | 테스트 케이스 | `docs/test/` | `test-cases.md`: 기능·화면별 케이스와 자동 테스트 대응표 |
 | 작업 규칙 | `.claude/rules/*.md` | 코드 영역별 규칙. `paths`로 적용 범위를 정한다. 짧게, 왜 그런지 한 줄 포함 |
-| 서브에이전트 | `.claude/agents/<이름>.md` | 역할별 에이전트. 기획 검토(product-planner, Opus, 읽기 전용), 구현(developer, Sonnet), 검토(code-reviewer, Sonnet, 읽기 전용) |
+| 서브에이전트 | `.claude/agents/<이름>.md` | 역할별 에이전트. 기획 검토(product-planner, Opus, 읽기 전용), 구현(developer, Sonnet), 검토(검증 에이전트(reviewer-ui·logic·quality), Sonnet, 읽기 전용) |
 | 스킬 | `.claude/skills/<이름>/SKILL.md` | 반복되는 절차가 생길 때만 추가 |
 
 새 문서를 만들면 `CLAUDE.md`의 문서 목록에 한 줄 추가한다.
@@ -173,6 +200,7 @@ app/(page, 컴포넌트) ─▶ app/_actions ─▶ lib/<영역>/repo ─▶ lib
         │                                   ▲
         └──(읽기 전용 조회는 repo 직접 호출)──┘
 lib/ai/queue ─▶ lib/ai/tasks/* ─▶ lib/<영역>/repo, lib/ai/claude-cli, lib/extract
+lib/stats ─▶ lib/applications(stages, repo), lib/documents/files, lib/db ;  lib/search/dashboard ─▶ lib/stats(outcome, rates)
 instrumentation.ts ─▶ lib/db, lib/backup, lib/ai/queue
 ```
 
@@ -208,17 +236,19 @@ tests/
 │  ├─ fake-claude.mjs       가짜 claude 실행 파일 (모드별 응답)
 │  └─ posting-*.html        공고 페이지 샘플
 └─ *.test.ts                config, db, backup, normalize, resume-repo, claude-cli, queue, extract,
-                            repos, search, tasks (1단계) / resume-diff, fabrication, tailored-repo,
+                            repos, search, tasks (1단계) / stats (2단계 추가) / resume-diff, fabrication, tailored-repo,
                             tailor-task, pdf, submitted-resume (3단계) / interview-repo,
                             interview-task (4단계) / sync-repo, sync-task, settings-final (5단계)
 
 scripts/
 ├─ start-career-flow.cmd    빌드 확인 → 실행 → 브라우저 열기 (바탕화면 바로가기용)
-└─ seed-dev.ts              개발용 데이터 (data-dev/ 에만 씀)
+├─ seed-dev.ts              개발용 데이터 (data-dev/ 에만 씀)
+└─ backfill-applied-datetime.ts  정렬용 일시 일회성 채우기 (data/ 안 파일을 읽음, --dry-run)
 
 data/                       git 제외. 위치는 CAREER_FLOW_DATA_DIR로 바꿀 수 있음
 ├─ career-flow.db           SQLite
 ├─ uploads/                 올린 이력서·캡처 원본 (resume/, import/)
+├─ documents/               제출 서류 PDF 복사본 (resume/이력서_YYYYMMDD.pdf, career/경력기술서_…, portfolio/포트폴리오_…)
 ├─ ai-work/<jobId>/         작업별 Claude Code 작업 폴더 (입력 파일)
 ├─ browser-profile/         Playwright 영구 프로필 (사이트 로그인 유지)
 └─ backups/                 DB 백업 (자동 30개, 수동 10개)

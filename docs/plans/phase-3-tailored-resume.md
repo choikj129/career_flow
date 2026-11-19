@@ -246,6 +246,7 @@ test('requestTailoredResume requires analysis', () => { /* 분석 없는 공고 
   - `markApplied` 입력에 `submittedResume?: SubmittedResume` 추가. 생략 시 기본값: 이 공고의 맞춤본 최신 리비전이 있으면 `{kind:'tailored', tailoredRevisionId}`, 없으면 `{kind:'base', versionId: 최신 기본 이력서 id}`.
   - `resolveSubmittedResume(sr: SubmittedResume, db?): { label: string; content: ResumeContent } | null` — label 예: `기본 이력서 v3`, `맞춤 이력서 r2`.
   - `updateApplication` patch에 `submittedResume?: SubmittedResume` 추가 — 지원 기록 수정 창에서 제출한 이력서를 바꿀 수 있다 (D-01).
+  - (지난 기록·제출 서류 계획 `phase-2-past-records.md` 이후) 같은 창에서 `submittedDocs`(종류별 서류 **파일 이름**, `data/documents/` 폴더 목록에서 고름)도 고칠 수 있게 `updateApplication` patch에 `submittedDocs?: SubmittedDocs`를 더한다. 가져온 기록의 `submittedResume` `{kind:'imported'}`는 그대로 유지한다. 대시보드 라벨 우선순위: 맞춤 → 기본 → 이력서 파일 → 모름.
   - `searchApplications`의 `resumeLabel`·`resumeBaseVersionNo`가 맞춤본도 채운다: 맞춤 리비전이면 `"맞춤 r2"`와 그 리비전의 `baseResumeVersionId`의 버전 번호(대시보드 "이력서별" 보기가 기준 버전으로 묶는다).
   - `listSubmittableResumes(postingId, db?): { value: SubmittedResume; label: string }[]` — 최신 기본 이력서 + 이 공고 맞춤본 리비전 전부(최신순).
 
