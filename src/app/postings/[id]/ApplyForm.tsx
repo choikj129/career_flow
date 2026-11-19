@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { markAppliedAction, recentApplicationsAction } from "@/app/_actions/applications";
 import { SiteBadge } from "@/app/_components/SiteBadge";
 import { statusText } from "@/app/_components/StatusBadge";
@@ -42,6 +42,9 @@ export function ApplyForm({
   const [notes, setNotes] = useState("");
   const { pending, error, setError, run } = useAction();
   const [checking, setChecking] = useState(false);
+  // 저장을 시작했거나 끝낸 폼은 다시 저장하지 않는다(이중 제출 방지). 폼을 새로 열 때만 풀린다.
+  const submittedRef = useRef(false);
+  const [submitted, setSubmitted] = useState(false);
 
   const start = async () => {
     setChecking(true);
@@ -62,6 +65,8 @@ export function ApplyForm({
     setSiteNote(defaultSiteNote ?? "");
     setNotes("");
     setError(null);
+    submittedRef.current = false;
+    setSubmitted(false);
     setOpen(true);
   };
 
@@ -106,6 +111,9 @@ export function ApplyForm({
           <form
             onSubmit={(e) => {
               e.preventDefault();
+              if (submittedRef.current) return;
+              submittedRef.current = true;
+              setSubmitted(true);
               run(
                 () =>
                   markAppliedAction({
@@ -116,6 +124,11 @@ export function ApplyForm({
                     notes,
                   }),
                 () => setOpen(false),
+                () => {
+                  // 저장 실패: 고쳐서 다시 저장할 수 있게 푼다
+                  submittedRef.current = false;
+                  setSubmitted(false);
+                },
               );
             }}
           >
@@ -159,7 +172,7 @@ export function ApplyForm({
               <button type="button" className="btn" onClick={() => setOpen(false)}>
                 취소
               </button>
-              <button type="submit" className="btn primary" disabled={pending}>
+              <button type="submit" className="btn primary" disabled={pending || submitted}>
                 저장
               </button>
             </footer>

@@ -13,7 +13,7 @@ export function useAction() {
   const [error, setError] = useState<string | null>(null);
   const toast = useToast();
 
-  function run(fn: () => Promise<ActionResult | void>, onOk?: () => void) {
+  function run(fn: () => Promise<ActionResult | void>, onOk?: () => void, onFail?: () => void) {
     setError(null);
     start(async () => {
       const r = await fn();
@@ -21,6 +21,7 @@ export function useAction() {
       if (!r) return;
       if (!r.ok) {
         setError(r.error);
+        onFail?.();
         return;
       }
       if (r.notice) toast(r.notice);

@@ -89,4 +89,33 @@ test.describe.serial('다시 지원', () => {
     await page.goto(`/?q=${encodeURIComponent('재지원회사')}`);
     await expect(page.locator('tbody tr.row-link').filter({ hasText: '재지원 서버' })).toHaveCount(2);
   });
+
+  test('TC-REAPPLY-E06 [저장]을 빠르게 두 번 눌러도 기록은 1개만 생긴다', async ({ page }) => {
+    const id = await registerByPaste(page, body(['회사명: 더블클릭회사', '포지션: 더블클릭 서버', '적합도: 70']));
+    await waitAnalyzed(page);
+    await page.getByRole('button', { name: '지원 완료', exact: true }).click();
+    const dlg = page.getByRole('dialog', { name: '지원 완료로 기록' });
+    await dlg.getByLabel('지원일').fill(monthsAgo(0));
+    await dlg.getByRole('button', { name: '저장' }).dblclick();
+    await toast(page, '지원 완료로 저장했습니다');
+    await page.goto(`/postings/${id}`);
+    await page.getByRole('tab', { name: '지원 기록' }).click();
+    await expect(page.locator('[data-testid^="record-"]')).toHaveCount(1);
+  });
+
+  test('TC-REAPPLY-E07 같은 폼을 같은 틱에 두 번 제출해도(Enter 등) 기록은 1개만 생긴다', async ({ page }) => {
+    const id = await registerByPaste(page, body(['회사명: 이중제출회사', '포지션: 이중제출 서버', '적합도: 70']));
+    await waitAnalyzed(page);
+    await page.getByRole('button', { name: '지원 완료', exact: true }).click();
+    const dlg = page.getByRole('dialog', { name: '지원 완료로 기록' });
+    await dlg.getByLabel('지원일').fill(monthsAgo(0));
+    await dlg.locator('form').evaluate((f) => {
+      (f as HTMLFormElement).requestSubmit();
+      (f as HTMLFormElement).requestSubmit();
+    });
+    await toast(page, '지원 완료로 저장했습니다');
+    await page.goto(`/postings/${id}`);
+    await page.getByRole('tab', { name: '지원 기록' }).click();
+    await expect(page.locator('[data-testid^="record-"]')).toHaveCount(1);
+  });
 });
