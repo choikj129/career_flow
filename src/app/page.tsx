@@ -148,22 +148,22 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
           <span>
             이번 달 지원<b>{stats.appliedThisMonth}</b>
           </span>
-          {stats.byStatus.document_passed > 0 && (
+          {stats.reachedCounts.document_passed > 0 && (
             <span>
               {STATUS_LABELS.document_passed}
-              <b>{stats.byStatus.document_passed}</b>
+              <b>{stats.reachedCounts.document_passed}</b>
             </span>
           )}
-          {stats.byStatus.interview > 0 && (
+          {stats.reachedCounts.interview > 0 && (
             <span>
               {STATUS_LABELS.interview}
-              <b>{stats.byStatus.interview}</b>
+              <b>{stats.reachedCounts.interview}</b>
             </span>
           )}
-          {stats.byStatus.final_passed > 0 && (
+          {stats.reachedCounts.final_passed > 0 && (
             <span>
               {STATUS_LABELS.final_passed}
-              <b>{stats.byStatus.final_passed}</b>
+              <b>{stats.reachedCounts.final_passed}</b>
             </span>
           )}
           <span className="sites">

@@ -31,6 +31,7 @@ export function DashboardFilters({ params }: { params: DashboardParams }) {
   };
 
   return (
+    <>
     <div className="search-row">
       <label className="search">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -108,5 +109,11 @@ export function DashboardFilters({ params }: { params: DashboardParams }) {
         </div>
       )}
     </div>
+    {(params.status === "document_passed" || params.status === "interview" || params.status === "final_passed") && (
+      <p className="muted small" style={{ margin: "6px 0 0" }}>
+        이 단계를 거친 기록을 모두 보여 줍니다(지금 상태와 관계없이)
+      </p>
+    )}
+    </>
   );
 }

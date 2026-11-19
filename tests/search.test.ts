@@ -1,8 +1,9 @@
 import { expect, test } from 'vitest';
 import { makeTestDb } from './helpers/db';
+import { reachedStages } from '@/lib/applications/stages';
 import { applications } from '@/lib/db/schema';
 import { addCompanyAlias, findOrCreateCompany } from '@/lib/companies/repo';
-import { bulkCreateApplications, markApplied } from '@/lib/applications/repo';
+import { bulkCreateApplications, changeStatus, markApplied } from '@/lib/applications/repo';
 import { registerPosting, saveAnalysis } from '@/lib/postings/repo';
 import { saveResumeVersion } from '@/lib/resume/repo';
 import { emptyResume } from '@/lib/resume/schema';
@@ -136,6 +137,7 @@ function dr(over: Partial<DashboardRow>): DashboardRow {
     resumeLabel: null,
     resumeBaseVersionNo: null,
     resumeDocFile: null,
+    reached: [...reachedStages(over.status ?? 'applied', [])],
     ...over,
   };
 }
@@ -199,4 +201,57 @@ test('TC-PAST-31 groupDashboardRows by resume: base -> files (newest first) -> u
   expect(g.map((x) => x.key)).toEqual(['v1', 'doc:이력서_20261102.pdf', 'doc:이력서_20260905.pdf', 'none']);
   expect(g[1].label).toBe('이력서 2026-11-02');
   expect(g[1].rows).toHaveLength(2);
+});
+
+// A: 서류합격 -> 불합격, B: 서류합격 -> 면접, C: 지원, D: 불합격(이력 없음), E: 서류합격 -> 지원취소, F: 서류합격 -> 지원(되돌림)
+function reachedDb() {
+  const db = makeTestDb();
+  bulkCreateApplications(['A', 'B', 'C', 'D', 'E', 'F'].map((c) => row(c, 'applied', 'wanted')), db);
+  const id = (c: string) => searchApplications({ text: c }, db)[0].applicationId;
+  changeStatus(id('A'), 'document_passed', {}, db);
+  changeStatus(id('A'), 'rejected', {}, db);
+  changeStatus(id('B'), 'document_passed', {}, db);
+  changeStatus(id('B'), 'interview', { interviewRound: 1 }, db);
+  changeStatus(id('D'), 'rejected', {}, db);
+  changeStatus(id('E'), 'document_passed', {}, db);
+  changeStatus(id('E'), 'withdrawn', {}, db);
+  changeStatus(id('F'), 'document_passed', {}, db);
+  changeStatus(id('F'), 'applied', {}, db);
+  return db;
+}
+const names = (rows: DashboardRow[]) => rows.map((r) => r.companyName).sort();
+
+test('TC-PAST-51 status filter shows records that passed the stage', () => {
+  const db = reachedDb();
+  expect(names(searchApplications({ status: 'document_passed' }, db))).toEqual(['A', 'B', 'E']);
+  expect(names(searchApplications({ status: 'interview' }, db))).toEqual(['B']);
+  expect(names(searchApplications({ status: 'rejected' }, db))).toEqual(['A', 'D']);
+  expect(names(searchApplications({ status: 'withdrawn' }, db))).toEqual(['E']);
+  expect(names(searchApplications({ status: 'applied' }, db))).toEqual(['C', 'F']);
+  expect(names(searchApplications({ status: 'final_passed' }, db))).toEqual([]);
+});
+
+test('TC-PAST-52 status board columns stay on the current status', () => {
+  const db = reachedDb();
+  const g = groupDashboardRows(searchApplications({ status: 'document_passed' }, db), 'status');
+  expect(names(g.find((x) => x.key === 'closed')!.rows)).toEqual(['A', 'E']);
+  expect(names(g.find((x) => x.key === 'interview')!.rows)).toEqual(['B']);
+  expect(g.find((x) => x.key === 'document_passed')!.rows).toEqual([]);
+});
+
+test('TC-PAST-53 summary counts: reachedCounts follow the filter results, byStatus stays current', () => {
+  const db = reachedDb();
+  const s = getDashboardStats(new Date(2026, 10, 16), db);
+  expect(s.reachedCounts.document_passed).toBe(searchApplications({ status: 'document_passed' }, db).length);
+  expect(s.reachedCounts.interview).toBe(searchApplications({ status: 'interview' }, db).length);
+  expect(s.reachedCounts.final_passed).toBe(0);
+  expect(Object.values(s.byStatus).reduce((a, b) => a + b, 0)).toBe(6);
+  expect(s.byStatus.document_passed).toBe(0);
+});
+
+test('TC-PAST-54 pass rate counts passed-then-rejected/withdrawn as passed', () => {
+  const db = reachedDb();
+  const [g] = groupDashboardRows(searchApplications({}, db), 'site');
+  // passed: A, B, E / decided: passed + 서류합격을 거치지 않은 불합격(D)
+  expect(g).toMatchObject({ passed: 3, decided: 4 });
 });
