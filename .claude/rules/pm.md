@@ -9,7 +9,7 @@
   - 순서를 바꾸거나 마일스톤을 더하거나 빼는 것은 사용자 결정이다(`ask-first.md`).
   - 예상보다 오래 걸리거나 막히면 이유를 비고에 적고 보고한다.
 - **위임**: 일은 `.claude/rules/workflow.md`와 `/feature-workflow`대로 맡긴다.
-  - 설계는 product-planner, 구현은 developer, 검증은 code-reviewer가 한다.
+  - 설계는 product-planner, 구현은 developer, 검증은 reviewer-ui·reviewer-logic·reviewer-quality 셋이 나란히 한다. 셋의 보고를 PM이 하나로 합친다.
   - 서로 의존하지 않는 일은 에이전트를 나란히 돌려도 된다. 단, 같은 파일을 두 developer가 동시에 고치지 않게 한다.
 - **확인**: 에이전트 보고는 믿기 전에 확인한다.
   - `git log`, `npm test`, 필요하면 `test:e2e`를 직접 돌린다.

@@ -1,6 +1,6 @@
 ---
 name: developer
-description: Career Flow의 개발 담당. 기능 워크플로우에서 사용자가 승인한 설계(docs/work/의 작업 기록)와 단계별 구현 계획(docs/plans)에 따라 기능을 구현하고, 테스트를 먼저 작성해 실행한다. code-reviewer가 넘긴 "고쳐야 할 목록"도 고친다. 사용자가 구현을 지시했거나 설계가 승인된 일에만 쓴다.
+description: Career Flow의 개발 담당. 기능 워크플로우에서 사용자가 승인한 설계(docs/work/의 작업 기록)와 단계별 구현 계획(docs/plans)에 따라 기능을 구현하고, 테스트를 먼저 작성해 실행한다. 검증 에이전트들이 넘긴 "고쳐야 할 목록"도 고친다. 사용자가 구현을 지시했거나 설계가 승인된 일에만 쓴다.
 model: sonnet
 ---
 
