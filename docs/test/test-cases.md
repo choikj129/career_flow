@@ -528,6 +528,24 @@ AI 작업이 끝나면 `data/ai-work/<번호>/`를 바로 지운다. 올린 이�
 | TC-SET-HEALTH-DIR | `tests/claude-health.test.ts` | 로그인 확인이 고정 폴더 재사용 |
 | TC-RESUME-DIRTY | `tests/resume-compare.test.ts` | 이력서 편집기 `isResumeDirty`(draft, done, 되돌리기) |
 
+## 10. 지난 지원 기록·서류 파일 (브랜치 `feat/past-records`)
+
+계획: [phase-2-past-records.md](../plans/phase-2-past-records.md). 자동 테스트는 임시 폴더·임시 DB만 쓴다.
+
+| ID | 대상 | 테스트 위치 |
+|---|---|---|
+| TC-PAST-01~04 | 서류 파일 이름 규칙, 지원일로 고르기, 폴더 읽기, 경로 탈출 거부 | `tests/documents.test.ts` |
+| TC-PAST-10, 11 | `findExistingMatches`, 행 검증 | `tests/import-review.test.ts` |
+| TC-PAST-12 | 일괄 등록 메모·서류 저장, 없는 파일이면 롤백 | `tests/repos.test.ts` |
+| TC-PAST-20, 21 | 메모 줄 형식, 메모 이관 | `tests/documents.test.ts` |
+| TC-PAST-30 | 보기 라우트 200/400/404 | `tests/documents-route.test.ts` |
+| TC-PAST-31 | 대시보드 이력서 라벨·묶음 순서 | `tests/search.test.ts` |
+| TC-PAST-40~43 | 정렬용 일시, 정렬, 입력 순서, 일회성 채우기 | `tests/applied-datetime.test.ts` |
+| TC-PAST-50 | `reachedStages`, `matchesStatusFilter` | `tests/stages.test.ts` |
+| TC-PAST-51~54 | 상태 필터, 보드 칸, 요약 줄, 서류 통과율 | `tests/search.test.ts` |
+| TC-PAST-M1 | 실제 데이터 채우기(수동): dry-run 메일 452·그룹바이 17건 모두 맞음, 실행 뒤 같은 날 순서 확인 | 수동 |
+| TC-PAST-E2E-01~06 | 직접 입력 열기·등록·서류 자동 선택·제출 서류 보기·서류 파일 탭·메모 이관 | `tests/e2e/12-past-records.spec.ts` (작성만, 검증 단계에서 실행) |
+
 ## 9. 미구현 (3~5단계)
 
 아래는 아직 코드가 없어 케이스를 만들지 않았다. 구현되면 이 문서에 영역을 추가한다.
