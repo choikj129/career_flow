@@ -8,6 +8,7 @@
   - 디자인: `docs/design/`
   - 사용 안내: `docs/guide/`
   - 테스트 케이스: `docs/test/`
+  - 기능 워크플로우 작업 기록: `docs/work/<작업 이름>.md` (형식 `docs/work/_template.md`)
 - 사용자가 정해야 할 것은 `docs/decisions.md` 한 곳에 `D-번호`로 모은다. 다른 문서에는 질문 목록을 따로 두지 않고 그 번호를 링크한다. 결정되면 "결정된 것" 표로 옮기고 관련 문서를 고친다.
 - 스킬이 다른 경로를 기본값으로 쓰더라도(예: `docs/superpowers/specs/YYYY-MM-DD-...`) 이 규칙을 따른다.
 - 새 문서를 만들면 `CLAUDE.md`의 "문서" 표에 한 줄 추가한다. `CLAUDE.md`에는 개요, 구조, 링크만 둔다. 상세 내용은 `docs/`에 쓰고 링크한다.
