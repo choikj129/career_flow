@@ -14,7 +14,7 @@ career_flow/
 ├─ .claude/
 │  ├─ rules/                 작업 규칙 (경로별로 자동 적용)
 │  ├─ agents/                서브에이전트 (product-planner, developer, code-reviewer)
-│  └─ skills/                프로젝트 전용 스킬 (feature-workflow: 기능 워크플로우)
+│  └─ skills/                프로젝트 전용 스킬 (feature-workflow: 기능 워크플로우, project-status: 현황 보고)
 ├─ docs/                     모든 문서 (기획·화면·구조·계획·디자인·사용 안내)
 ├─ prompts/                  Claude Code에 보내는 작업별 프롬프트 (.md)
 ├─ src/
@@ -157,6 +157,7 @@ src/app/
 | 구현 계획 | `docs/plans/` | `phase-<번호>-<주제>.md` |
 | 디자인 | `docs/design/` | `design.md`(결정 기록), `wireframes/`(배치·문구), `mockups/`(시각 디자인) |
 | 사용 안내 | `docs/guide/` | 설치·실행·백업 (구현 마지막에 작성: `usage.md`) |
+| 현황판 | `docs/pm/` | `status.md`: 마일스톤·일정·백로그·위험·사용자 할 일 (메인 세션 PM이 관리) |
 | 작업 기록 | `docs/work/` | 기능 워크플로우의 작업마다 한 파일. 설계·검토·회차·결정·재설계·실패·결과 |
 | 테스트 케이스 | `docs/test/` | `test-cases.md`: 기능·화면별 케이스와 자동 테스트 대응표 |
 | 작업 규칙 | `.claude/rules/*.md` | 코드 영역별 규칙. `paths`로 적용 범위를 정한다. 짧게, 왜 그런지 한 줄 포함 |

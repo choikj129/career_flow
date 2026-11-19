@@ -7,6 +7,8 @@
 
 ## 현재 단계
 
+- 현황판(마일스톤·일정·백로그·사용자 할 일): [docs/pm/status.md](docs/pm/status.md). 메인 세션은 PM 역할을 한다([.claude/rules/pm.md](.claude/rules/pm.md)), 현황 보고는 `/project-status`.
+
 - **1·2단계 구현·검증 완료, `main`에 병합됨** (2026-11-19). 다음은 3단계(맞춤 이력서, `/feature-workflow`로 진행). 구현은 사용자가 명시적으로 지시할 때만, `docs/plans/`의 단계 순서대로 한다.
 - Claude Code CLI 로그인과 응답 모양은 확인했다(2026-11-16, 2.1.325).
 
@@ -30,7 +32,7 @@ npm run start    # 실행 (scripts/start-career-flow.cmd 가 이것을 부름)
 ```
 CLAUDE.md
 .claude/rules/   작업 규칙          .claude/skills/  프로젝트 스킬(필요할 때)
-.claude/agents/  서브에이전트      .claude/skills/feature-workflow/  기능 워크플로우
+.claude/agents/  서브에이전트      .claude/skills/  feature-workflow(기능 워크플로우), project-status(현황 보고)
 docs/            모든 문서          prompts/         Claude Code 작업별 프롬프트
 src/app/         화면·서버 액션·API  src/lib/         로직(DB, AI 실행, 추출, PDF)
 tests/           Vitest             drizzle/         생성된 마이그레이션
@@ -43,6 +45,7 @@ scripts/         실행·시드          data/            실행 데이터(git �
 
 | 문서 | 내용 |
 |---|---|
+| [docs/pm/status.md](docs/pm/status.md) | **프로젝트 현황판** (PM 관리): 마일스톤·일정·백로그·위험·사용자 할 일 |
 | [docs/decisions.md](docs/decisions.md) | **정할 것·결정 기록** (사용자 검토용). 열린 질문은 여기에만 모은다 |
 | [docs/spec/product.md](docs/spec/product.md) | 기획서: 목적, 기능, AI 실행 방식, 데이터 모델, 구현 단계 |
 | [docs/spec/screens.md](docs/spec/screens.md) | 화면 구성: 화면별 데이터, 버튼, 상황별 표시 |
@@ -62,6 +65,7 @@ scripts/         실행·시드          data/            실행 데이터(git �
 |---|---|
 | [.claude/rules/docs.md](.claude/rules/docs.md) | 문서 작성·배치 (항상) |
 | [.claude/rules/ask-first.md](.claude/rules/ask-first.md) | 큰 결정·필수 결정은 멈추고 묻기 (항상) |
+| [.claude/rules/pm.md](.claude/rules/pm.md) | 메인 세션 = PM: 위임·일정·현황판·보고 (항상) |
 | [.claude/rules/workflow.md](.claude/rules/workflow.md) | 서브에이전트 워크플로우, 보고서 상태 블록 (항상) |
 | [.claude/rules/git.md](.claude/rules/git.md) | 완료된 작업은 알아서 커밋·`main` 병합, push·강제 작업은 묻기 (항상) |
 | [.claude/rules/code-structure.md](.claude/rules/code-structure.md) | `src/**` |
@@ -70,6 +74,8 @@ scripts/         실행·시드          data/            실행 데이터(git �
 | [.claude/rules/testing.md](.claude/rules/testing.md) | `tests/**` |
 
 ## 서브에이전트
+
+메인 세션(PM)이 아래 에이전트에게 일을 맡기고 관리한다. 제품 코드는 developer가 고친다.
 
 새 기능·다음 단계·큰 변경은 `/feature-workflow <요청>`으로 진행한다. 순서: product-planner 설계 → 사용자 검토 → developer → code-reviewer(수정 필요 시 developer로 최대 2회) → 병합. 결정이 필요하면 멈추고 묻고, 설계가 다시 필요하면 planner로 되돌리고, 해결하지 못하면 실패 사유를 적는다([.claude/skills/feature-workflow/SKILL.md](.claude/skills/feature-workflow/SKILL.md)).
 

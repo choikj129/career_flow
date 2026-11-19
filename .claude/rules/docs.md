@@ -7,6 +7,7 @@
   - 구현 계획: `docs/plans/phase-<번호>-<주제>.md`
   - 디자인: `docs/design/`
   - 사용 안내: `docs/guide/`
+  - 프로젝트 현황판: `docs/pm/status.md` (PM 관리)
   - 테스트 케이스: `docs/test/`
   - 기능 워크플로우 작업 기록: `docs/work/<작업 이름>.md` (형식 `docs/work/_template.md`)
 - 사용자가 정해야 할 것은 `docs/decisions.md` 한 곳에 `D-번호`로 모은다. 다른 문서에는 질문 목록을 따로 두지 않고 그 번호를 링크한다. 결정되면 "결정된 것" 표로 옮기고 관련 문서를 고친다.
