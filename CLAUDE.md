@@ -30,7 +30,7 @@ npm run start    # 실행 (scripts/start-career-flow.cmd 가 이것을 부름)
 ```
 CLAUDE.md
 .claude/rules/   작업 규칙          .claude/skills/  프로젝트 스킬(필요할 때)
-.claude/agents/  서브에이전트
+.claude/agents/  서브에이전트      .claude/skills/feature-workflow/  기능 워크플로우
 docs/            모든 문서          prompts/         Claude Code 작업별 프롬프트
 src/app/         화면·서버 액션·API  src/lib/         로직(DB, AI 실행, 추출, PDF)
 tests/           Vitest             drizzle/         생성된 마이그레이션
@@ -53,6 +53,7 @@ scripts/         실행·시드          data/            실행 데이터(git �
 | [docs/plans/phase-5-site-sync-settings.md](docs/plans/phase-5-site-sync-settings.md) | 5단계: 사이트 반영 체크리스트·설정 |
 | [docs/guide/usage.md](docs/guide/usage.md) | 설치·실행·백업 안내 |
 | [docs/test/test-cases.md](docs/test/test-cases.md) | 기능·화면별 테스트 케이스와 자동 테스트 대응표 |
+| [docs/work/](docs/work/) | 기능 워크플로우 작업 기록(작업마다 한 파일, 형식은 `_template.md`) |
 | [docs/design/design.md](docs/design/design.md) | 화면 디자인: 디자인 B 결정, 색(사이트·상태), 와이어프레임·목업 링크 |
 
 ## 규칙
@@ -61,6 +62,7 @@ scripts/         실행·시드          data/            실행 데이터(git �
 |---|---|
 | [.claude/rules/docs.md](.claude/rules/docs.md) | 문서 작성·배치 (항상) |
 | [.claude/rules/ask-first.md](.claude/rules/ask-first.md) | 큰 결정·필수 결정은 멈추고 묻기 (항상) |
+| [.claude/rules/workflow.md](.claude/rules/workflow.md) | 서브에이전트 워크플로우, 보고서 상태 블록 (항상) |
 | [.claude/rules/git.md](.claude/rules/git.md) | 완료된 작업은 알아서 커밋·`main` 병합, push·강제 작업은 묻기 (항상) |
 | [.claude/rules/code-structure.md](.claude/rules/code-structure.md) | `src/**` |
 | [.claude/rules/nextjs.md](.claude/rules/nextjs.md) | `src/app/**` 등 |
@@ -69,8 +71,10 @@ scripts/         실행·시드          data/            실행 데이터(git �
 
 ## 서브에이전트
 
+새 기능·다음 단계·큰 변경은 `/feature-workflow <요청>`으로 진행한다. 순서: product-planner 설계 → 사용자 검토 → developer → code-reviewer(수정 필요 시 developer로 최대 2회) → 병합. 결정이 필요하면 멈추고 묻고, 설계가 다시 필요하면 planner로 되돌리고, 해결하지 못하면 실패 사유를 적는다([.claude/skills/feature-workflow/SKILL.md](.claude/skills/feature-workflow/SKILL.md)).
+
 | 에이전트 | 모델 | 하는 일 |
 |---|---|---|
-| [product-planner](.claude/agents/product-planner.md) | Opus | 기획서와 개발 상태 분석, 기획 검토, 다음 작업 제안. 수정하지 않음 |
-| [developer](.claude/agents/developer.md) | Sonnet | 계획 Task 구현, 테스트 먼저 작성·실행. 구현 지시가 있을 때만 |
-| [code-reviewer](.claude/agents/code-reviewer.md) | Sonnet | 요구사항 충족·품질·버그·보안·성능 검토. 수정하지 않음 |
+| [product-planner](.claude/agents/product-planner.md) | Opus | 설계(작업 기록·기획·계획 문서 작성), 재설계, 기획 검토·다음 작업 제안. 코드는 고치지 않음 |
+| [developer](.claude/agents/developer.md) | Sonnet | 승인된 설계 구현, 테스트 먼저 작성·실행, 리뷰 지적 수정. 작업 브랜치에만 커밋 |
+| [code-reviewer](.claude/agents/code-reviewer.md) | Sonnet | 설계·요구 충족 검증, 전체 테스트 실행, 버그·보안·성능 검토, 고쳐야 할 목록(필수/권장/사소). 수정하지 않음 |
