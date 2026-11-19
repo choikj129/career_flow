@@ -3,6 +3,8 @@
 import { z } from 'zod';
 import { checkClaudeHealth } from '@/lib/ai/health';
 import { isBrowserBusy, openSiteLogin } from '@/lib/extract/browser';
+import { clearUploads } from '@/lib/uploads/cleanup';
+import { formatBytes } from '@/lib/uploads/check';
 import { setModelFor, setSetting, MODEL_CHOICES } from '@/lib/settings';
 import type { SiteId } from '@/lib/domain/types';
 import { run } from './run';
@@ -50,4 +52,14 @@ export async function openSiteLoginAction(site: string): Promise<ActionResult> {
     return { ok: false, error: e instanceof Error ? e.message : String(e) };
   }
   return { ok: true, notice: '브라우저 창이 열렸습니다. 로그인한 뒤 창을 닫으세요' };
+}
+
+/** 올린 이력서·캡처 원본을 지운다. 이미 저장한 이력서와 지원 기록은 그대로다. */
+export async function clearUploadsAction(): Promise<ActionResult> {
+  let done = { count: 0, bytes: 0 };
+  const r = await run(() => {
+    done = clearUploads();
+  });
+  if (!r.ok) return r;
+  return { ok: true, notice: `올린 파일 ${done.count}개(${formatBytes(done.bytes)})를 지웠습니다` };
 }

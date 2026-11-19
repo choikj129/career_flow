@@ -69,20 +69,23 @@ describe('job queue', () => {
     expect(getJob(id, db)?.errorMessage).toBe('앱이 재시작되어 중단되었습니다');
   });
 
-  test('creates per-job work dir', async () => {
+  test('creates per-job work dir (D-09: removed once the job ends)', async () => {
     const db = makeTestDb();
     const root = workRoot();
     const id = enqueueJob('analyze_posting', {}, db);
     let seen = '';
+    let existedDuringJob = false;
     const handlers = {
       analyze_posting: async ({ workDir }: { workDir: string }) => {
         seen = workDir;
+        existedDuringJob = existsSync(workDir);
         return { result: {} };
       },
     } as unknown as Handlers;
     await processNextJob({ runner: stubRunner, handlers, db, workRoot: root });
     expect(seen).toBe(join(root, String(id)));
-    expect(existsSync(seen)).toBe(true);
+    expect(existedDuringJob).toBe(true);
+    expect(existsSync(seen)).toBe(false);
   });
 
   test('latestJobFor finds newest matching job', () => {

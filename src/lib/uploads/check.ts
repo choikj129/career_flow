@@ -29,3 +29,10 @@ export function checkUpload(
   if (size > MAX_UPLOAD_BYTES) return { ok: false, reason: '20MB를 넘습니다.' };
   return { ok: true };
 }
+
+/** 파일 크기를 "900 B", "1.5 KB", "12.3 MB"로. */
+export function formatBytes(n: number): string {
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+}

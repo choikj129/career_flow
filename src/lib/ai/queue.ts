@@ -1,4 +1,4 @@
-import { mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { and, asc, desc, eq, inArray } from 'drizzle-orm';
 import { config } from '@/lib/config';
@@ -95,6 +95,40 @@ export function recoverInterruptedJobs(db: Db = getDb()): number {
   return res.changes;
 }
 
+/** 작업 폴더를 지운다. 지우다 실패해도(파일이 잠겼을 때 등) 작업 결과에는 영향이 없다. */
+function removeWorkDir(dir: string): boolean {
+  try {
+    rmSync(dir, { recursive: true, force: true });
+    return !existsSync(dir);
+  } catch (e) {
+    console.warn('[worker] 작업 폴더를 지우지 못했습니다:', dir, e instanceof Error ? e.message : e);
+    return false;
+  }
+}
+
+/**
+ * 끝난(성공·실패·중단·취소) 작업의 폴더 data/ai-work/<번호>/를 지운다. 지운 개수를 돌려준다.
+ * 대기·실행 중 작업의 폴더와 숫자가 아닌 폴더(health 등)는 건드리지 않는다.
+ * 앱 시작 때 recoverInterruptedJobs 다음에 부른다.
+ */
+export function cleanupFinishedWorkDirs(db: Db = getDb(), workRoot: string = config.aiWorkDir): number {
+  let names: string[];
+  try {
+    names = readdirSync(workRoot);
+  } catch {
+    return 0;
+  }
+  const ids = names.filter((n) => /^\d+$/.test(n)).map(Number);
+  if (ids.length === 0) return 0;
+  const active = new Set(listActiveJobs(db).map((j) => j.id));
+  let removed = 0;
+  for (const id of ids) {
+    if (active.has(id)) continue;
+    if (removeWorkDir(join(workRoot, String(id)))) removed += 1;
+  }
+  return removed;
+}
+
 export interface WorkerDeps {
   runner: AiRunner;
   handlers: Record<JobType, JobHandler>;
@@ -121,10 +155,10 @@ export async function processNextJob(deps: WorkerDeps): Promise<boolean> {
     .run();
   if (claimed.changes === 0) return false;
 
+  const workDir = join(deps.workRoot ?? config.aiWorkDir, String(next.id));
   try {
     const handler = deps.handlers[next.type];
     if (!handler) throw new AiError('cli', `처리기가 없는 작업 종류입니다: ${next.type}`);
-    const workDir = join(deps.workRoot ?? config.aiWorkDir, String(next.id));
     mkdirSync(workDir, { recursive: true });
     const out = await handler({ jobId: next.id, payload: next.payload as JobPayload | null, runner: deps.runner, workDir, db });
     db.update(aiJobs)
@@ -151,6 +185,8 @@ export async function processNextJob(deps: WorkerDeps): Promise<boolean> {
       })
       .where(eq(aiJobs.id, next.id))
       .run();
+  } finally {
+    removeWorkDir(workDir); // 성공·실패 모두. 복사본만 지우고 올린 원본은 uploads/에 남는다
   }
   return true;
 }

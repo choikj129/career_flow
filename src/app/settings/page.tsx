@@ -8,6 +8,8 @@ import { isBrowserBusy } from "@/lib/extract/browser";
 import { getModelFor, getSetting } from "@/lib/settings";
 import { ClaudeStatus } from "./ClaudeStatus";
 import { ModelSelects } from "./ModelSelects";
+import { summarizeUploads, uploadsInUse } from "@/lib/uploads/cleanup";
+import { UploadsCleanup } from "./UploadsCleanup";
 import { SiteLoginButtons } from "./SiteLoginButtons";
 
 export default function SettingsPage() {
@@ -39,6 +41,8 @@ async function SettingsBody() {
   // 설치 확인(claude --version)만 자동으로 한다. 로그인 확인은 버튼을 눌렀을 때만 한다.
   const health = await checkClaudeHealth();
   const backup = latestBackupAt();
+  const uploads = summarizeUploads();
+  const uploadsBusy = uploadsInUse();
   const models = {
     analyze_posting: getModelFor("analyze_posting"),
     import_resume: getModelFor("import_resume"),
@@ -80,6 +84,7 @@ async function SettingsBody() {
         <p className="muted small" style={{ margin: "10px 0 0" }}>
           최근 자동 백업: {backup ? formatDateTime(backup) : "아직 없음"}
         </p>
+        <UploadsCleanup count={uploads.count} bytes={uploads.bytes} busy={uploadsBusy} />
       </div>
     </>
   );
