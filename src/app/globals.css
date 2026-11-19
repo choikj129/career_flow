@@ -463,3 +463,5 @@ textarea.in-sm { height: auto; min-height: 64px; padding: 8px 10px; }
 .stat-terms { margin-top: 18px; font-size: 13px; color: var(--sub); }
 .stat-terms summary { cursor: pointer; }
 @media (max-width: 1000px) { .stat-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } .stat-grid2 { grid-template-columns: 1fr; } }
+.summary .links { margin-left: auto; display: flex; gap: 18px; }
+.summary .links a { margin-left: 0; }

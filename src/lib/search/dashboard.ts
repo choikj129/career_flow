@@ -5,6 +5,8 @@ import { monthLocal } from '@/lib/domain/dates';
 import { listReachedHistory, listRecordExtras } from '@/lib/applications/repo';
 import { applicationOrder } from '@/lib/applications/sort';
 import { matchesStatusFilter, reachedStages, type ReachedStage } from '@/lib/applications/stages';
+import { classifyOutcome } from '@/lib/stats/outcome';
+import { tally, type Tally } from '@/lib/stats/rates';
 import { docLabel } from '@/lib/documents/files';
 import { normalizeCompanyName } from '@/lib/domain/normalize';
 import {
@@ -128,26 +130,27 @@ export type DashboardGroup = {
   key: string;
   label: string;
   rows: DashboardRow[];
-  passed: number;
-  decided: number;
+  /** 통계 화면과 같은 결과 분류·비율(D-18) */
+  tally: Tally;
 };
 
-function makeGroup(key: string, label: string, rows: DashboardRow[]): DashboardGroup {
-  const passed = rows.filter((r) => r.reached.includes('document_passed')).length;
+function makeGroup(key: string, label: string, rows: DashboardRow[], today: string): DashboardGroup {
   return {
     key,
     label,
     rows,
-    passed,
-    // 서류를 통과했거나, 통과하지 못하고 지금 불합격인 기록
-    decided: passed + rows.filter((r) => !r.reached.includes('document_passed') && r.status === 'rejected').length,
+    tally: tally(rows.map((r) => classifyOutcome({ status: r.status, appliedAt: r.appliedAt, reached: r.reached }, today))),
   };
 }
 
-export function groupDashboardRows(rows: DashboardRow[], by: 'site' | 'status' | 'resume'): DashboardGroup[] {
+export function groupDashboardRows(
+  rows: DashboardRow[],
+  by: 'site' | 'status' | 'resume',
+  today: string,
+): DashboardGroup[] {
   if (by === 'site') {
     return SITE_IDS.map((s) =>
-      makeGroup(s, SITE_LABELS[s], rows.filter((r) => r.site === s)),
+      makeGroup(s, SITE_LABELS[s], rows.filter((r) => r.site === s), today),
     ).filter((g) => g.rows.length > 0);
   }
   if (by === 'status') {
@@ -159,22 +162,22 @@ export function groupDashboardRows(rows: DashboardRow[], by: 'site' | 'status' |
       { key: 'final_passed', label: STATUS_LABELS.final_passed, match: ['final_passed'] },
       { key: 'closed', label: '종료', match: ['rejected', 'withdrawn'] },
     ];
-    return cols.map((c) => makeGroup(c.key, c.label, rows.filter((r) => c.match.includes(r.status))));
+    return cols.map((c) => makeGroup(c.key, c.label, rows.filter((r) => c.match.includes(r.status)), today));
   }
   const versions = [
     ...new Set(rows.map((r) => r.resumeBaseVersionNo).filter((v): v is number => v != null)),
   ].sort((a, b) => b - a);
   const groups = versions.map((v) =>
-    makeGroup(`v${v}`, `기본 v${v}`, rows.filter((r) => r.resumeBaseVersionNo === v)),
+    makeGroup(`v${v}`, `기본 v${v}`, rows.filter((r) => r.resumeBaseVersionNo === v), today),
   );
   const files = [
     ...new Set(rows.filter((r) => r.resumeBaseVersionNo == null).map((r) => r.resumeDocFile).filter((f): f is string => f != null)),
   ].sort((a, b) => (a < b ? 1 : a > b ? -1 : 0)); // 파일 이름의 날짜(YYYYMMDD)가 늦은 순
   for (const f of files) {
-    groups.push(makeGroup(`doc:${f}`, docLabel(f), rows.filter((r) => r.resumeBaseVersionNo == null && r.resumeDocFile === f)));
+    groups.push(makeGroup(`doc:${f}`, docLabel(f), rows.filter((r) => r.resumeBaseVersionNo == null && r.resumeDocFile === f), today));
   }
   const unknown = rows.filter((r) => r.resumeBaseVersionNo == null && r.resumeDocFile == null);
-  if (unknown.length > 0) groups.push(makeGroup('none', '모름', unknown));
+  if (unknown.length > 0) groups.push(makeGroup('none', '모름', unknown, today));
   return groups;
 }
 
