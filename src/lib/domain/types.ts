@@ -11,16 +11,18 @@ export const SITE_LABELS: Record<SiteId, string> = {
 export type ApplicationStatus =
   | 'applied'
   | 'document_passed'
+  | 'assignment'
   | 'interview'
   | 'final_passed'
   | 'rejected'
   | 'withdrawn';
 export const APPLICATION_STATUSES: ApplicationStatus[] = [
-  'applied', 'document_passed', 'interview', 'final_passed', 'rejected', 'withdrawn',
+  'applied', 'document_passed', 'assignment', 'interview', 'final_passed', 'rejected', 'withdrawn',
 ];
 export const STATUS_LABELS: Record<ApplicationStatus, string> = {
   applied: '지원',
   document_passed: '서류합격',
+  assignment: '과제·코딩테스트',
   interview: '면접',
   final_passed: '최종합격',
   rejected: '불합격',

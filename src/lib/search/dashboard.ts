@@ -169,6 +169,7 @@ export function groupDashboardRows(rows: DashboardRow[], by: 'site' | 'status' |
     const cols: { key: string; label: string; match: ApplicationStatus[] }[] = [
       { key: 'applied', label: STATUS_LABELS.applied, match: ['applied'] },
       { key: 'document_passed', label: STATUS_LABELS.document_passed, match: ['document_passed'] },
+      { key: 'assignment', label: STATUS_LABELS.assignment, match: ['assignment'] },
       { key: 'interview', label: STATUS_LABELS.interview, match: ['interview'] },
       { key: 'final_passed', label: STATUS_LABELS.final_passed, match: ['final_passed'] },
       { key: 'closed', label: '종료', match: ['rejected', 'withdrawn'] },
@@ -207,7 +208,7 @@ export function getDashboardStats(
   const month = monthLocal(now);
   const byStatus = Object.fromEntries(APPLICATION_STATUSES.map((s) => [s, 0])) as Record<ApplicationStatus, number>;
   const bySite = Object.fromEntries(SITE_IDS.map((s) => [s, 0])) as Record<SiteId, number>;
-  const reachedCounts: Record<ReachedStage, number> = { document_passed: 0, interview: 0, final_passed: 0 };
+  const reachedCounts: Record<ReachedStage, number> = { document_passed: 0, assignment: 0, interview: 0, final_passed: 0 };
   let appliedThisMonth = 0;
   for (const a of db.select().from(applications).all()) {
     byStatus[a.status] += 1;

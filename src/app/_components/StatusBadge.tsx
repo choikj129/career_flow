@@ -3,6 +3,7 @@ import { STATUS_LABELS, type ApplicationStatus } from "@/lib/domain/types";
 const CLASS: Record<ApplicationStatus, string> = {
   applied: "",
   document_passed: "pass",
+  assignment: "asg",
   interview: "go",
   final_passed: "ok",
   rejected: "no",

@@ -1,7 +1,7 @@
 import { afterEach, expect, test, vi } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { makeTestDb } from './helpers/db';
-import { aiJobs, statusEvents } from '@/lib/db/schema';
+import { aiJobs, applications, statusEvents } from '@/lib/db/schema';
 import { emptyResume } from '@/lib/resume/schema';
 import { saveResumeVersion } from '@/lib/resume/repo';
 import { enqueueJob, getJob } from '@/lib/ai/queue';
@@ -32,6 +32,7 @@ import {
   changeStatus,
   getPriorApplications,
   bulkCreateApplications,
+  getApplication,
   getApplicationForPosting,
   listStatusEvents,
   updateApplication,
@@ -387,4 +388,21 @@ test('TC-PAST-12 bulkCreateApplications rolls back when a document file is missi
     ),
   ).toThrow('서류 파일을 찾을 수 없습니다: 이력서_20261102.pdf');
   expect(db.select().from(applications).all()).toHaveLength(0);
+});
+
+test('TC-PAST-65 changeStatus assignment: no round, one event per save', () => {
+  const db = makeTestDb();
+  bulkCreateApplications(
+    [{ companyName: '토스', positionTitle: 'A', site: 'wanted', appliedAt: '2026-11-05', status: 'applied' }],
+    db,
+  );
+  const id = db.select().from(applications).get()!.id;
+  changeStatus(id, 'assignment', { interviewRound: 2, note: '코딩테스트' }, db);
+  expect(getApplication(id, db)).toMatchObject({ status: 'assignment', interviewRound: null });
+  let ev = listStatusEvents(id, db).filter((e) => e.status === 'assignment');
+  expect(ev).toHaveLength(1);
+  expect(ev[0]).toMatchObject({ interviewRound: null, note: '코딩테스트' });
+  changeStatus(id, 'assignment', { note: '과제 제출' }, db);
+  ev = listStatusEvents(id, db).filter((e) => e.status === 'assignment');
+  expect(ev.map((e) => e.note)).toEqual(['코딩테스트', '과제 제출']);
 });
