@@ -14,7 +14,7 @@ test.describe.serial('기본 이력서 첫 등록', () => {
   test('TC-RESUME-13 처음 화면: 안내와 [가져오기] 비활성', async ({ page }) => {
     await page.goto('/resume');
     await expect(page.getByText('기존 이력서를 올려 시작하세요.')).toBeVisible();
-    await expect(page.getByText('PDF·DOCX·TXT·MD, 파일당 20MB까지')).toBeVisible();
+    await expect(page.getByText('PDF·DOCX·TXT·MD, 한 번에 10개까지, 파일당 20MB까지')).toBeVisible();
     await expect(page.getByRole('button', { name: '가져오기' })).toBeDisabled();
     await page.getByLabel('또는 텍스트 붙여넣기').fill('내용');
     await expect(page.getByRole('button', { name: '가져오기' })).toBeEnabled();
@@ -31,6 +31,16 @@ test.describe.serial('기본 이력서 첫 등록', () => {
     await expect(page.getByText(/huge\.pdf — 20MB를 넘습니다/)).toBeVisible();
     await expect(page.getByText(/empty\.txt — 빈 파일입니다/)).toBeVisible();
     await expect(page.getByRole('button', { name: '가져오기' })).toBeDisabled();
+  });
+
+  test('TC-RESUME-14b 한 번에 11개를 올리면 10개까지라는 안내와 함께 거부', async ({ page }) => {
+    await page.goto('/resume');
+    await page.locator('#files').setInputFiles(
+      Array.from({ length: 11 }, (_, i) => ({ name: `r${i}.txt`, mimeType: 'text/plain', buffer: Buffer.from('이력서') })),
+    );
+    await page.getByRole('button', { name: '가져오기' }).click();
+    await expect(page.getByText('한 번에 10개까지 올릴 수 있습니다')).toBeVisible();
+    await expect(page).toHaveURL(/\/resume$/);
   });
 
   test('TC-RESUME-15 가져오기 실패: 실패 문구, [직접 입력으로 시작], 저장 전 이탈 확인', async ({ page }) => {
