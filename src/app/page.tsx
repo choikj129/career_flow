@@ -6,6 +6,7 @@ import { listSiteNotes } from "@/lib/postings/repo";
 import { getLatestResume } from "@/lib/resume/repo";
 import { todayLocal } from "@/lib/domain/dates";
 import { loadDashboard } from "@/lib/search/dashboard";
+import { selectVisibleRows } from "@/lib/search/visible-rows";
 import { statsHref } from "@/lib/stats/params";
 import {
   dashboardHref,
@@ -75,7 +76,10 @@ export default function Home({ searchParams }: PageProps<"/">) {
 async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searchParams"] }) {
   await connection();
   const params = parseDashboardParams(await searchParams);
-  const { rows, stats, extras } = loadDashboard(toSearchQuery(params));
+  const today = todayLocal();
+  const { rows, stats, extras } = loadDashboard(toSearchQuery(params), new Date(), undefined, (all) =>
+    selectVisibleRows(all, params.view, params.page, params.more, today),
+  );
   const hasResume = getLatestResume() != null;
   const siteNotes = listSiteNotes();
 
@@ -132,7 +136,7 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
             key={t.view}
             role="tab"
             aria-selected={params.view === t.view}
-            href={dashboardHref({ ...params, view: t.view })}
+            href={dashboardHref({ ...params, view: t.view, page: 1, more: [] })}
             replace
           >
             {t.icon}
@@ -198,7 +202,7 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
       {searching && <div style={{ height: 14 }} />}
 
       {rows.length > 0 ? (
-        <DashboardViews view={params.view} rows={rows} details={details} siteNotes={siteNotes} today={todayLocal()} />
+        <DashboardViews params={params} rows={rows} details={details} siteNotes={siteNotes} today={today} />
       ) : (
         <EmptyState params={params} filtered={Boolean(filtered)} totalRecords={totalRecords} />
       )}

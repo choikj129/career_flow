@@ -600,3 +600,10 @@ AI 작업이 끝나면 `data/ai-work/<번호>/`를 바로 지운다. 올린 이�
 - **5단계**: (TC-SETTINGS-13 포함) 사이트 반영 체크리스트 `/sync`와 내비게이션 배지, 이력서 저장 후 "사이트 반영" 안내 링크, 설정의 작업별 시간 제한(60~1800초 보정), 백업 목록·[지금 백업], [데이터 폴더 열기], 작업별 모델 8종 전체
 - **결정됨**: [D-08](../decisions.md) 읽기에 실패하면 붙여넣기를 기본 흐름으로 안내한다. 화면이 보이는 브라우저로 다시 시도하는 방식은 만들지 않는다(TC-DETAIL-38·39, TC-NEW-22).
 
+## 12. 지원 기록 페이지 나누기 (브랜치 `feat/app-paging`)
+
+| ID | 대상 | 기대 결과 | 테스트 위치 |
+|---|---|---|---|
+| TC-PAGE-01~05 | `pageSlice`·`parsePage`·`parseMore`·`pageNumbers`·`selectVisibleRows`, 주소 `page`·`more` | 50건씩, 51건이면 2페이지, 범위 밖 page는 마지막 페이지, 묶음·열은 20건 + 더 보기 | `tests/paging.test.ts`, `tests/dashboard-params.test.ts` |
+| TC-PAGE-E2E-01~05 | 2페이지 이동, 범위 밖 page, 필터 변경 시 1페이지, 사이트별 기본 접힘·20건·더 보기, 날짜 입력(텍스트 + 달력 버튼, "(" 없음, 숫자만 쳐도 하이픈, 잘못된 날짜 표시) | `tests/e2e/14-paging.spec.ts` (작성만, 검증 단계에서 실행) |
+| TC-DATE-01 | `formatDateText`: 숫자만 쳐도 YYYY-MM-DD, 다른 글자 버림, 8자리 초과 자름 | `tests/date-input.test.ts` |

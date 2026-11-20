@@ -217,10 +217,12 @@ export function loadDashboard(
   q: SearchQuery,
   now: Date = new Date(),
   db: Db = getDb(),
+  /** 상세(메모·서류·이력)를 읽을 행. 기본은 모든 행. 페이지 나누기를 쓰면 보이는 행만 넘긴다 */
+  pick?: (rows: DashboardRow[]) => DashboardRow[],
 ): { rows: DashboardRow[]; stats: ReturnType<typeof getDashboardStats>; extras: Map<number, RecordExtra> } {
   const reachedById = listReachedHistory(db);
   const rows = searchApplications(q, db, reachedById);
   const stats = getDashboardStats(now, db, reachedById);
-  const extras = listRecordExtras(rows.filter((r) => r.postingId == null).map((r) => r.applicationId), db);
+  const extras = listRecordExtras((pick ? pick(rows) : rows).filter((r) => r.postingId == null).map((r) => r.applicationId), db);
   return { rows, stats, extras };
 }

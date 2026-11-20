@@ -5,6 +5,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import { APPLICATION_STATUSES, SITE_IDS, SITE_LABELS, STATUS_LABELS } from "@/lib/domain/types";
 import { isReachedStage } from "@/lib/applications/stages";
 import { dashboardHref, PERIODS, type DashboardParams, type Period } from "@/lib/search/dashboard-params";
+import { DateInput } from "./DateInput";
 
 const PERIOD_LABELS: Record<Period, string> = {
   all: "기간: 전체",
@@ -28,7 +29,7 @@ export function DashboardFilters({ params }: { params: DashboardParams }) {
   }, [params.q]);
 
   const go = (patch: Partial<DashboardParams>) => {
-    startTransition(() => router.replace(dashboardHref({ ...params, ...patch })));
+    startTransition(() => router.replace(dashboardHref({ ...params, ...patch, page: 1, more: [] }))); // 필터가 바뀌면 1페이지로
   };
 
   return (
@@ -92,20 +93,24 @@ export function DashboardFilters({ params }: { params: DashboardParams }) {
         </select>
         {params.period === "custom" && (
           <div className="period-custom">
-            <input
-              type="date"
+            <DateInput
               className="in-sm"
               aria-label="시작일"
               value={params.from ?? ""}
-              onChange={(e) => go({ from: e.target.value || undefined })}
+              onChange={(e) => {
+              if (!e.target.value && !params.from) return; // 입력 도중의 빈 값은 주소를 바꾸지 않는다
+              go({ from: e.target.value || undefined });
+            }}
             />
             <span className="muted">~</span>
-            <input
-              type="date"
+            <DateInput
               className="in-sm"
               aria-label="종료일"
               value={params.to ?? ""}
-              onChange={(e) => go({ to: e.target.value || undefined })}
+              onChange={(e) => {
+              if (!e.target.value && !params.to) return;
+              go({ to: e.target.value || undefined });
+            }}
             />
           </div>
         )}

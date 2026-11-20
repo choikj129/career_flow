@@ -52,7 +52,7 @@ test.describe.serial('통계 화면', () => {
   test('TC-STATS-E2E-03 사이트 필터: 카드 지원 수가 대시보드와 같고 사이트별은 한 줄', async ({ page }) => {
     await page.goto('/?site=wanted');
     const foot = await page.locator('.table-foot').innerText();
-    const n = /총 (\d+)건/.exec(foot)![1];
+    const n = /전체 (\d+)건/.exec(foot)![1];
     await page.goto('/stats?site=wanted');
     await expect(page.getByTestId('card-total').locator('.stat-big')).toHaveText(n);
     await expect(page.getByTestId('stats-sites').locator('[data-testid^="hbar-"]')).toHaveCount(1);

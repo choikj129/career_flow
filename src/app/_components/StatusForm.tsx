@@ -5,6 +5,7 @@ import { changeStatusAction } from "@/app/_actions/applications";
 import { todayLocal } from "@/lib/domain/dates";
 import { APPLICATION_STATUSES, STATUS_LABELS, type ApplicationStatus } from "@/lib/domain/types";
 import { useAction } from "./useAction";
+import { DateInput } from "./DateInput";
 
 /** 상태 변경 폼(상태 / 면접 차수 / 날짜 / 메모). docs/spec/screens.md 3.8 */
 export function StatusForm({
@@ -73,7 +74,7 @@ export function StatusForm({
         )}
         <label className="f">
           날짜
-          <input className="in-sm" type="date" required value={at} onChange={(e) => setAt(e.target.value)} />
+          <DateInput className="in-sm" required value={at} onChange={(e) => setAt(e.target.value)} />
         </label>
         <label className="f" style={{ flex: "1 1 180px" }}>
           메모

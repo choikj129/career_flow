@@ -5,6 +5,7 @@ import { updateApplicationAction } from "@/app/_actions/applications";
 import { SITE_IDS, SITE_LABELS, type SiteId } from "@/lib/domain/types";
 import { Modal } from "./Modal";
 import { useAction } from "./useAction";
+import { DateInput } from "./DateInput";
 
 export type EditableRecord = {
   applicationId: number;
@@ -88,7 +89,7 @@ export function ApplicationEditModal({
         )}
         <div className="row">
           <label htmlFor="ed-date">지원일</label>
-          <input id="ed-date" type="date" required value={appliedAt} onChange={(e) => setAppliedAt(e.target.value)} />
+          <DateInput id="ed-date" required value={appliedAt} onChange={(e) => setAppliedAt(e.target.value)} />
         </div>
         {error ? <p className="err">{error}</p> : null}
         <footer>

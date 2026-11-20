@@ -496,3 +496,21 @@ textarea.in-sm { height: auto; min-height: 64px; padding: 8px 10px; }
 
 /* 날짜·숫자는 줄바꿈하지 않는다(표 공통) */
 .nw { white-space: nowrap; }
+
+/* 페이지 나누기·더 보기 */
+.pager { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.pg { display: flex; gap: 4px; align-items: center; }
+.pg-btn { min-width: 30px; height: 30px; padding: 0 8px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); color: var(--ink); font-size: 13px; white-space: nowrap; }
+.pg-btn.on { background: var(--accent-tint); color: var(--accent); border-color: var(--accent); font-weight: 700; }
+.pg-btn.disabled { color: var(--faint); background: var(--bg); }
+.pg-gap { color: var(--faint); padding: 0 2px; }
+.more-link { display: inline-block; font-weight: 600; font-size: 13px; }
+.col .more-link { padding: 4px 4px 8px; }
+
+/* 날짜 칸: YYYY-MM-DD 텍스트 + 달력 버튼(브라우저 date 입력의 빈 요일 칸 "()"을 피한다) */
+.date-input { position: relative; display: inline-block; vertical-align: middle; max-width: 100%; }
+.review .date-input { display: block; }
+.date-input > input[type="text"] { width: 100%; min-width: 128px; padding-right: 34px; }
+.date-input-btn { position: absolute; right: 3px; top: 50%; transform: translateY(-50%); width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 6px; background: transparent; color: var(--sub); cursor: pointer; padding: 0; }
+.date-input-btn:hover { background: var(--line); color: var(--ink); }
+.date-input-picker { position: absolute; left: 0; bottom: 0; width: 100%; height: 0; opacity: 0; pointer-events: none; border: 0; padding: 0; }

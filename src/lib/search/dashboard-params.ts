@@ -6,6 +6,7 @@ import {
   type SiteId,
 } from '@/lib/domain/types';
 import type { SearchQuery } from './dashboard';
+import { parseMore, parsePage } from './paging';
 
 export const DASHBOARD_VIEWS = ['all', 'site', 'status', 'resume'] as const;
 export type DashboardView = (typeof DASHBOARD_VIEWS)[number];
@@ -20,6 +21,10 @@ export type DashboardParams = {
   period: Period;
   from: string | undefined;
   to: string | undefined;
+  /** 전체 보기의 페이지(1부터) */
+  page: number;
+  /** 더 보기로 펼친 묶음·열의 키(`${view}:${키}`) */
+  more: string[];
 };
 
 type Raw = Record<string, string | string[] | undefined>;
@@ -43,6 +48,8 @@ export function parseDashboardParams(sp: Raw): DashboardParams {
     period: p,
     from: p === 'custom' && isDate(from) ? from : undefined,
     to: p === 'custom' && isDate(to) ? to : undefined,
+    page: parsePage(sp.page),
+    more: parseMore(sp.more),
   };
 }
 
@@ -89,6 +96,8 @@ export function dashboardHref(p: Partial<DashboardParams>): string {
       if (p.to) qs.set('to', p.to);
     }
   }
+  if (p.page && p.page > 1) qs.set('page', String(p.page));
+  if (p.more && p.more.length > 0) qs.set('more', p.more.join(','));
   const s = qs.toString();
   return s ? `/?${s}` : '/';
 }

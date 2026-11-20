@@ -13,6 +13,7 @@ import {
 } from "@/lib/applications/import-rows";
 import { validDate } from "@/lib/domain/dates";
 import { DOC_KINDS, DOC_KIND_LABELS, DOC_NONE, canBeNone, pickDocs, type DocFile, type DocKind } from "@/lib/documents/files";
+import { DateInput } from "@/app/_components/DateInput";
 import {
   APPLICATION_STATUSES,
   SITE_IDS,
@@ -249,10 +250,9 @@ export function ImportReviewTable({
                   )}
                 </td>
                 <td>
-                  <input
+                  <DateInput
                     className={`in${need("appliedAt")}`}
                     aria-label="지원일"
-                    type="date"
                     value={r.appliedAt}
                     onChange={(e) => setAppliedAt(r.key, e.target.value)}
                     onBlur={() => void recheck(r.key)}

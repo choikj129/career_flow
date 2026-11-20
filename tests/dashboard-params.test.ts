@@ -4,7 +4,7 @@ import { dashboardHref, parseDashboardParams, periodRange, toSearchQuery } from 
 describe('parseDashboardParams', () => {
   test('uses defaults when nothing is given', () => {
     expect(parseDashboardParams({})).toEqual({
-      q: '', view: 'all', status: undefined, site: undefined, period: 'all', from: undefined, to: undefined,
+      q: '', view: 'all', status: undefined, site: undefined, period: 'all', from: undefined, to: undefined, page: 1, more: [],
     });
   });
 
