@@ -1,5 +1,5 @@
 import { and, desc, eq, inArray, lte, ne } from 'drizzle-orm';
-import { enqueueJob, latestJobFor, type JobPayload, type JobSummary } from '@/lib/ai/queue';
+import { enqueueJob, latestJobFor, type JobSummary } from '@/lib/ai/queue';
 import { getDb, type Db } from '@/lib/db/client';
 import { companies, tailoredResumes, tailoredRevisions } from '@/lib/db/schema';
 import { assemble, type Recipe } from '@/lib/kit/assemble';
@@ -224,20 +224,17 @@ export function addExternalRevision(
 }
 
 const TAILOR_JOBS = ['tailor_resume', 'revise_tailored'] as const;
-const forPosting = (postingId: number) => (payload: JobPayload | null) => payload?.postingId === postingId;
+const newest = (jobs: (JobSummary | undefined)[]) =>
+  jobs.filter((j): j is JobSummary => j != null).sort((a, b) => b.id - a.id)[0];
 
-/** 대기·실행 중인 맞춤 작업(용어 맞추기·다듬기) */
+/** 대기·실행 중인 맞춤 작업(용어 맞추기·다듬기). 상태 필터로 SQL에서 찾는다 */
 export function activeTailorJob(postingId: number, db: Db = getDb()): JobSummary | undefined {
-  return TAILOR_JOBS.map((t) => latestJobFor(t, forPosting(postingId), db))
-    .filter((j): j is JobSummary => j != null && (j.status === 'queued' || j.status === 'running'))
-    .sort((a, b) => b.id - a.id)[0];
+  return newest(TAILOR_JOBS.map((t) => latestJobFor(t, () => true, db, { postingId, statuses: ['queued', 'running'] })));
 }
 
 /** 가장 최근 맞춤 작업(상태 무관) */
 export function latestTailorJob(postingId: number, db: Db = getDb()): JobSummary | undefined {
-  return TAILOR_JOBS.map((t) => latestJobFor(t, forPosting(postingId), db))
-    .filter((j): j is JobSummary => j != null)
-    .sort((a, b) => b.id - a.id)[0];
+  return newest(TAILOR_JOBS.map((t) => latestJobFor(t, () => true, db, { postingId })));
 }
 
 const NO_TAILORED = '먼저 맞춤본을 조립하세요';
@@ -301,4 +298,20 @@ export function rebuildStage1(rev: TailoredRevision, db: Db = getDb()): Revision
   }
   const out = assemble(parsed, base, { track: rev.track, profileId: rev.profileId, adjustmentIds: rev.adjustments.map((a) => a.id) });
   return { kit: { ...kit, parsed }, base, stage1: { resumeMd: out.resumeMd, careerMd: out.careerMd }, pending: out.pending };
+}
+
+/** 모든 리비전의 번호·프로필(본문은 읽지 않는다). 지원 기록의 라벨·통계가 한 번 읽어 쓴다 */
+export function listRevisionLabels(db: Db = getDb()): Map<number, { revNo: number; profileId: string; profileName: string }> {
+  return new Map(
+    db
+      .select({
+        id: tailoredRevisions.id,
+        revNo: tailoredRevisions.revNo,
+        profileId: tailoredRevisions.profileId,
+        profileName: tailoredRevisions.profileName,
+      })
+      .from(tailoredRevisions)
+      .all()
+      .map((r) => [r.id, { revNo: r.revNo, profileId: r.profileId, profileName: r.profileName }]),
+  );
 }

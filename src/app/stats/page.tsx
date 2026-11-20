@@ -14,6 +14,7 @@ import { StackedBarChart } from "./StackedBarChart";
 import { StatsFilters } from "./StatsFilters";
 import { StatsTable } from "./StatsTable";
 import { SummaryCards } from "./SummaryCards";
+import { TailoredEffect } from "./TailoredEffect";
 
 export default function StatsPage(props: PageProps<"/stats">) {
   return (
@@ -97,6 +98,8 @@ async function StatsLoader({ searchParams }: { searchParams: PageProps<"/stats">
             </p>
           )}
 
+          <TailoredEffect compare={data.tailoredCompare} profiles={data.byProfile} />
+
           <section className="card stat-panel" data-testid="stats-periods">
             <div className="stat-head">
               <h2>기간별 지원과 결과</h2>
@@ -161,7 +164,9 @@ async function StatsLoader({ searchParams }: { searchParams: PageProps<"/stats">
                 rows={data.docs.map((d) => ({
                   key: d.key,
                   label: d.label,
-                  sub: d.absent
+                  sub: d.key === "tailored"
+                    ? "공고마다 맞춘 이력서"
+                    : d.absent
                     ? "내지 않은 지원"
                     : d.unknown
                       ? params.doc === "resume"

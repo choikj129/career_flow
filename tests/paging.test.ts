@@ -80,6 +80,8 @@ const row = (over: Partial<DashboardRow>): DashboardRow => {
     resumeLabel: null,
     resumeBaseVersionNo: null,
     resumeDocFile: null,
+    tailored: false,
+    resumeKitTrack: null,
     reached: [],
     ...over,
   };

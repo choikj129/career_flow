@@ -1,5 +1,6 @@
 // 통계 화면 /stats: 카드·그래프·전환·필터·빈 상태·표본 표시·대시보드 연결. TC-STATS-E2E-01~07
 import { expect, test, type Page } from '@playwright/test';
+import Database from 'better-sqlite3';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { dataDir } from './paths';
@@ -93,5 +94,80 @@ test.describe.serial('통계 화면', () => {
     await expect(page).toHaveURL(/\/stats\?period=1y&site=wanted$/);
     await page.goto('/?view=site');
     await expect(page.getByText('서류 통과').first()).toBeVisible();
+  });
+
+  test('TC-TAILOR-E2E-11 맞춤 이력서 효과·프로필별 표·서류 버전별 묶음, 기록이 없으면 안내', async ({ page }) => {
+    const tailoredCard = page.getByTestId('stats-tailored');
+    // 1) 맞춤·기본 서류 기록이 없을 때
+    await page.goto('/stats');
+    await expect(tailoredCard.getByRole('heading', { name: '맞춤 이력서 효과' })).toBeVisible();
+    await expect(page.getByTestId('stats-tailored-empty')).toContainText('아직 맞춤 이력서로 낸 지원이 없습니다');
+    await expect(page.getByTestId('stats-tailored-empty')).toContainText("제출 서류의 이력서를 '맞춤 이력서'로 고르면");
+    await expect(page.getByTestId('stats-profiles-empty')).toHaveText('프로필이 기록된 지원이 없습니다.');
+    await expect(page.getByTestId('stats-docs')).not.toContainText('맞춤 이력서');
+
+    // 2) 화면 기능이 생기기 전(Task 7)이라 지원 기록의 제출 서류를 DB에 직접 넣어 확인한다(끝나면 되돌린다)
+    const db = new Database(join(dataDir('seeded'), 'career-flow.db'));
+    const apps = db
+      .prepare("select a.id, a.submitted_resume as sr, p.id as posting_id from applications a join postings p on p.id = a.posting_id order by a.applied_at limit 3")
+      .all() as { id: number; sr: string; posting_id: number }[];
+    expect(apps).toHaveLength(3);
+    const longName = '아주 긴 프로필 이름으로 정합성과 안정성을 함께 강조하는 가상 직무 이력서';
+    const insertedKit = db.prepare("insert into kits (label, files, parsed, errors, created_at) values ('e2e', '[]', null, '[]', ?)").run(new Date().toISOString()).lastInsertRowid;
+    const insertedResumes: number[] = [];
+    const insertedRevisions: number[] = [];
+    const rev = (postingId: number, profileId: string, profileName: string) => {
+      const t = db.prepare('insert into tailored_resumes (posting_id, created_at) values (?, ?)').run(postingId, new Date().toISOString()).lastInsertRowid;
+      insertedResumes.push(Number(t));
+      const r = db
+        .prepare(
+          "insert into tailored_revisions (tailored_resume_id, rev_no, kit_id, track, profile_id, profile_name, adjustments, source, resume_md, career_md, pending_adjustments, change_reasons, warnings, notes, created_at) values (?, 1, ?, '백엔드', ?, ?, '[]', 'recipe', '# 가상', '# 가상', '[]', '[]', '[]', '', ?)",
+        )
+        .run(t, insertedKit, profileId, profileName, new Date().toISOString()).lastInsertRowid;
+      insertedRevisions.push(Number(r));
+      return Number(r);
+    };
+    try {
+      const set = db.prepare('update applications set submitted_resume = ? where id = ?');
+      set.run(JSON.stringify({ kind: 'kit', kitId: Number(insertedKit), track: '백엔드', profileId: 'B1', profileName: '범용' }), apps[0].id);
+      set.run(JSON.stringify({ kind: 'tailored', tailoredRevisionId: rev(apps[1].posting_id, 'B3', longName) }), apps[1].id);
+      set.run(JSON.stringify({ kind: 'tailored', tailoredRevisionId: rev(apps[2].posting_id, 'B3', longName) }), apps[2].id);
+
+      for (const width of [1440, 1024]) {
+        await page.setViewportSize({ width, height: 900 });
+        await page.goto('/stats');
+        await expect(page.getByTestId('stats-tailored-empty')).toHaveCount(0);
+        const table = page.getByTestId('stats-tailored-table');
+        await expect(table.locator('tbody tr')).toHaveCount(2);
+        await expect(table.locator('tbody tr').first()).toContainText('맞춤 이력서');
+        await expect(table.locator('tbody tr').first().locator('td').nth(1)).toHaveText('2');
+        await expect(tailoredCard).toContainText('(맞춤본을 처음 낸 날)부터의 지원만 비교합니다');
+        const profiles = page.getByTestId('stats-profiles-table');
+        await expect(profiles.locator('tbody tr')).toHaveCount(2);
+        await expect(profiles.locator('tbody tr').nth(0)).toContainText('B1 범용');
+        await expect(profiles.locator('tbody tr').nth(1)).toContainText('B3 ' + longName);
+        await expect(profiles.locator('tbody tr').nth(1).locator('td').nth(1)).toHaveText('2');
+        await expect(profiles.locator('tbody tr').nth(1).locator('td').nth(7)).toHaveText('2'); // 그중 맞춤
+        await expect(profiles.locator('tbody tr').nth(0).locator('td').nth(7)).toHaveText('0');
+        // 잘리지 않고 한글이 낱말 중간에서 끊기지 않는다(긴 이름은 카드 안에서 줄바꿈)
+        const fits = await tailoredCard.evaluate((el) => el.scrollWidth <= el.clientWidth + 1);
+        expect(fits).toBe(true);
+        const keepAll = await profiles.locator('tbody tr').nth(1).locator('td').first().evaluate((el) => getComputedStyle(el).wordBreak);
+        expect(keepAll).toBe('keep-all');
+      }
+      // 서류 버전별(이력서): 맞춤 이력서 → 기본 서류 백엔드 순
+      const docs = page.getByTestId('stats-docs');
+      await expect(docs.locator('[data-testid^="hbar-"]').nth(0)).toContainText('맞춤 이력서');
+      await expect(docs.locator('[data-testid^="hbar-"]').nth(0)).toContainText('공고마다 맞춘 이력서');
+      await expect(docs.locator('[data-testid^="hbar-"]').nth(1)).toContainText('기본 서류 백엔드');
+      await page.screenshot({ path: 'test-results/stats-tailored-1024.png', fullPage: true });
+    } finally {
+      for (const a of apps) db.prepare('update applications set submitted_resume = ? where id = ?').run(a.sr, a.id);
+      for (const id of insertedRevisions) db.prepare('delete from tailored_revisions where id = ?').run(id);
+      for (const id of insertedResumes) db.prepare('delete from tailored_resumes where id = ?').run(id);
+      db.prepare('delete from kits where id = ?').run(insertedKit);
+      db.close();
+      await page.setViewportSize({ width: 1280, height: 720 });
+    }
   });
 });

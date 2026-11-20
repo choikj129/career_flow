@@ -1,4 +1,5 @@
 import { JOB_TIMEOUT_MS, type JobHandler } from '@/lib/ai/queue';
+import { fence } from '@/lib/ai/fence';
 import { renderPrompt } from '@/lib/ai/prompt';
 import { AiError } from '@/lib/ai/runner';
 import { todayLocal } from '@/lib/domain/dates';
@@ -32,7 +33,7 @@ export const analyzePosting: JobHandler = async ({ jobId, payload, runner, workD
   const outSchema = analysisOutputSchema(kit != null);
   const prompt = renderPrompt('analyze-posting', {
     today: todayLocal(),
-    posting_text: text,
+    posting_text: fence(text),
     resume_json: JSON.stringify(resume.content, null, 2),
     preferences_json: JSON.stringify(getPreferences(db), null, 2),
     profile_table: kit ? profileTableMd(kit.parsed) : '(키트 없음. profileRecommendation을 내지 않는다)',

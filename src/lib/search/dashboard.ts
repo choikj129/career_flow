@@ -8,6 +8,8 @@ import { matchesStatusFilter, reachedStages, type ReachedStage } from '@/lib/app
 import { classifyOutcome } from '@/lib/stats/outcome';
 import { tally, type Tally } from '@/lib/stats/rates';
 import { docFileOf, docLabel } from '@/lib/documents/files';
+import { resumeLabel } from '@/lib/applications/submitted';
+import { listRevisionLabels } from '@/lib/tailored/repo';
 import { normalizeCompanyName } from '@/lib/domain/normalize';
 import {
   APPLICATION_STATUSES,
@@ -34,6 +36,10 @@ export type DashboardRow = {
   fitScore: number | null;
   resumeLabel: string | null;
   resumeBaseVersionNo: number | null;
+  /** 맞춤본으로 냈으면 true(작업 공간 결과 포함) */
+  tailored: boolean;
+  /** 기본 서류 그대로 냈으면 그 직무 이름 */
+  resumeKitTrack: string | null;
   /** 낸 이력서 파일 이름(기록에 있으면). 기본 이력서 버전이 없을 때 라벨로 쓴다 */
   resumeDocFile: string | null;
   /** 거친 단계(상태 이력 기준). 지금 상태가 지원이면 비어 있다 */
@@ -101,11 +107,13 @@ export function searchApplications(
   const versionNoById = new Map(
     db.select({ id: resumeVersions.id, no: resumeVersions.versionNo }).from(resumeVersions).all().map((r) => [r.id, r.no]),
   );
+  const revisions = listRevisionLabels(db);
 
   return filtered.map(({ a, companyName }) => {
     const sr = a.submittedResume;
     const versionNo = sr && sr.kind === 'base' ? (versionNoById.get(sr.versionId) ?? null) : null;
     const resumeDocFile = docFileOf(a.submittedDocs?.resume);
+    const rev = sr.kind === 'tailored' ? revisions.get(sr.tailoredRevisionId) : undefined;
     return {
       applicationId: a.id,
       postingId: a.postingId,
@@ -118,8 +126,15 @@ export function searchApplications(
       status: a.status,
       interviewRound: a.interviewRound,
       fitScore: a.postingId != null ? (fitByPosting.get(a.postingId) ?? null) : null,
-      resumeLabel: versionNo != null ? `기본 v${versionNo}` : resumeDocFile ? docLabel(resumeDocFile) : null,
+      resumeLabel: resumeLabel(
+        sr,
+        a.submittedDocs,
+        { revNo: rev?.revNo, profile: rev?.profileId, profileName: rev?.profileName, versionNo },
+        'short',
+      ),
       resumeBaseVersionNo: versionNo,
+      tailored: sr.kind === 'tailored',
+      resumeKitTrack: sr.kind === 'kit' ? sr.track : null,
       resumeDocFile,
       reached: [...reachedOf(a)],
     };
@@ -164,19 +179,22 @@ export function groupDashboardRows(
     ];
     return cols.map((c) => makeGroup(c.key, c.label, rows.filter((r) => c.match.includes(r.status)), today));
   }
-  const versions = [
-    ...new Set(rows.map((r) => r.resumeBaseVersionNo).filter((v): v is number => v != null)),
-  ].sort((a, b) => b - a);
-  const groups = versions.map((v) =>
-    makeGroup(`v${v}`, `기본 v${v}`, rows.filter((r) => r.resumeBaseVersionNo === v), today),
-  );
+  // 이력서별: 맞춤 이력서 → 기본 서류 {직무} → 기본 v{n}(번호 큰 순) → 이력서 파일(날짜 늦은 순) → 모름
+  const groups: DashboardGroup[] = [];
+  const tailored = rows.filter((r) => r.tailored);
+  if (tailored.length > 0) groups.push(makeGroup('tailored', '맞춤 이력서', tailored, today));
+  const tracks = [...new Set(rows.map((r) => r.resumeKitTrack).filter((t): t is string => t != null))].sort((x, y) => x.localeCompare(y, 'ko'));
+  for (const t of tracks) groups.push(makeGroup(`kit:${t}`, `기본 서류 ${t}`, rows.filter((r) => r.resumeKitTrack === t), today));
+  const rest = rows.filter((r) => !r.tailored && r.resumeKitTrack == null);
+  const versions = [...new Set(rest.map((r) => r.resumeBaseVersionNo).filter((v): v is number => v != null))].sort((x, y) => y - x);
+  for (const v of versions) groups.push(makeGroup(`v${v}`, `기본 v${v}`, rest.filter((r) => r.resumeBaseVersionNo === v), today));
   const files = [
-    ...new Set(rows.filter((r) => r.resumeBaseVersionNo == null).map((r) => r.resumeDocFile).filter((f): f is string => f != null)),
-  ].sort((a, b) => (a < b ? 1 : a > b ? -1 : 0)); // 파일 이름의 날짜(YYYYMMDD)가 늦은 순
+    ...new Set(rest.filter((r) => r.resumeBaseVersionNo == null).map((r) => r.resumeDocFile).filter((f): f is string => f != null)),
+  ].sort((x, y) => (x < y ? 1 : x > y ? -1 : 0)); // 파일 이름의 날짜(YYYYMMDD)가 늦은 순
   for (const f of files) {
-    groups.push(makeGroup(`doc:${f}`, docLabel(f), rows.filter((r) => r.resumeBaseVersionNo == null && r.resumeDocFile === f), today));
+    groups.push(makeGroup(`doc:${f}`, docLabel(f), rest.filter((r) => r.resumeBaseVersionNo == null && r.resumeDocFile === f), today));
   }
-  const unknown = rows.filter((r) => r.resumeBaseVersionNo == null && r.resumeDocFile == null);
+  const unknown = rest.filter((r) => r.resumeBaseVersionNo == null && r.resumeDocFile == null);
   if (unknown.length > 0) groups.push(makeGroup('none', '모름', unknown, today));
   return groups;
 }

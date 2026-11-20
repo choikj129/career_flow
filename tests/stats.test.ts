@@ -6,7 +6,7 @@ import { bulkCreateApplications, changeStatus } from '@/lib/applications/repo';
 import { saveResumeVersion } from '@/lib/resume/repo';
 import { emptyResume } from '@/lib/resume/schema';
 import { periodRange } from '@/lib/search/dashboard-params';
-import { byDocVersion, byPeriod, bySite, byWeekday, funnel } from '@/lib/stats/aggregate';
+import { byDocVersion, byPeriod, bySite, byProfile, byWeekday, funnel, tailoredCompare } from '@/lib/stats/aggregate';
 import { getStats, loadStatItems, type StatItem } from '@/lib/stats/load';
 import { parseStatsParams, statsHref, toStatsQuery } from '@/lib/stats/params';
 import { niceMax, ticks } from '@/lib/stats/chart-scale';
@@ -92,6 +92,9 @@ const mk = (over: Partial<StatItem> = {}): StatItem => {
     reached: [],
     outcome: 'no_response',
     baseVersionNo: null,
+    tailored: false,
+    profile: null,
+    kitTrack: null,
     docs: { resume: null, career: null, portfolio: null },
   };
   return { ...base, ...over };
@@ -321,5 +324,95 @@ describe('byDocVersion with none (TC-PAST-75)', () => {
     const b = byDocVersion([mk({ baseVersionNo: 1 }), mk({ docs: { resume: '이력서_20261102.pdf', career: null, portfolio: null } }), mk()], 'resume');
     expect(b.map((x) => x.label)).toEqual(['기본 v1', '이력서 2026-11-02', '모름']);
     expect(b.some((x) => x.absent)).toBe(false);
+  });
+});
+
+// ---- 맞춤 이력서 효과 (D-24, D-29) ----
+
+const tl = (over: Partial<StatItem> = {}) =>
+  mk({ tailored: true, profile: { id: 'B3', name: '정합성' }, ...over });
+const kitItem = (over: Partial<StatItem> = {}) =>
+  mk({ kitTrack: '백엔드', profile: { id: 'B1', name: '범용' }, ...over });
+
+describe('byDocVersion with tailored and base documents (TC-STATS-15)', () => {
+  const items = [
+    mk({ baseVersionNo: 2, appliedAt: '2026-02-01' }),
+    kitItem({ appliedAt: '2026-11-01' }),
+    kitItem({ kitTrack: '데이터', profile: { id: 'D1', name: '범용' }, appliedAt: '2026-11-02' }),
+    kitItem({ appliedAt: '2026-11-03' }),
+    tl({ appliedAt: '2026-11-04' }),
+    tl({ appliedAt: '2026-11-06', docs: { resume: null, career: '경력기술서_20261102.pdf', portfolio: null } }),
+    mk({ docs: { resume: '이력서_20261102.pdf', career: null, portfolio: null }, appliedAt: '2026-10-05' }),
+    mk({ appliedAt: '2026-07-01' }),
+  ];
+  test('resume order: tailored, base documents by track, base v, files, unknown', () => {
+    const b = byDocVersion(items, 'resume');
+    expect(b.map((x) => [x.key, x.label])).toEqual([
+      ['tailored', '맞춤 이력서'],
+      ['kit:데이터', '기본 서류 데이터'],
+      ['kit:백엔드', '기본 서류 백엔드'],
+      ['v2', '기본 v2'],
+      ['doc:이력서_20261102.pdf', '이력서 2026-11-02'],
+      ['none', '모름'],
+    ]);
+    expect(b[0]).toMatchObject({ unknown: false, firstApplied: '2026-11-04', lastApplied: '2026-11-06' });
+    expect(b[0].tally.total).toBe(2);
+    expect(b[2].tally.total).toBe(2);
+    expect(b[5].tally.total).toBe(1); // 맞춤·기본 서류 기록은 모름에 섞이지 않는다
+  });
+  test('career counts tailored and base-document records by their file value', () => {
+    const b = byDocVersion(items, 'career');
+    expect(b.map((x) => x.label)).toEqual(['경력기술서 2026-11-02', '모름']);
+    expect(b[0].tally.total).toBe(1);
+    expect(b[1].tally.total).toBe(7);
+  });
+});
+
+describe('tailoredCompare (TC-STATS-16)', () => {
+  test('null when no tailored record', () => {
+    expect(tailoredCompare([mk(), kitItem()])).toBeNull();
+    expect(tailoredCompare([])).toBeNull();
+  });
+  test('compares from the first tailored day, same-day records included, base documents count as plain', () => {
+    const items = [
+      mk({ appliedAt: '2026-11-20', outcome: 'rejected' }), // 그 전: 빠짐
+      tl({ appliedAt: '2026-11-21', outcome: 'passed' }),
+      tl({ appliedAt: '2026-11-25', outcome: 'rejected' }),
+      mk({ appliedAt: '2026-11-21', outcome: 'rejected' }), // 같은 날: 들어감
+      kitItem({ appliedAt: '2026-11-23', outcome: 'passed' }),
+      mk({ appliedAt: '2026-12-01', outcome: 'pending' }),
+    ];
+    const c = tailoredCompare(items)!;
+    expect(c.since).toBe('2026-11-21');
+    expect(c.tailored).toMatchObject({ total: 2, passed: 1, rejected: 1 });
+    expect(c.plain).toMatchObject({ total: 3, passed: 1, rejected: 1, pending: 1 });
+  });
+  test('no tailored record left after a filter gives null', () => {
+    expect(tailoredCompare([kitItem()])).toBeNull();
+  });
+});
+
+describe('byProfile (TC-STATS-17)', () => {
+  test('counts tailored and base-document records by profile; records without a profile are left out; id order', () => {
+    const items = [
+      tl({ appliedAt: '2026-11-01', outcome: 'passed' }),
+      tl({ appliedAt: '2026-11-02', outcome: 'rejected' }),
+      kitItem({ appliedAt: '2026-11-03', outcome: 'rejected' }),
+      kitItem({ appliedAt: '2026-11-04', outcome: 'pending' }),
+      kitItem({ profile: { id: 'B3', name: '정합성' }, appliedAt: '2026-11-05', outcome: 'rejected' }),
+      mk({ appliedAt: '2026-11-06' }), // 프로필 없음(파일·모름)
+      mk({ baseVersionNo: 1 }),
+      tl({ profile: { id: 'A1', name: '범용' }, appliedAt: '2026-11-07', outcome: 'passed' }),
+    ];
+    const rows = byProfile(items);
+    expect(rows.map((r) => r.id)).toEqual(['A1', 'B1', 'B3']);
+    const b3 = rows.find((r) => r.id === 'B3')!;
+    expect(b3.name).toBe('정합성');
+    expect(b3.all).toMatchObject({ total: 3, passed: 1, rejected: 2 });
+    expect(b3.tailored.total).toBe(2);
+    expect(b3.plain.total).toBe(1);
+    expect(rows.find((r) => r.id === 'B1')!.all.total).toBe(2);
+    expect(rows.find((r) => r.id === 'B1')!.tailored.total).toBe(0);
+    expect(byProfile([mk(), mk({ baseVersionNo: 2 })])).toEqual([]);
   });
 });

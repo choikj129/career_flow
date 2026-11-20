@@ -168,6 +168,8 @@ const pOrange = addPosting({ url: null, site: 'other', siteNote: '지인 추천'
 markApplied({ postingId: pMobil, appliedAt: '2026-10-22' }, db);
 markApplied({ postingId: pHanbit, appliedAt: '2026-10-30' }, db);
 markApplied({ postingId: pOrange, appliedAt: '2026-11-02', site: 'other', siteNote: '지인 추천' }, db);
+// 3단계 전에 지원한 기록(예전 [지원 완료]는 기본 이력서 버전으로 남겼다). markApplied는 이제 제출 서류 기본값을 쓰므로 직접 맞춘다.
+db.$client.prepare('update applications set submitted_resume = ? where posting_id is not null').run(JSON.stringify({ kind: 'base', versionId: v1.id }));
 
 // 이후 지원은 v2 기준
 saveResumeVersion(resume('결제·정산 도메인 백엔드 개발자, Kafka 파이프라인 경험'), '시드 v2', db);

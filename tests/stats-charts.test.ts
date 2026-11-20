@@ -19,6 +19,9 @@ const item = (appliedAt: string, outcome: StatItem['outcome'] = 'rejected'): Sta
   reached: outcome === 'passed' ? ['document_passed'] : [],
   outcome,
   baseVersionNo: null,
+  tailored: false,
+  profile: null,
+  kitTrack: null,
   docs: { resume: null, career: null, portfolio: null },
 });
 

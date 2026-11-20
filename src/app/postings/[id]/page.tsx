@@ -24,6 +24,8 @@ import { JobStatus } from "../../_components/JobStatus";
 import { SiteBadge } from "../../_components/SiteBadge";
 import { StatusBadge } from "../../_components/StatusBadge";
 import { SubmittedDocs } from "../../_components/SubmittedDocs";
+import { resumeLabel } from "@/lib/applications/submitted";
+import { listRevisionLabels } from "@/lib/tailored/repo";
 import { ApplyForm } from "./ApplyForm";
 import { CompanyLink } from "./CompanyLink";
 import { DeletePostingButton } from "./DeletePostingButton";
@@ -65,7 +67,7 @@ async function PostingDetail({
 
   const company = posting.companyId != null ? getCompany(posting.companyId) : undefined;
   const application = getApplicationForPosting(postingId); // 최신 기록
-  const job = latestJobFor("analyze_posting", (p) => p?.postingId === postingId);
+  const job = latestJobFor("analyze_posting", () => true, undefined, { postingId });
   const jobActive = job != null && (job.status === "queued" || job.status === "running");
   const jobFailed = job?.status === "failed";
   const siteNotes = listSiteNotes();
@@ -461,8 +463,10 @@ function RecordItem({
   siteNotes: string[];
 }) {
   const events = listStatusEvents(app.id).reverse();
-  const resumeNo =
-    app.submittedResume.kind === "base" ? (getResumeVersion(app.submittedResume.versionId)?.versionNo ?? null) : null;
+  const sr = app.submittedResume;
+  const resumeNo = sr.kind === "base" ? (getResumeVersion(sr.versionId)?.versionNo ?? null) : null;
+  const rev = sr.kind === "tailored" ? listRevisionLabels().get(sr.tailoredRevisionId) : undefined;
+  const resumeText = resumeLabel(sr, app.submittedDocs, { revNo: rev?.revNo, profile: rev?.profileId, profileName: rev?.profileName, versionNo: resumeNo }, "long");
   return (
     <>
       <div className="card" style={{ padding: "18px 22px", display: "flex", gap: 32, flexWrap: "wrap" }}>
@@ -479,7 +483,7 @@ function RecordItem({
         <span>
           <span className="muted small">제출한 이력서</span>
           <br />
-          <b>{resumeNo != null ? `기본 이력서 v${resumeNo}` : "모름"}</b>
+          <b>{resumeText ?? "모름"}</b>
         </span>
         <span style={{ marginLeft: "auto", display: "flex", gap: 6, alignItems: "center" }}>
           <RecordActions

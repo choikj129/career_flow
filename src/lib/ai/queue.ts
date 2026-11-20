@@ -1,10 +1,10 @@
 import { existsSync, mkdirSync, readdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
-import { and, asc, desc, eq, inArray } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
 import { config } from '@/lib/config';
 import { getDb, type Db } from '@/lib/db/client';
 import { aiJobs } from '@/lib/db/schema';
-import type { AiErrorKind, JobType } from '@/lib/domain/types';
+import type { AiErrorKind, JobStatus, JobType } from '@/lib/domain/types';
 import { AiError, type AiRunner } from './runner';
 
 /** 작업 종류마다 모양이 다르다. 처리기가 값을 검사해 쓴다. */
@@ -45,12 +45,22 @@ export function getJob(id: number, db: Db = getDb()): JobRow | undefined {
 
 export type JobSummary = Omit<JobRow, 'result' | 'usage'>;
 
-/** result·usage(큰 JSON)는 읽지 않는다. */
+export const LATEST_JOB_LIMIT = 200;
+
+/**
+ * 그 종류의 가장 최근 작업(match를 만족하는 것). result·usage(큰 JSON)는 읽지 않는다.
+ * 읽는 범위를 SQL로 좁힌다: postingId(payload.postingId가 같은 것만), statuses(상태 필터), limit(최근 N건, 기본 LATEST_JOB_LIMIT).
+ * match는 그 위에서 한 번 더 거른다.
+ */
 export function latestJobFor(
   type: JobType,
   match: (payload: JobPayload | null) => boolean,
   db: Db = getDb(),
+  opts: { postingId?: number; statuses?: JobStatus[]; limit?: number } = {},
 ): JobSummary | undefined {
+  const conds = [eq(aiJobs.type, type)];
+  if (opts.postingId != null) conds.push(sql`json_extract(${aiJobs.payload}, '$.postingId') = ${opts.postingId}`);
+  if (opts.statuses?.length) conds.push(inArray(aiJobs.status, opts.statuses));
   const rows = db
     .select({
       id: aiJobs.id,
@@ -66,8 +76,9 @@ export function latestJobFor(
       finishedAt: aiJobs.finishedAt,
     })
     .from(aiJobs)
-    .where(eq(aiJobs.type, type))
+    .where(and(...conds))
     .orderBy(desc(aiJobs.id))
+    .limit(opts.limit ?? LATEST_JOB_LIMIT)
     .all();
   return rows.find((r) => match(r.payload as JobPayload | null));
 }

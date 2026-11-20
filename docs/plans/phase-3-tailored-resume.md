@@ -406,6 +406,7 @@ export function resumeLabel(sr: SubmittedResume, docs: SubmittedDocs | null, nam
 - `markApplied`·`updateApplication`·검증·`resolveSubmittedResume`은 처음 설계와 같다. 추가: `kit` 선택은 그 키트가 있고 직무가 키트에 있어야 한다. `resolveSubmittedResume`은 `tailored`·`kit`이면 `null`(앱 JSON 이력서가 아니므로) — 4단계는 대신 "맞춤본 md"를 쓰는 방법을 4단계 설계 때 정한다.
 - 대시보드 이력서별 묶음: "맞춤 이력서" → "기본 서류 {직무}" → "기본 v{n}" → 이력서 파일 → 모름.
 
+- 구현 메모(묶음 D): `resumeLabel`의 `names`에 `profileName`을 더했다(짧은 라벨은 프로필 id, 긴 라벨은 "id 이름"). `kit` 기본 직무는 분석의 프로필 추천 직무, 추천이 없으면 직무가 하나뿐일 때만 그 직무이고 여럿이면 고르지 않는다(파일 → 모름으로 내려감). `markApplied`·`updateApplication`에 서류 폴더 인자(`docsDir`)를 더했다. 서버 액션·화면(지원 완료 창의 select)은 묶음 F(Task 7) 몫이라 이번에는 액션이 기본값으로 저장한다. 수정 창 연결 전에는 `updateApplicationAction`이 제출 서류를 바꾸지 않는다.
 - [ ] Step 1 테스트 TC-SUBMIT-01~07(처음 설계와 같고 `kit` 종류 추가: 기본값 순서, 키트 없는 직무 거부, 라벨에 프로필). Step 2~4. Step 5 커밋 `feat: record submitted resume with profile on apply`.
 
 ---

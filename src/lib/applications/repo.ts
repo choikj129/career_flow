@@ -2,33 +2,115 @@ import { and, eq, gte, inArray, or } from 'drizzle-orm';
 import { getDb, type Db } from '@/lib/db/client';
 import { applications, statusEvents } from '@/lib/db/schema';
 import { monthsAgoLocal, syntheticKstIso, toKstIso, todayLocal } from '@/lib/domain/dates';
-import type { ApplicationStatus, SiteId } from '@/lib/domain/types';
+import type { ApplicationStatus, SiteId, SubmittedResume } from '@/lib/domain/types';
+import { AnalysisResult } from '@/lib/ai/tasks/schemas';
 import { findOrCreateCompany } from '@/lib/companies/repo';
 import { DOC_KINDS, DOC_NONE, canBeNone, isDocsForKind, type SubmittedDocs } from '@/lib/documents/files';
-import { docFileExists } from '@/lib/documents/folder';
+import { docFileExists, listDocFiles } from '@/lib/documents/folder';
+import { getKit, getUsableKit } from '@/lib/kit/repo';
+import { getLatestAnalysis, getPosting } from '@/lib/postings/repo';
+import { getResumeVersion } from '@/lib/resume/repo';
+import type { ResumeContent } from '@/lib/resume/schema';
+import { listRevisionsForPosting, revisionPostingId } from '@/lib/tailored/repo';
 import { applicationOrder } from './sort';
 import { REACHED_STAGES } from './stages';
-import { getPosting } from '@/lib/postings/repo';
-import { getLatestResume } from '@/lib/resume/repo';
+import { defaultSubmitted, toColumns, type SubmittedInput } from './submitted';
 
 export type Application = typeof applications.$inferSelect;
 export type StatusEvent = typeof statusEvents.$inferSelect;
 
 const now = () => new Date().toISOString();
 
+/** [지원 완료] 기본 선택: 키트가 있으면 추천 직무(분석의 프로필 추천, 직무가 하나뿐이면 그 직무)의 기본 서류. 고를 수 없으면 null */
+function defaultKitChoice(postingId: number, db: Db): { id: number; track: string } | null {
+  const kit = getUsableKit(db);
+  if (!kit) return null;
+  const tracks = kit.parsed.tracks.map((t) => t.name);
+  const analysis = getLatestAnalysis(postingId, db);
+  const rec = analysis ? AnalysisResult.safeParse(analysis.result).data?.profileRecommendation : null;
+  if (rec && tracks.includes(rec.track)) return { id: kit.id, track: rec.track };
+  return tracks.length === 1 ? { id: kit.id, track: tracks[0] } : null;
+}
+
+/** 저장 전 검증과 칸 변환. 실패하면 예외(아무것도 저장되지 않는다). prev는 수정할 때의 지금 기록 */
+function resolveSubmittedColumns(
+  input: SubmittedInput,
+  ctx: { postingId: number | null; prev?: Application; docsDir?: string },
+  db: Db,
+): ReturnType<typeof toColumns> {
+  const r = input.resume;
+  let kitProfile: { profileId: string; profileName: string } | undefined;
+  switch (r.kind) {
+    case 'tailored':
+      if (ctx.postingId == null || revisionPostingId(r.tailoredRevisionId, db) !== ctx.postingId) {
+        throw new Error('이 공고의 맞춤 이력서가 아닙니다');
+      }
+      break;
+    case 'kit': {
+      const prev = ctx.prev?.submittedResume;
+      if (prev?.kind === 'kit' && prev.kitId === r.kitId && prev.track === r.track) {
+        kitProfile = { profileId: prev.profileId, profileName: prev.profileName }; // 바꾸지 않았으면 기록된 프로필 그대로
+        break;
+      }
+      const parsed = getKit(r.kitId, db)?.parsed;
+      const track = parsed?.tracks.find((t) => t.name === r.track);
+      if (!parsed || !track) throw new Error('서류 키트에 없는 직무입니다');
+      const profile =
+        parsed.profiles.find((p) => p.track === track.name && p.id === track.defaultProfileId) ??
+        parsed.profiles.find((p) => p.track === track.name && p.isDefault);
+      if (!profile) throw new Error('서류 키트에 없는 직무입니다');
+      kitProfile = { profileId: profile.id, profileName: profile.name };
+      break;
+    }
+    case 'file':
+      if (!isDocsForKind('resume', r.fileName) || !docFileExists(r.fileName, ctx.docsDir)) {
+        throw new Error(`서류 파일을 찾을 수 없습니다: ${r.fileName}`);
+      }
+      break;
+    case 'base': {
+      const prev = ctx.prev?.submittedResume;
+      if (!(prev?.kind === 'base' && prev.versionId === r.versionId)) throw new Error('기본 이력서 버전은 새로 고를 수 없습니다');
+      break;
+    }
+    case 'unknown':
+      break;
+  }
+  assertDocsValid({ career: input.career, portfolio: input.portfolio }, ctx.docsDir);
+  return toColumns(input, { prevKind: ctx.prev?.submittedResume.kind, kitProfile });
+}
+
+/**
+ * 지원 완료로 저장한다. submitted가 없으면 기본값(최신 맞춤 리비전 → 추천 직무의 기본 서류 → 지원일 기준 이력서 파일 → 모름).
+ * 기본 이력서(앱 JSON)는 필요 없다. 잘못된 선택은 저장 전에 예외로 막는다.
+ */
 export function markApplied(
-  input: { postingId: number; appliedAt?: string; site?: SiteId; siteNote?: string; notes?: string },
+  input: {
+    postingId: number;
+    appliedAt?: string;
+    site?: SiteId;
+    siteNote?: string;
+    notes?: string;
+    submitted?: SubmittedInput;
+  },
   db: Db = getDb(),
+  docsDir?: string,
 ): number {
   const posting = getPosting(input.postingId, db);
   if (!posting) throw new Error('공고를 찾을 수 없습니다');
   if (posting.companyId == null) throw new Error('분석이 끝난 뒤 지원 완료를 눌러주세요');
-  const resume = getLatestResume(db);
-  if (!resume) throw new Error('기본 이력서를 먼저 등록하세요.');
 
   const site = input.site ?? posting.site;
   const siteNote = site === 'other' ? (input.siteNote?.trim() || posting.siteNote || null) : null;
   const appliedAt = input.appliedAt ?? todayLocal();
+  const submitted =
+    input.submitted ??
+    defaultSubmitted({
+      appliedAt,
+      files: listDocFiles(docsDir).files,
+      latestRevisionId: listRevisionsForPosting(posting.id, db)[0]?.id ?? null,
+      kit: defaultKitChoice(posting.id, db),
+    });
+  const cols = resolveSubmittedColumns(submitted, { postingId: posting.id, docsDir }, db);
   return db.transaction((tx) => {
     const id = tx
       .insert(applications)
@@ -40,7 +122,8 @@ export function markApplied(
         siteNote,
         appliedAt,
         appliedDatetime: toKstIso(new Date()),
-        submittedResume: { kind: 'base', versionId: resume.id },
+        submittedResume: cols.submittedResume,
+        submittedDocs: cols.submittedDocs,
         status: 'applied',
         notes: input.notes ?? null,
         createdAt: now(),
@@ -236,7 +319,7 @@ export function updateNotes(applicationId: number, notes: string, db: Db = getDb
   db.update(applications).set({ notes }).where(eq(applications.id, applicationId)).run();
 }
 
-/** 회사명·포지션·사이트·지원일 수정. 상태는 changeStatus로 바꾼다. */
+/** 회사명·포지션·사이트·지원일·제출 서류 수정. 상태는 changeStatus로 바꾼다. */
 export function updateApplication(
   id: number,
   patch: {
@@ -245,13 +328,20 @@ export function updateApplication(
     site?: SiteId;
     siteNote?: string | null;
     appliedAt?: string;
+    submitted?: SubmittedInput;
   },
   db: Db = getDb(),
+  docsDir?: string,
 ): void {
   db.transaction((tx) => {
     const app = tx.select().from(applications).where(eq(applications.id, id)).get();
     if (!app) throw new Error('지원 기록을 찾을 수 없습니다');
     const set: Partial<typeof applications.$inferInsert> = {};
+    if (patch.submitted) {
+      const cols = resolveSubmittedColumns(patch.submitted, { postingId: app.postingId, prev: app, docsDir }, tx as unknown as Db);
+      set.submittedResume = cols.submittedResume;
+      set.submittedDocs = cols.submittedDocs;
+    }
     if (patch.companyName !== undefined) {
       set.companyId = findOrCreateCompany({ displayName: patch.companyName }, tx as unknown as Db);
     }
@@ -315,4 +405,17 @@ export function listReachedHistory(db: Db = getDb()): Map<number, ApplicationSta
     else map.set(e.applicationId, [e.status]);
   }
   return map;
+}
+
+/**
+ * 4단계 면접 준비가 쓰는 "제출한 이력서"의 앱 JSON 내용. 예전 [지원 완료] 기록(base)만 있다.
+ * 맞춤본·기본 서류(키트 md)와 이력서 파일(PDF)은 앱 JSON이 아니므로 null이다.
+ */
+export function resolveSubmittedResume(
+  sr: SubmittedResume,
+  db: Db = getDb(),
+): { label: string; content: ResumeContent } | null {
+  if (sr.kind !== 'base') return null;
+  const v = getResumeVersion(sr.versionId, db);
+  return v ? { label: `기본 이력서 v${v.versionNo}`, content: v.content } : null;
 }

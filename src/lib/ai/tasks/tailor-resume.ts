@@ -1,4 +1,5 @@
 import { JOB_TIMEOUT_MS, type JobHandler } from '@/lib/ai/queue';
+import { fence } from '@/lib/ai/fence';
 import { renderPrompt } from '@/lib/ai/prompt';
 import { buildRevisionPrompt } from '@/lib/ai/revision';
 import { AiError } from '@/lib/ai/runner';
@@ -57,16 +58,16 @@ function prepare(postingId: number, rev: TailoredRevision | null, db: Db) {
 
   const basePrompt = renderPrompt('tailor-resume', {
     today: todayLocal(),
-    posting_text: text,
+    posting_text: fence(text),
     analysis_json: JSON.stringify(analysis?.result ?? {}, null, 2),
     top_words: top.length ? top.map((w) => `${w.word} (${w.count}회)`).join(', ') : '(없음)',
     profile: `${rev.track} / ${rev.profileId} ${rev.profileName}${profile?.keywords.length ? ` — 공고 단어: ${profile.keywords.join(', ')}` : ''}`,
     pending_adjustments: pending.length ? pending.map((p) => `- ${p}`).join('\n') : '(없음)',
-    writing_rules: readKitText(kit.id, 'rules', db),
+    writing_rules: fence(readKitText(kit.id, 'rules', db)),
     terms_table: termsTableMd(kit.parsed.terms),
-    master_story: masterMd,
-    resume_md: stage1.resumeMd,
-    career_md: stage1.careerMd,
+    master_story: fence(masterMd),
+    resume_md: fence(stage1.resumeMd),
+    career_md: fence(stage1.careerMd),
   });
 
   return { kit, base, stage1, pending, basePrompt, masterMd, otherCompanyNames: otherCompanyNames(postingId, db) };

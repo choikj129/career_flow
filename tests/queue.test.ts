@@ -97,6 +97,37 @@ describe('job queue', () => {
     expect(latestJobFor('import_resume', () => true, db)).toBeUndefined();
   });
 
+  test('latestJobFor narrows by SQL: postingId, statuses and limit (old jobs of other postings do not hide it)', () => {
+    const db = makeTestDb();
+    const first = enqueueJob('analyze_posting', { postingId: 1 }, db);
+    for (let i = 0; i < 150; i++) enqueueJob('analyze_posting', { postingId: 2 }, db);
+    // 최근 100건 안에는 postingId 1이 없지만 SQL 조건으로 찾는다
+    expect(latestJobFor('analyze_posting', () => true, db, { postingId: 1 })?.id).toBe(first);
+    // postingId 조건이 없으면 최근 limit건만 본다
+    expect(latestJobFor('analyze_posting', (p) => p?.postingId === 1, db, { limit: 100 })).toBeUndefined();
+    expect(latestJobFor('analyze_posting', (p) => p?.postingId === 1, db)?.id).toBe(first); // 기본 limit 200
+  });
+
+  test('latestJobFor statuses filter finds the active job even when a newer one finished', () => {
+    const db = makeTestDb();
+    const running = enqueueJob('tailor_resume', { postingId: 3 }, db);
+    const done = enqueueJob('tailor_resume', { postingId: 3 }, db);
+    db.update(aiJobs).set({ status: 'running' }).where(eq(aiJobs.id, running)).run();
+    db.update(aiJobs).set({ status: 'succeeded' }).where(eq(aiJobs.id, done)).run();
+    expect(latestJobFor('tailor_resume', () => true, db, { postingId: 3 })?.id).toBe(done);
+    expect(latestJobFor('tailor_resume', () => true, db, { postingId: 3, statuses: ['queued', 'running'] })?.id).toBe(running);
+    expect(latestJobFor('tailor_resume', () => true, db, { postingId: 4, statuses: ['queued', 'running'] })).toBeUndefined();
+  });
+
+  test('latestJobFor does not read result or usage', () => {
+    const db = makeTestDb();
+    const id = enqueueJob('analyze_posting', { postingId: 7 }, db);
+    db.update(aiJobs).set({ result: { big: 'x'.repeat(100) }, usage: { a: 1 } }).where(eq(aiJobs.id, id)).run();
+    const j = latestJobFor('analyze_posting', () => true, db, { postingId: 7 })!;
+    expect(j).not.toHaveProperty('result');
+    expect(j).not.toHaveProperty('usage');
+  });
+
   test('worker runs only one job at a time and stops', async () => {
     const db = makeTestDb();
     enqueueJob('analyze_posting', { n: 1 }, db);

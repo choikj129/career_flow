@@ -1,3 +1,4 @@
+import { fence } from '@/lib/ai/fence';
 import type { KitWarning } from '@/lib/kit/types';
 
 // 이력서 작업 공간에 "이 공고용 이력서"를 요청하는 요청문과 권유 기준(D-26 추가, D-30 a). 순수 함수다.
@@ -23,13 +24,6 @@ export function handoffReasons(i: {
   if (i.pending.length > 0) out.push('pending_adjustments');
   if (i.needsWorkspace) out.push('ai_suggested');
   return out;
-}
-
-/** 본문 안의 ``` 보다 긴 울타리로 감싸 본문이 요청문 구조를 깨지 못하게 한다 */
-function fence(text: string): string {
-  const longest = Math.max(2, ...[...text.matchAll(/`+/g)].map((m) => m[0].length));
-  const bar = '`'.repeat(longest + 1);
-  return `${bar}\n${text}\n${bar}`;
 }
 
 const list = (xs: string[]) => (xs.length ? xs.map((x) => `- ${x}`).join('\n') : '- (없음)');
