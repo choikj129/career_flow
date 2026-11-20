@@ -359,7 +359,7 @@ textarea.in { height: auto; min-height: 70px; padding: 10px 12px; resize: vertic
 .review-wrap { margin-top: 12px; }
 .review { display: block; width: 100%; border-collapse: collapse; }
 .review thead, .review tbody { display: block; }
-.review tr { display: grid; grid-template-columns: 28px minmax(130px, 1.3fr) minmax(150px, 1.6fr) 144px 140px 164px 72px 32px; column-gap: 8px; align-items: start; }
+.review tr { display: grid; grid-template-columns: 28px minmax(130px, 1.3fr) minmax(150px, 1.6fr) 144px 150px 164px 72px 32px; column-gap: 8px; align-items: start; }
 .review tbody tr { padding: 8px 0; border-top: 1px solid var(--line); }
 .review th, .review td { padding: 0; text-align: left; min-width: 0; }
 .review th { font-weight: 600; font-size: 13px; color: var(--sub); padding-bottom: 6px; }
