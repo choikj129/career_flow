@@ -76,3 +76,8 @@ model: sonnet
 3. **설계·계획과 다른 점**: 있을 때만. 무엇을, 왜 바꿨는지.
 4. **확인하지 못한 것**: 실제 브라우저 확인, 실제 `claude` 호출처럼 자동 테스트로 확인하지 못한 것.
 5. 맨 끝에 `.claude/rules/workflow.md`의 **상태 블록**을 쓴다. 결과는 `완료` / `결정 필요` / `설계 필요` / `실패` 중 하나다.
+
+## 클라이언트 번들 주의
+
+- `"use client"` 컴포넌트가 import하는 `src/lib` 파일은 DB·`fs`·`better-sqlite3`를 (간접으로도) 끌어오면 안 된다. 순수 계산은 별도 파일에 두고 서버 전용 코드와 나눈다. Vitest·tsc·lint는 이 문제를 잡지 못하고 `npm run build`에서만 드러난다.
+- 사용자 앱이 쓰는 프로젝트 폴더(`C:\project\career_flow`)에서는 빌드하지 않는다. 별도 작업 폴더(worktree)에서 일할 때는 끝내기 전에 `npx next typegen && npm run build`를 돌려 통과를 확인한다.
