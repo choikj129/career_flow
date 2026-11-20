@@ -214,18 +214,31 @@ test.describe.serial('지난 기록 직접 입력', () => {
         if (t.scrollHeight > t.clientHeight + 1) bad.push(`${label} 세로로 잘림`);
         if (t.scrollWidth > t.clientWidth + 1) bad.push(`${label} 가로로 잘림`);
       }
-      // 선택 칸·날짜: 가장 긴 글자가 칸 안에 들어간다
-      const measure = (el: HTMLElement, text: string, extra: number, name: string) => {
+      // 선택 칸·날짜: 가장 긴 글자가 칸 안에 들어간다. 실제 렌더와 맞추려고 같은 글꼴의 span을 만들어 offsetWidth로 잰다.
+      // 칸 안쪽 글자 공간 = clientWidth(테두리 제외) - 좌우 padding - 화살표(select 20, 달력 아이콘 28)
+      const textWidth = (el: HTMLElement, text: string) => {
         const cs = getComputedStyle(el);
-        const c = document.createElement('canvas').getContext('2d')!;
-        c.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
-        const inner = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - extra;
-        if (c.measureText(text).width > inner + 0.5) bad.push(`${name}: "${text}" ${Math.round(c.measureText(text).width)} > ${Math.round(inner)}`);
+        const span = document.createElement('span');
+        span.textContent = text;
+        span.style.cssText = `position:absolute;visibility:hidden;white-space:nowrap;font:${cs.font};letter-spacing:${cs.letterSpacing}`;
+        document.body.appendChild(span);
+        const w = span.offsetWidth;
+        span.remove();
+        return w;
+      };
+      const measure = (el: HTMLElement, text: string, arrow: number, name: string) => {
+        const cs = getComputedStyle(el);
+        const inner = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - arrow;
+        const w = textWidth(el, text);
+        if (w > inner) bad.push(`${name}: "${text}" 글자 ${w}px > 칸 안쪽 ${Math.round(inner)}px`);
       };
       for (const sel of Array.from(row.querySelectorAll('select')) as HTMLSelectElement[]) {
-        for (const o of Array.from(sel.options)) measure(sel, o.text, 0, sel.getAttribute('aria-label') ?? '');
+        for (const o of Array.from(sel.options)) measure(sel, o.text, 20, sel.getAttribute('aria-label') ?? '');
       }
-      measure(row.querySelector('input[aria-label="지원일"]') as HTMLElement, '2026-10-20', 28, '지원일'); // 달력 아이콘 자리
+      measure(row.querySelector('input[aria-label="지원일"]') as HTMLElement, '2026-10-20', 28, '지원일');
+      // 메모 칸: 비어 있어도 세로로 잘리지 않는다
+      const memo = row.querySelector('textarea[aria-label="메모"]') as HTMLTextAreaElement;
+      if (memo.scrollHeight > memo.clientHeight + 1) bad.push('메모 세로로 잘림');
       return bad;
     });
     expect(problems).toEqual([]);

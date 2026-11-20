@@ -36,7 +36,8 @@ test.describe.serial('가져오기 흐름', () => {
     await expect(page.getByText('3건을 찾았습니다.')).toBeVisible();
     await expect(page.getByText('2. 검토')).toBeVisible();
     await expect(rows(page)).toHaveCount(3);
-    const dup = rows(page).filter({ has: page.locator('input[value="토스"]') });
+    const dup = rows(page).nth(1); // 토스(회사·포지션은 textarea라 값 속성으로 찾을 수 없다)
+    await expect(dup.getByLabel('회사')).toHaveValue('토스');
     await expect(dup.getByText('이미 있음')).toBeVisible();
     await expect(dup.getByLabel('등록할 행')).not.toBeChecked();
     await expect(rows(page).first().getByLabel('등록할 행')).toBeChecked();
