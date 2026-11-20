@@ -30,7 +30,15 @@ export const STATUS_LABELS: Record<ApplicationStatus, string> = {
   withdrawn: '지원취소',
 };
 
-export type JobType = 'analyze_posting' | 'import_resume' | 'import_applications';
+export type JobType = 'analyze_posting' | 'import_resume' | 'import_applications' | 'tailor_resume' | 'revise_tailored';
+
+/** 지원 기록의 제출 이력서. 맞춤본(tailored)·기본 서류 그대로(kit)·이력서 파일(file)·가져온 기록(imported)·예전 [지원 완료](base). */
+export type SubmittedResume =
+  | { kind: 'tailored'; tailoredRevisionId: number }
+  | { kind: 'kit'; kitId: number; track: string; profileId: string; profileName: string }
+  | { kind: 'file' }
+  | { kind: 'imported' }
+  | { kind: 'base'; versionId: number };
 export type JobStatus = 'queued' | 'running' | 'succeeded' | 'failed' | 'canceled';
 export type AiErrorKind =
   | 'auth'

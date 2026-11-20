@@ -24,6 +24,8 @@ export const JOB_TIMEOUT_MS: Record<JobType, number> = {
   analyze_posting: 300_000,
   import_resume: 300_000,
   import_applications: 300_000,
+  tailor_resume: 300_000,
+  revise_tailored: 300_000,
 };
 
 const now = () => new Date().toISOString();

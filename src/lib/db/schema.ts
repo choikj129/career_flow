@@ -1,6 +1,7 @@
-import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
 import type { SubmittedDocs } from '@/lib/documents/files';
-import type { SiteId, ApplicationStatus, JobType, JobStatus, AiErrorKind } from '@/lib/domain/types';
+import type { SiteId, ApplicationStatus, JobType, JobStatus, AiErrorKind, SubmittedResume } from '@/lib/domain/types';
+import type { KitError, KitFile, KitParsed, KitWarning } from '@/lib/kit/types';
 
 export const resumeVersions = sqliteTable('resume_versions', {
   id: integer('id').primaryKey({ autoIncrement: true }),
@@ -87,9 +88,7 @@ export const applications = sqliteTable('applications', {
    * 직접 입력·가져오기·그룹바이는 표 순서로 만든 값(12:00:00에서 순번초를 뺀 값).
    */
   appliedDatetime: text('applied_datetime'),
-  submittedResume: text('submitted_resume', { mode: 'json' })
-    .$type<{ kind: 'base'; versionId: number } | { kind: 'imported' }>()
-    .notNull(),
+  submittedResume: text('submitted_resume', { mode: 'json' }).$type<SubmittedResume>().notNull(),
   /** 낸 이력서·경력기술서·포트폴리오 파일 이름(종류별, null = 모름). 기존 행은 null. */
   submittedDocs: text('submitted_docs', { mode: 'json' }).$type<SubmittedDocs>(),
   status: text('status').$type<ApplicationStatus>().notNull(),
@@ -116,3 +115,46 @@ export const settings = sqliteTable('settings', {
   key: text('key').primaryKey(),
   value: text('value').notNull(),
 });
+
+/** 서류 키트: 사용자가 올린 가이드·기본 서류·규칙·마스터스토리. 파일은 data/kit/<id>/에 보관한다. 올릴 때마다 새 행. */
+export const kits = sqliteTable('kits', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  label: text('label').notNull(),
+  files: text('files', { mode: 'json' }).$type<KitFile[]>().notNull(),
+  parsed: text('parsed', { mode: 'json' }).$type<KitParsed | null>(),
+  errors: text('errors', { mode: 'json' }).$type<KitError[]>().notNull(),
+  createdAt: text('created_at').notNull(),
+});
+
+/** 공고마다 하나인 맞춤 이력서 묶음. 공고를 지우면 함께 지운다. */
+export const tailoredResumes = sqliteTable('tailored_resumes', {
+  id: integer('id').primaryKey({ autoIncrement: true }),
+  postingId: integer('posting_id').notNull().unique().references(() => postings.id, { onDelete: 'cascade' }),
+  createdAt: text('created_at').notNull(),
+});
+
+/** 맞춤본의 한 번 저장. source: recipe(코드 조립) / terms(공고 용어 맞추기) / revise(다듬기) / external(이력서 작업 공간 결과) */
+export const tailoredRevisions = sqliteTable(
+  'tailored_revisions',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    tailoredResumeId: integer('tailored_resume_id').notNull().references(() => tailoredResumes.id, { onDelete: 'cascade' }),
+    revNo: integer('rev_no').notNull(),
+    kitId: integer('kit_id').notNull().references(() => kits.id),
+    track: text('track').notNull(),
+    profileId: text('profile_id').notNull(),
+    profileName: text('profile_name').notNull(),
+    adjustments: text('adjustments', { mode: 'json' }).$type<{ id: string; label: string }[]>().notNull(),
+    source: text('source').$type<'recipe' | 'terms' | 'revise' | 'external'>().notNull(),
+    resumeMd: text('resume_md').notNull(),
+    careerMd: text('career_md').notNull(),
+    pendingAdjustments: text('pending_adjustments', { mode: 'json' }).$type<string[]>().notNull(),
+    changeReasons: text('change_reasons', { mode: 'json' }).$type<{ doc: 'resume' | 'career'; after: string; reason: string }[]>().notNull(),
+    warnings: text('warnings', { mode: 'json' }).$type<KitWarning[]>().notNull(),
+    notes: text('notes').notNull(),
+    userRequest: text('user_request'),
+    jobId: integer('job_id').references(() => aiJobs.id),
+    createdAt: text('created_at').notNull(),
+  },
+  (t) => [uniqueIndex('tailored_revisions_resume_rev_idx').on(t.tailoredResumeId, t.revNo)],
+);

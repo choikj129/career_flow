@@ -264,7 +264,7 @@ export function deletePosting(postingId: number, db: Db = getDb()): void {
     const jobs = tx
       .select()
       .from(aiJobs)
-      .where(and(eq(aiJobs.type, 'analyze_posting'), inArray(aiJobs.status, ['queued', 'running'])))
+      .where(and(inArray(aiJobs.type, ['analyze_posting', 'tailor_resume', 'revise_tailored']), inArray(aiJobs.status, ['queued', 'running'])))
       .all()
       .filter((j) => (j.payload as { postingId?: number } | null)?.postingId === postingId);
     if (jobs.some((j) => j.status === 'running')) throw new Error('작업이 끝난 뒤 삭제하세요');

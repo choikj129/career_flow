@@ -11,6 +11,7 @@ export const config = {
   browserProfileDir: join(dataDir, 'browser-profile'),
   backupDir: join(dataDir, 'backups'),
   documentsDir: join(dataDir, 'documents'),
+  kitDir: join(dataDir, 'kit'),
   claudeBin: process.env.CLAUDE_BIN ?? 'claude',
 };
 
@@ -21,6 +22,7 @@ export function ensureDataDirs(): void {
     config.aiWorkDir,
     config.browserProfileDir,
     config.backupDir,
+    config.kitDir,
     join(config.documentsDir, 'resume'),
     join(config.documentsDir, 'career'),
     join(config.documentsDir, 'portfolio'),
