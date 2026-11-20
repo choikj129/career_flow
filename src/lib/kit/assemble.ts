@@ -70,7 +70,7 @@ export function assemble(kit: KitGuide, base: { resumeMd: string; careerMd: stri
 
   // 주요 성과: 원래 번호(origIdx)를 따라다니게 해서 추가 조정이 "원래 번호 N"을 찾을 수 있게 한다.
   const achSec = findSection(resume, (t) => t.includes('주요 성과'));
-  let achOrder = [...profile.achievementOrder];
+  const achOrder = [...profile.achievementOrder];
   const moves: { n: number; k: number; label: string }[] = [];
   const sectionMoves: { what: string; target: string; label: string }[] = [];
   for (const id of recipe.adjustmentIds) {
