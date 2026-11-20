@@ -9,6 +9,7 @@ import { Modal } from "@/app/_components/Modal";
 import { useAction } from "@/app/_components/useAction";
 import { todayLocal } from "@/lib/domain/dates";
 import { SITE_IDS, SITE_LABELS, type SiteId } from "@/lib/domain/types";
+import { DateInput } from "@/app/_components/DateInput";
 
 /**
  * [지원 완료] 버튼과 작은 폼. docs/spec/screens.md 3.7
@@ -134,7 +135,7 @@ export function ApplyForm({
           >
             <div className="row">
               <label htmlFor="ap-date">지원일</label>
-              <input id="ap-date" type="date" required value={appliedAt} onChange={(e) => setAppliedAt(e.target.value)} />
+              <DateInput id="ap-date" required value={appliedAt} onChange={(e) => setAppliedAt(e.target.value)} />
             </div>
             <div className="row">
               <label htmlFor="ap-site">지원 사이트</label>

@@ -1,5 +1,8 @@
 import { groupDashboardRows, type DashboardGroup, type DashboardRow } from "@/lib/search/dashboard";
-import type { DashboardView } from "@/lib/search/dashboard-params";
+import Link from "next/link";
+import { dashboardHref, type DashboardParams } from "@/lib/search/dashboard-params";
+import { GROUP_PREVIEW, pageSlice } from "@/lib/search/paging";
+import { Pagination } from "./Pagination";
 import type { SiteId } from "@/lib/domain/types";
 import { RateText } from "./RateText";
 import { ApplicationTable } from "./ApplicationTable";
@@ -29,23 +32,36 @@ function Rate({ g }: { g: DashboardGroup }) {
 
 /** 대시보드 보기 4종(전체 / 사이트별 / 상태별 보드 / 이력서별). 검색·필터는 rows에 이미 적용되어 있다. */
 export function DashboardViews({
-  view,
+  params,
   rows,
   details,
   siteNotes,
   today,
 }: {
-  view: DashboardView;
+  params: DashboardParams;
   rows: DashboardRow[];
   details: Record<number, RecordDetail>;
   siteNotes: string[];
   today: string;
 }) {
+  const { view } = params;
+  /** 묶음·열에서 처음 GROUP_PREVIEW건만 보이고, 더 보기를 누르면(주소의 more) 그 묶음은 전부 */
+  const shown = <T,>(key: string, list: T[]) => (params.more.includes(`${view}:${key}`) ? list : list.slice(0, GROUP_PREVIEW));
+  const moreHref = (key: string) => dashboardHref({ ...params, more: [...params.more, `${view}:${key}`] });
+  const MoreLink = ({ k, hidden, unit }: { k: string; hidden: number; unit: string }) =>
+    hidden > 0 ? (
+      <div className="table-foot">
+        <Link className="more-link" href={moreHref(k)} replace scroll={false}>
+          {hidden}{unit} 더 보기
+        </Link>
+      </div>
+    ) : null;
   if (view === "all") {
+    const pg = pageSlice(rows, params.page);
     return (
       <div className="card table-card">
-        <ApplicationTable rows={rows} details={details} siteNotes={siteNotes} />
-        <div className="table-foot">총 {rows.length}건</div>
+        <ApplicationTable rows={pg.items} details={details} siteNotes={siteNotes} />
+        <Pagination pg={pg} params={params} />
       </div>
     );
   }
@@ -55,7 +71,9 @@ export function DashboardViews({
       key: g.key,
       label: g.key === "closed" ? "불합격·지원취소" : g.label,
       color: STATUS_COLUMN_COLORS[g.key],
-      rows: g.rows,
+      rows: shown(g.key, g.rows),
+      total: g.rows.length,
+      moreHref: g.rows.length > GROUP_PREVIEW && !params.more.includes(`status:${g.key}`) ? moreHref(g.key) : undefined,
     }));
     return <StatusBoard columns={columns} details={details} siteNotes={siteNotes} />;
   }
@@ -71,7 +89,8 @@ export function DashboardViews({
             count={g.rows.length}
             rate={<Rate g={g} />}
           >
-            <ApplicationTable rows={g.rows} details={details} siteNotes={siteNotes} showSite={false} />
+            <ApplicationTable rows={shown(g.key, g.rows)} details={details} siteNotes={siteNotes} showSite={false} />
+            <MoreLink k={g.key} hidden={g.rows.length - shown(g.key, g.rows).length} unit="건" />
           </Group>
         ))}
       </>
@@ -102,7 +121,8 @@ export function DashboardViews({
           );
         return (
           <Group key={g.key} storageKey={`resume:${g.key}`} chip={chip} count={g.rows.length} rate={<Rate g={g} />}>
-            <ApplicationTable rows={g.rows} details={details} siteNotes={siteNotes} />
+            <ApplicationTable rows={shown(g.key, g.rows)} details={details} siteNotes={siteNotes} />
+            <MoreLink k={g.key} hidden={g.rows.length - shown(g.key, g.rows).length} unit="건" />
           </Group>
         );
       })}

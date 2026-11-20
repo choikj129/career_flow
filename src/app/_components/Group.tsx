@@ -30,7 +30,7 @@ function writeOpen(key: string, open: boolean) {
   listeners.forEach((fn) => fn());
 }
 
-/** 접고 펴는 묶음. 펼침 상태는 이 브라우저에만 기억한다. 기본은 펼침. */
+/** 접고 펴는 묶음. 펼침 상태는 이 브라우저에만 기억한다. 기본은 접힘(머리만 보인다). */
 export function Group({
   storageKey,
   chip,
@@ -44,13 +44,13 @@ export function Group({
   rate: React.ReactNode;
   children: React.ReactNode;
 }) {
-  // 저장된 값은 브라우저에서만 읽는다(서버 렌더링과 첫 화면은 펼침).
+  // 저장된 값은 브라우저에서만 읽는다(서버 렌더링과 첫 화면은 접힘).
   const saved = useSyncExternalStore(
     subscribe,
     () => readOpen(storageKey),
     () => undefined,
   );
-  const open = saved ?? true;
+  const open = saved ?? false;
 
   return (
     <div className="group" data-open={open}>

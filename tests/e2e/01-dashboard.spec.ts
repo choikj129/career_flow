@@ -13,7 +13,7 @@ test.describe('대시보드', () => {
     for (const h of ['회사', '포지션', '사이트', '지원일', '상태', '제출한 이력서', '적합도']) {
       await expect(page.getByRole('columnheader', { name: h })).toBeVisible();
     }
-    await expect(page.getByText('총 11건')).toBeVisible();
+    await expect(page.getByText('전체 11건 중 1–11')).toBeVisible();
     await expect(page.locator('tbody tr.row-link').first()).toContainText('코어뱅크'); // 지원일 최신순
   });
 
@@ -87,14 +87,14 @@ test.describe('대시보드', () => {
     await expect(page.getByRole('tab', { name: '사이트별' })).toHaveAttribute('aria-selected', 'true');
   });
 
-  test('TC-DASH-11 묶음 접기는 이 브라우저에 기억', async ({ page }) => {
+  test('TC-DASH-11 묶음은 기본 접힘, 펼침은 이 브라우저에 기억', async ({ page }) => {
     await page.goto('/?view=site');
     const first = page.locator('.group').first();
-    await expect(first).toHaveAttribute('data-open', 'true');
+    await expect(first).toHaveAttribute('data-open', 'false'); // 기본은 접힘(머리만 보인다)
     await first.locator('.group-head').click();
-    await expect(first).toHaveAttribute('data-open', 'false');
+    await expect(first).toHaveAttribute('data-open', 'true');
     await page.reload();
-    await expect(page.locator('.group').first()).toHaveAttribute('data-open', 'false');
+    await expect(page.locator('.group').first()).toHaveAttribute('data-open', 'true');
   });
 
   test('TC-DASH-12 보기 전환: 상태별 보드 6열', async ({ page }) => {

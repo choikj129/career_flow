@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { ApplicationStatus } from "@/lib/domain/types";
@@ -9,7 +10,8 @@ import { RecordPanel, type RecordDetail } from "./RecordPanel";
 import { SiteBadge } from "./SiteBadge";
 import { StatusForm } from "./StatusForm";
 
-export type BoardColumn = { key: string; label: string; color: string; rows: DashboardRow[] };
+/** rows는 지금 보이는 카드, total은 열 전체 건수, moreHref가 있으면 "n장 더 보기" 링크를 보인다 */
+export type BoardColumn = { key: string; label: string; color: string; rows: DashboardRow[]; total: number; moreHref?: string };
 
 const DROP_STATUS: Record<string, ApplicationStatus> = {
   applied: "applied",
@@ -62,9 +64,9 @@ export function StatusBoard({
           >
             <div className="col-head">
               <span className="label-chip">{c.label}</span>
-              <span className="n">{c.rows.length}</span>
+              <span className="n">{c.total}</span>
             </div>
-            {c.rows.length === 0 && (
+            {c.total === 0 && (
               <p className="faint small" style={{ padding: "6px 4px" }}>
                 없음
               </p>
@@ -99,6 +101,11 @@ export function StatusBoard({
                 </div>
               </button>
             ))}
+            {c.moreHref && (
+              <Link className="more-link" href={c.moreHref} replace scroll={false}>
+                {c.total - c.rows.length}장 더 보기
+              </Link>
+            )}
           </section>
         ))}
       </div>

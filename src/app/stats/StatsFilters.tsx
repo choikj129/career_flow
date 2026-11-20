@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { SITE_IDS, SITE_LABELS } from "@/lib/domain/types";
 import { statsHref, type StatsParams } from "@/lib/stats/params";
+import { DateInput } from "@/app/_components/DateInput";
 
 const PERIOD_LABELS: Record<StatsParams["period"], string> = {
   all: "기간: 전체",
@@ -46,9 +47,9 @@ export function StatsFilters({ params }: { params: StatsParams }) {
       </select>
       {params.period === "custom" && (
         <div className="period-custom">
-          <input type="date" className="in-sm" aria-label="시작일" value={params.from ?? ""} onChange={(e) => go({ from: e.target.value || undefined })} />
+          <DateInput  className="in-sm" aria-label="시작일" value={params.from ?? ""} onChange={(e) => go({ from: e.target.value || undefined })} />
           <span className="muted">~</span>
-          <input type="date" className="in-sm" aria-label="종료일" value={params.to ?? ""} onChange={(e) => go({ to: e.target.value || undefined })} />
+          <DateInput  className="in-sm" aria-label="종료일" value={params.to ?? ""} onChange={(e) => go({ to: e.target.value || undefined })} />
         </div>
       )}
     </div>
