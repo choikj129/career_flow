@@ -17,8 +17,8 @@
   --site-remember: #111827; --site-wanted: #3366FF; --site-groupby: #16A34A; --site-jobkorea: #1E3A8A; --site-homepage: #8C7B6B; --site-other: #5B6475;
 }
 /* 사이트 표시: 색 점 + 이름(상태 배지는 채운 알약이라 모양으로도 구분된다) */
-.site { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 13.5px; color: var(--c, var(--site-other)); white-space: nowrap; }
-.site::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex: none; }
+.site { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 13.5px; color: var(--ink); white-space: nowrap; }
+.site::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--c, var(--site-other)); flex: none; }
 .site.remember { --c: var(--site-remember); } .site.wanted { --c: var(--site-wanted); } .site.groupby { --c: var(--site-groupby); } .site.jobkorea { --c: var(--site-jobkorea); } .site.homepage { --c: var(--site-homepage); } .site.other { --c: var(--site-other); }
 .site.lg { font-size: 15px; }
 .site.lg::before { width: 10px; height: 10px; }
@@ -287,14 +287,14 @@ details summary { cursor: pointer; font-weight: 600; margin: 22px 0 10px; }
 .group-head .n { color: var(--sub); font-weight: 600; }
 .group-head .rate { margin-left: auto; font-size: 13px; color: var(--sub); }
 .group-head .rate b { color: var(--ink); }
-.label-chip { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 6px; font-weight: 700; font-size: 14px; color: var(--c, var(--ink)); background: color-mix(in srgb, var(--c, var(--ink)) 11%, white); }
+.label-chip { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 6px; font-weight: 700; font-size: 14px; color: var(--ink); background: color-mix(in srgb, var(--c, var(--ink)) 11%, white); box-shadow: inset 3px 0 0 var(--c, var(--ink)); }
 .label-chip.remember { --c: var(--site-remember); } .label-chip.wanted { --c: var(--site-wanted); } .label-chip.groupby { --c: var(--site-groupby); } .label-chip.jobkorea { --c: var(--site-jobkorea); } .label-chip.homepage { --c: var(--site-homepage); } .label-chip.other { --c: var(--site-other); }
 .group-body { display: none; margin: 2px 0 10px 22px; }
 .group[open-g] .group-body { display: block; }
 .res-tag { font-size: 12.5px; font-weight: 600; color: var(--sub); border: 1px solid var(--line-strong); border-radius: 5px; padding: 1px 6px; white-space: nowrap; }
 .res-tag.tailored { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 35%, white); }
 /* 상태별 보드 */
-.board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(180px, 1fr); gap: 12px; overflow-x: auto; padding-bottom: 8px; }
+.board { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(148px, 1fr); gap: 10px; overflow-x: auto; padding-bottom: 8px; }
 .col { border-radius: var(--r); padding: 10px; background: color-mix(in srgb, var(--cc) 6%, var(--bg)); min-height: 220px; }
 .col-head { display: flex; align-items: center; gap: 8px; padding: 2px 4px 10px; }
 .col-head .label-chip { --c: var(--cc); }
@@ -353,23 +353,28 @@ textarea.in { height: auto; min-height: 70px; padding: 10px 12px; resize: vertic
 .steps .on { color: var(--ink); font-weight: 700; }
 .steps i { width: 24px; height: 1px; background: var(--line-strong); }
 .drop { border: 1.5px dashed var(--line-strong); border-radius: var(--r); padding: 22px; text-align: center; color: var(--sub); background: var(--bg); }
-/* 직접 입력·가져오기 검토 표: 칸마다 최소 폭을 두고, 넘치면 표를 감싼 영역에서만 가로로 민다(페이지는 안 밀린다). */
-.review-wrap { overflow-x: auto; margin-top: 12px; }
-.review { min-width: 100%; border-collapse: collapse; }
-.review th, .review td { padding: 8px 6px; text-align: left; white-space: nowrap; }
-/* 표 칸의 min-width는 자동 레이아웃에서 무시되므로, 안의 입력·선택 요소에 최소 폭을 준다. */
-.review { width: max-content; min-width: 100%; }
-.review td:nth-child(2) .in { min-width: 180px; }
-.review td:nth-child(3) .in { min-width: 200px; }
-.review td:nth-child(4) .in { min-width: 148px; }
-.review td:nth-child(5) .in { min-width: 148px; }
-.review td:nth-child(6) .in { min-width: 150px; }
-.review td:nth-child(7) .in { min-width: 118px; }
-.review td:nth-child(8) .in { min-width: 150px; }
-.doc-pick { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
-.doc-pick > span { width: 66px; font-size: 12px; color: var(--sub); flex: none; }
-.review textarea.in { min-height: 34px; }
+/* 직접 입력·가져오기 검토 표: 한 행을 두 줄 격자로 놓아 폭 1024에서도 가로 스크롤 없이 모든 칸이 보인다.
+   1줄: 체크·회사·포지션·사이트·지원일·상태·안내·삭제 / 2줄: 서류 3개(가로) + 메모 */
+.review-wrap { margin-top: 12px; }
+.review { display: block; width: 100%; border-collapse: collapse; }
+.review thead, .review tbody { display: block; }
+.review tr { display: grid; grid-template-columns: 28px minmax(130px, 1.3fr) minmax(150px, 1.6fr) 136px 140px 160px 84px 36px; column-gap: 8px; align-items: start; }
+.review tbody tr { padding: 8px 0; border-top: 1px solid var(--line); }
+.review th, .review td { padding: 0; text-align: left; min-width: 0; }
+.review th { font-weight: 600; font-size: 13px; color: var(--sub); padding-bottom: 6px; }
+.review th:nth-child(n+7) { display: none; }
+.review td:nth-child(1) { padding-top: 8px; }
+.review td:nth-child(7) { grid-column: 2 / 6; grid-row: 2; display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+.review td:nth-child(8) { grid-column: 6 / 9; grid-row: 2; margin-top: 6px; }
+.review td:nth-child(9) { grid-column: 7; grid-row: 1; padding-top: 8px; }
+.review td:nth-child(10) { grid-column: 8; grid-row: 1; }
+.review .in { min-width: 0; }
+.doc-pick { display: flex; align-items: center; gap: 6px; margin: 0; }
+.doc-pick > span { font-size: 12px; color: var(--sub); flex: none; white-space: nowrap; }
+.doc-pick select.in { width: 118px; }
+textarea.autotext { resize: none; overflow: hidden; height: 34px; min-height: 34px; padding: 6px 12px; line-height: 20px; }
 .review .in { height: 34px; }
+.review textarea.in:not(.autotext) { min-height: 34px; height: 34px; }
 .review select.in { padding-right: 24px; }
 .review tr.dupe td { background: #FAFBFC; color: var(--faint); }
 .review .in.need { border: 2px solid var(--mark); }
@@ -486,3 +491,6 @@ textarea.in-sm { height: auto; min-height: 64px; padding: 8px 10px; }
 /* 통계 표: 숫자·날짜 칸은 줄바꿈하지 않는다. 표가 칸보다 넓으면 패널 안에서 가로로 민다. */
 .stats-table th, .stats-table td:not(:first-child) { white-space: nowrap; }
 .stat-panel { overflow-x: auto; }
+
+/* 날짜·숫자는 줄바꿈하지 않는다(표 공통) */
+.nw { white-space: nowrap; }

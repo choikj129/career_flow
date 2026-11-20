@@ -185,50 +185,62 @@ test.describe.serial('지난 기록 직접 입력', () => {
     await expect(stats.getByText('내지 않은 지원')).toBeVisible();
   });
 
-  test('TC-PAST-E2E-09 폭 1024에서도 직접 입력 표의 선택·입력 칸(회사·포지션·사이트·지원일·상태·서류) 글자가 잘리지 않는다', async ({ page }) => {
+  test('TC-PAST-E2E-09 폭 1024: 직접 입력 표에 가로 스크롤이 없고 모든 칸 글자가 잘리지 않는다', async ({ page }) => {
     put('portfolio', '포트폴리오_20261017.pdf');
     put('career', '경력기술서_20261102.pdf');
     await page.setViewportSize({ width: 1024, height: 800 });
     await openManual(page, '원티드');
-    await expect(page.locator('.doc-pick').first()).toContainText('이력서'); // 종류 이름은 select 왼쪽 라벨
     const r = rows(page).first();
-    await r.getByLabel('회사').fill('아주긴테스트회사 코리아');
-    await r.getByLabel('포지션').fill('[CS] Backend Engineer (경력)');
+    await r.getByLabel('회사').fill('아주긴테스트회사 코리아 주식회사 (Very Long Test Company Co., Ltd.)');
+    await r.getByLabel('포지션').fill('[CS] Senior Backend Engineer (경력 5년 이상, 플랫폼)');
     await r.getByLabel('지원일').fill('2026-11-20');
     await r.getByLabel('상태').selectOption('assignment'); // 가장 긴 상태 이름
-    // 서류 select는 모든 옵션 글자(모름/없음/날짜), 사이트·상태 select는 모든 옵션 글자, 회사·포지션은 입력한 글자
-    const clipped = await page.evaluate(() => {
-      const ctxFor = (el: Element) => {
+    await expect(page.locator('.doc-pick').first()).toContainText('이력서'); // 종류 이름은 select 왼쪽 라벨
+    const problems = await page.evaluate(() => {
+      const bad: string[] = [];
+      const row = document.querySelector('table.review tbody tr') as HTMLElement;
+      const wrap = document.querySelector('.review-wrap') as HTMLElement;
+      if (document.documentElement.scrollWidth > document.documentElement.clientWidth) bad.push('페이지 가로 스크롤');
+      if (wrap.scrollWidth > wrap.clientWidth + 1) bad.push('표 영역 가로 스크롤');
+      // 모든 칸이 표 영역 안에 있다(서류·메모 포함)
+      const wr = wrap.getBoundingClientRect();
+      for (const el of Array.from(row.querySelectorAll('select, input, textarea')) as HTMLElement[]) {
+        const b = el.getBoundingClientRect();
+        if (b.right > wr.right + 1 || b.left < wr.left - 1) bad.push(`칸이 영역 밖: ${el.getAttribute('aria-label')}`);
+      }
+      // 회사·포지션: 줄바꿈으로 늘어나 글자가 잘리지 않는다
+      for (const label of ['회사', '포지션']) {
+        const t = row.querySelector(`textarea[aria-label="${label}"]`) as HTMLTextAreaElement;
+        if (t.scrollHeight > t.clientHeight + 1) bad.push(`${label} 세로로 잘림`);
+        if (t.scrollWidth > t.clientWidth + 1) bad.push(`${label} 가로로 잘림`);
+      }
+      // 선택 칸·날짜: 가장 긴 글자가 칸 안에 들어간다
+      const measure = (el: HTMLElement, text: string, extra: number, name: string) => {
         const cs = getComputedStyle(el);
         const c = document.createElement('canvas').getContext('2d')!;
         c.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
-        return { c, cs };
-      };
-      const bad: string[] = [];
-      const check = (el: HTMLElement, text: string, extra: number, name: string) => {
-        const { c, cs } = ctxFor(el);
         const inner = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - extra;
         if (c.measureText(text).width > inner + 0.5) bad.push(`${name}: "${text}" ${Math.round(c.measureText(text).width)} > ${Math.round(inner)}`);
       };
-      const row = document.querySelector('table.review tbody tr')!;
       for (const sel of Array.from(row.querySelectorAll('select')) as HTMLSelectElement[]) {
-        const label = sel.getAttribute('aria-label') ?? '';
-        const texts = ['사이트', '상태'].includes(label) ? Array.from(sel.options).map((o) => o.text) : [sel.selectedOptions[0].text];
-        for (const t of texts) check(sel, t, 20, label);
-        if (['이력서', '경력기술서', '포트폴리오'].includes(label)) {
-          for (const o of Array.from(sel.options)) check(sel, o.text, 20, label);
-        }
+        for (const o of Array.from(sel.options)) measure(sel, o.text, 0, sel.getAttribute('aria-label') ?? '');
       }
-      const date = row.querySelector('input[aria-label="지원일"]') as HTMLInputElement;
-      check(date, '2026-10-20', 28, '지원일'); // 달력 아이콘 자리
-      for (const label of ['회사', '포지션']) {
-        const input = row.querySelector(`input[aria-label="${label}"]`) as HTMLInputElement;
-        check(input, input.value, 0, label);
-      }
-      const wrapScroll = document.documentElement.scrollWidth > document.documentElement.clientWidth;
-      if (wrapScroll) bad.push('페이지가 가로로 스크롤됨');
+      measure(row.querySelector('input[aria-label="지원일"]') as HTMLElement, '2026-10-20', 28, '지원일'); // 달력 아이콘 자리
       return bad;
     });
-    expect(clipped).toEqual([]);
+    expect(problems).toEqual([]);
+  });
+
+  test('TC-PAST-E2E-10 대시보드·공고 상세의 지원일은 한 줄로 보인다', async ({ page }) => {
+    await page.setViewportSize({ width: 1024, height: 800 });
+    await page.goto('/');
+    const cell = page.locator('tbody tr.row-link td.nw').first();
+    await expect(cell).toBeVisible();
+    const oneLine = await cell.evaluate((el) => {
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      return getComputedStyle(el).whiteSpace === 'nowrap' && range.getClientRects().length === 1;
+    });
+    expect(oneLine).toBe(true);
   });
 });
