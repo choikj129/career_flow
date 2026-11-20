@@ -144,7 +144,8 @@ export function ImportReviewTable({
         </p>
       )}
 
-      <table className="review" style={{ marginTop: 12 }}>
+      <div className="review-wrap">
+      <table className="review">
         <thead>
           <tr>
             <th />
@@ -282,6 +283,7 @@ export function ImportReviewTable({
           })}
         </tbody>
       </table>
+      </div>
       {rows.length === 0 && <p className="muted" style={{ marginTop: 12 }}>행이 없습니다. 아래에서 추가하거나 처음부터 다시 하세요.</p>}
 
       <div className="toolbar" style={{ marginTop: 14 }}>
