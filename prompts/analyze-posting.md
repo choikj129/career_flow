@@ -8,6 +8,7 @@
 - 판단할 수 없는 값은 null 또는 빈 배열로 둔다. 마감일은 YYYY-MM-DD 형식이고, 상시 채용이면 null이다. 연도가 없으면 오늘 날짜 기준으로 추정한다.
 - gaps의 kind: 이력서에 근거가 있는데 드러나지 않으면 hidden, 근거가 없으면 missing. hidden이면 suggestion에 이력서의 어느 내용을 어떻게 드러낼지 적는다.
 - 희망 조건이 비어 있으면 fit.breakdown에 preferences 항목을 넣지 않고 preferenceMismatches는 빈 배열로 둔다.
+- 프로필 추천은 아래 "프로필 표"에 직무와 프로필이 있을 때만 profileRecommendation에 넣는다. 추천도(fitPercent)는 프로필마다 따로 매기는 0~100 정수다(합이 100일 필요 없다). 공고가 원하는 것과 프로필의 공고 단어·이름이 얼마나 맞는지로 판단한다. 근거 키워드(keywords)는 공고 본문에 실제로 있는 단어만 쓴다. 직무(track)는 표의 직무 이름 중 하나이고, profiles에는 그 직무의 프로필을 모두 넣는다. 추가 조정은 트리거 단어가 공고에 있으면 recommended를 true로 한다.
 - fit.score는 0~100의 정수다. breakdown의 각 reason은 근거를 한두 문장으로 적는다.
 - 모든 문장은 한국어로 쓴다.
 
@@ -26,3 +27,7 @@
 ## 희망 조건 (JSON)
 
 {{preferences_json}}
+
+## 프로필 표
+
+{{profile_table}}

@@ -271,6 +271,7 @@ async function AnalysisTab({
           basis={`${version ? `기본 이력서 v${version.versionNo} 기준 · ` : ""}${formatDateTime(shown.createdAt)} 분석`}
           staleNote={stale}
           aside={history}
+          tailoredHref={`/postings/${postingId}?tab=tailored`}
         />
       </>
     ) : (

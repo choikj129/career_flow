@@ -259,6 +259,7 @@ test('renderPrompt throws on missing variable and substitutes in a single pass',
     resume_json: 'R',
     preferences_json: 'P',
     today: 'T',
+    profile_table: 'X',
   });
   expect(out).toContain('{{resume_json}}');
 });

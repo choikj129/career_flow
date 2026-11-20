@@ -8,7 +8,9 @@ import { getLatestResume, getPreferences } from '@/lib/resume/repo';
 import { getModelFor } from '@/lib/settings';
 import { toCliJsonSchema } from './json-schema';
 import { runValidated } from './run-validated';
-import { AnalysisResult } from './schemas';
+import { getUsableKit } from '@/lib/kit/repo';
+import { normalizeProfileRec, profileTableMd } from '@/lib/kit/profile-table';
+import { analysisOutputSchema, type AnalysisResult } from './schemas';
 
 export const analyzePosting: JobHandler = async ({ jobId, payload, runner, workDir, db }) => {
   const postingId = Number(payload?.postingId);
@@ -26,24 +28,32 @@ export const analyzePosting: JobHandler = async ({ jobId, payload, runner, workD
   }
 
   const model = getModelFor('analyze_posting', db);
+  const kit = getUsableKit(db); // 키트가 있으면 프로필 추천을 함께 받는다(호출 수는 그대로)
+  const outSchema = analysisOutputSchema(kit != null);
   const prompt = renderPrompt('analyze-posting', {
     today: todayLocal(),
     posting_text: text,
     resume_json: JSON.stringify(resume.content, null, 2),
     preferences_json: JSON.stringify(getPreferences(db), null, 2),
+    profile_table: kit ? profileTableMd(kit.parsed) : '(키트 없음. profileRecommendation을 내지 않는다)',
   });
   const { data, sessionId, usage } = await runValidated(
     runner,
     {
       prompt,
-      jsonSchema: toCliJsonSchema(AnalysisResult),
+      jsonSchema: toCliJsonSchema(outSchema),
       model,
       tools: [],
       cwd: workDir,
       timeoutMs: JOB_TIMEOUT_MS.analyze_posting,
     },
-    AnalysisResult,
+    outSchema,
   );
-  saveAnalysis(postingId, resume.id, data, jobId, db);
-  return { result: { postingId, fitScore: data.fit.score }, sessionId, usage, model };
+  const { profileRecommendation, ...rest } = data;
+  const result: AnalysisResult = {
+    ...rest,
+    ...(kit && profileRecommendation ? { profileRecommendation: normalizeProfileRec(profileRecommendation, kit.parsed, text, kit.id) } : {}),
+  };
+  saveAnalysis(postingId, resume.id, result, jobId, db);
+  return { result: { postingId, fitScore: result.fit.score }, sessionId, usage, model };
 };
