@@ -57,12 +57,24 @@ test.describe.serial('지원 기록 페이지 나누기', () => {
     await expect(page.locator('.group').first().locator('tbody tr.row-link')).toHaveCount(COUNT);
   });
 
-  test('TC-PAGE-E2E-05 모든 날짜 입력은 lang=en-CA(요일 칸이 비어 "()"로 보이지 않게)', async ({ page }) => {
-    // 브라우저가 그리는 안쪽 글자는 DOM으로 읽을 수 없어, 요일 칸이 없는 형식을 고르는 lang 속성으로 확인한다.
-    await page.goto('/?period=custom');
-    for (const input of await page.locator('input[type="date"]').all()) {
-      await expect(input).toHaveAttribute('lang', 'en-CA');
-    }
-    expect(await page.locator('input[type="date"]').count()).toBeGreaterThan(0);
+  test('TC-PAGE-E2E-05 날짜 칸은 YYYY-MM-DD 텍스트 + 달력 버튼, "()"가 보이지 않는다', async ({ page }) => {
+    await page.goto('/import');
+    await page.getByLabel('원티드', { exact: true }).check();
+    await page.getByRole('button', { name: '표에 직접 입력' }).click();
+    await page.waitForURL(/manual=1/);
+    const date = page.locator('table.review tbody tr').first().getByLabel('지원일');
+    await date.fill('20261120'); // 숫자만 쳐도 하이픈이 들어간다
+    await expect(date).toHaveValue('2026-11-20');
+    const shown = await date.inputValue();
+    expect(shown).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(shown).not.toContain('(');
+    await expect(date).toHaveAttribute('type', 'text');
+    await expect(page.getByRole('button', { name: '달력 열기' }).first()).toBeVisible();
+    // 숨긴 달력 입력은 탭 순서에 없다
+    await expect(page.locator('input.date-input-picker').first()).toHaveAttribute('tabindex', '-1');
+    // 잘못된 날짜는 표시되고 등록을 막는다
+    await date.fill('20261345');
+    await expect(date).toHaveValue('2026-13-45');
+    await expect(page.getByText(/지원일.*필요/)).toBeVisible();
   });
 });

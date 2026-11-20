@@ -605,4 +605,5 @@ AI 작업이 끝나면 `data/ai-work/<번호>/`를 바로 지운다. 올린 이�
 | ID | 대상 | 기대 결과 | 테스트 위치 |
 |---|---|---|---|
 | TC-PAGE-01~05 | `pageSlice`·`parsePage`·`parseMore`·`pageNumbers`·`selectVisibleRows`, 주소 `page`·`more` | 50건씩, 51건이면 2페이지, 범위 밖 page는 마지막 페이지, 묶음·열은 20건 + 더 보기 | `tests/paging.test.ts`, `tests/dashboard-params.test.ts` |
-| TC-PAGE-E2E-01~05 | 2페이지 이동, 범위 밖 page, 필터 변경 시 1페이지, 사이트별 기본 접힘·20건·더 보기, 날짜 입력 lang | `tests/e2e/14-paging.spec.ts` (작성만, 검증 단계에서 실행) |
+| TC-PAGE-E2E-01~05 | 2페이지 이동, 범위 밖 page, 필터 변경 시 1페이지, 사이트별 기본 접힘·20건·더 보기, 날짜 입력(텍스트 + 달력 버튼, "(" 없음, 숫자만 쳐도 하이픈, 잘못된 날짜 표시) | `tests/e2e/14-paging.spec.ts` (작성만, 검증 단계에서 실행) |
+| TC-DATE-01 | `formatDateText`: 숫자만 쳐도 YYYY-MM-DD, 다른 글자 버림, 8자리 초과 자름 | `tests/date-input.test.ts` |

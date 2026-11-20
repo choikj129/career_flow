@@ -215,7 +215,7 @@ test.describe.serial('지난 기록 직접 입력', () => {
         if (t.scrollWidth > t.clientWidth + 1) bad.push(`${label} 가로로 잘림`);
       }
       // 선택 칸·날짜: 가장 긴 글자가 칸 안에 들어간다. 실제 렌더와 맞추려고 같은 글꼴의 span을 만들어 offsetWidth로 잰다.
-      // 칸 안쪽 글자 공간 = clientWidth(테두리 제외) - 좌우 padding - 화살표(select 20, 달력 아이콘 28)
+      // 칸 안쪽 글자 공간 = clientWidth(테두리 제외) - 좌우 padding - 화살표(select 20)
       const textWidth = (el: HTMLElement, text: string) => {
         const cs = getComputedStyle(el);
         const span = document.createElement('span');
@@ -235,7 +235,7 @@ test.describe.serial('지난 기록 직접 입력', () => {
       for (const sel of Array.from(row.querySelectorAll('select')) as HTMLSelectElement[]) {
         for (const o of Array.from(sel.options)) measure(sel, o.text, 20, sel.getAttribute('aria-label') ?? '');
       }
-      measure(row.querySelector('input[aria-label="지원일"]') as HTMLElement, '2026-10-20', 28, '지원일');
+      measure(row.querySelector('input[aria-label="지원일"]') as HTMLElement, '2026-10-20', 0, '지원일'); // 달력 버튼은 padding-right 안
       // 메모 칸: 비어 있어도 세로로 잘리지 않는다
       const memo = row.querySelector('textarea[aria-label="메모"]') as HTMLTextAreaElement;
       if (memo.scrollHeight > memo.clientHeight + 1) bad.push('메모 세로로 잘림');
