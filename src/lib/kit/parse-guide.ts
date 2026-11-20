@@ -89,7 +89,8 @@ export function parseGuide(md: string): { guide: KitGuide | null; errors: KitErr
       else {
         const names = rest.split('·').map((x) => /^\d+\s+(.*)$/.exec(x.trim())?.[1]?.trim() ?? '');
         if (names.some((n) => !n)) err(`"번호표" 구획(${kind})`, `"1 이름 · 2 이름" 모양이 아닙니다: ${rest}`);
-        else (kind === '주요 성과' ? (cur.achievements = names) : (cur.chapters = names));
+        else if (kind === '주요 성과') cur.achievements = names;
+        else cur.chapters = names;
       }
     }
   }

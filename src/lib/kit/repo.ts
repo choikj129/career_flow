@@ -27,7 +27,6 @@ export type KitRow = {
 /** 경로 부분과 제어 문자를 버린 파일 이름 */
 function safeName(name: string): string {
   const base = name.split(/[\\/]/).pop() ?? '';
-  // eslint-disable-next-line no-control-regex
   return base.replace(/[\u0000-\u001f]/g, '').trim();
 }
 
