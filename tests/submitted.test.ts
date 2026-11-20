@@ -392,6 +392,20 @@ describe('dashboard rows and groups (TC-SUBMIT-04·05)', () => {
     void rev;
   });
 
+  test('a base record whose version row is gone falls back to the file label, or unknown', () => {
+    const db = makeTestDb();
+    const dir = docsDirWith({});
+    const a = analyzed(db);
+    const b = analyzed(db);
+    const ia = markApplied({ postingId: a.postingId, appliedAt: '2026-11-05' }, db, dir);
+    const ib = markApplied({ postingId: b.postingId, appliedAt: '2026-11-04' }, db, dir);
+    db.update(applications).set({ submittedResume: { kind: 'base', versionId: 999 }, submittedDocs: { resume: '이력서_20261102.pdf', career: null, portfolio: null } }).where(eq(applications.id, ia)).run();
+    db.update(applications).set({ submittedResume: { kind: 'base', versionId: 998 } }).where(eq(applications.id, ib)).run();
+    const rows = searchApplications({}, db);
+    expect(rows.find((r) => r.applicationId === ia)).toMatchObject({ resumeLabel: '이력서 2026-11-02', resumeBaseVersionNo: null });
+    expect(rows.find((r) => r.applicationId === ib)!.resumeLabel).toBeNull();
+  });
+
   test('groupDashboardRows by resume: tailored -> kit tracks -> base -> files -> unknown', () => {
     const mk = (over: Partial<ReturnType<typeof searchApplications>[number]>) => ({
       applicationId: 0,

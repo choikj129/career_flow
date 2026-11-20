@@ -97,6 +97,7 @@ src/lib/
    ├─ health.ts              Claude Code 설치·로그인 확인
    ├─ queue.ts               작업 큐 + 워커 (한 번에 하나)
    ├─ prompt.ts              prompts/*.md 로더
+   ├─ fence.ts               외부 텍스트(공고 본문·서류)를 긴 울타리로 감싸기
    ├─ revision.ts            다듬기·추가 요청용 새 실행 프롬프트 (D-11)
    └─ tasks/                 작업 종류별 처리기와 출력 스키마
       ├─ index.ts            JobType → 처리기 등록

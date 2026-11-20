@@ -435,6 +435,7 @@ async function RecordTab({
     );
   }
   const multi = records.length > 1;
+  const revisionLabels = listRevisionLabels();
   return (
     <>
       {records.map((app, i) => (
@@ -444,7 +445,7 @@ async function RecordTab({
               {i === 0 ? "최근 지원" : "이전 지원"} · {app.appliedAt}
             </h2>
           )}
-          <RecordItem app={app} companyName={companyName} positionTitle={positionTitle} siteNotes={siteNotes} />
+          <RecordItem app={app} companyName={companyName} positionTitle={positionTitle} siteNotes={siteNotes} revisionLabels={revisionLabels} />
         </section>
       ))}
     </>
@@ -456,7 +457,9 @@ function RecordItem({
   companyName,
   positionTitle,
   siteNotes,
+  revisionLabels,
 }: {
+  revisionLabels: ReturnType<typeof listRevisionLabels>;
   app: NonNullable<ReturnType<typeof getApplication>>;
   companyName: string;
   positionTitle: string;
@@ -465,7 +468,7 @@ function RecordItem({
   const events = listStatusEvents(app.id).reverse();
   const sr = app.submittedResume;
   const resumeNo = sr.kind === "base" ? (getResumeVersion(sr.versionId)?.versionNo ?? null) : null;
-  const rev = sr.kind === "tailored" ? listRevisionLabels().get(sr.tailoredRevisionId) : undefined;
+  const rev = sr.kind === "tailored" ? revisionLabels.get(sr.tailoredRevisionId) : undefined;
   const resumeText = resumeLabel(sr, app.submittedDocs, { revNo: rev?.revNo, profile: rev?.profileId, profileName: rev?.profileName, versionNo: resumeNo }, "long");
   return (
     <>

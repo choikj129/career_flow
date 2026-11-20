@@ -6,6 +6,26 @@ import { join } from 'node:path';
 import { dataDir } from './paths';
 
 const docsDir = join(dataDir('seeded'), 'documents');
+
+/** 카드 안의 표가 카드 안쪽 폭 안에 들어가고(오른쪽 끝) 가로 스크롤도 없는지 */
+const tableFitsCard = (page: Page, testId: string) =>
+  page.getByTestId(testId).evaluate((card) => {
+    const table = card.querySelector('table')!;
+    const c = card.getBoundingClientRect();
+    const cs = getComputedStyle(card);
+    const inner = c.right - parseFloat(cs.paddingRight) - parseFloat(cs.borderRightWidth);
+    return { right: table.getBoundingClientRect().right, inner, scroll: card.scrollWidth - card.clientWidth, width: c.width };
+  });
+
+/** 표가 카드 안쪽 폭 안에 들어가고 가로 스크롤이 없을 때까지(크기 변경 직후 배치가 끝나길) 기다려 확인한다 */
+async function expectTableInCard(page: Page, testId: string) {
+  await expect
+    .poll(async () => {
+      const m = await tableFitsCard(page, testId);
+      return m.width > 100 && m.right <= m.inner + 1 && m.scroll <= 1;
+    }, { message: `${testId} 표가 카드 안에 들어가야 합니다` })
+    .toBe(true);
+}
 const put = (kind: string, name: string) => {
   mkdirSync(join(docsDir, kind), { recursive: true });
   writeFileSync(join(docsDir, kind, name), '%PDF-1.4 fake');
@@ -96,6 +116,15 @@ test.describe.serial('통계 화면', () => {
     await expect(page.getByText('서류 통과').first()).toBeVisible();
   });
 
+  test('TC-STATS-E2E-08 폭 1024: 서류 버전별·사이트별 표가 카드 안에 다 들어간다(기록 없는 시드)', async ({ page }) => {
+    await page.setViewportSize({ width: 1024, height: 900 });
+    await page.goto('/stats');
+    for (const id of ['stats-docs', 'stats-sites']) {
+      await expectTableInCard(page, id);
+    }
+    await page.setViewportSize({ width: 1280, height: 720 });
+  });
+
   test('TC-TAILOR-E2E-11 맞춤 이력서 효과·프로필별 표·서류 버전별 묶음, 기록이 없으면 안내', async ({ page }) => {
     const tailoredCard = page.getByTestId('stats-tailored');
     // 1) 맞춤·기본 서류 기록이 없을 때
@@ -149,6 +178,9 @@ test.describe.serial('통계 화면', () => {
         await expect(profiles.locator('tbody tr').nth(1).locator('td').nth(1)).toHaveText('2');
         await expect(profiles.locator('tbody tr').nth(1).locator('td').nth(7)).toHaveText('2'); // 그중 맞춤
         await expect(profiles.locator('tbody tr').nth(0).locator('td').nth(7)).toHaveText('0');
+        for (const id of ['stats-docs', 'stats-sites']) {
+          await expectTableInCard(page, id);
+        }
         // 잘리지 않고 한글이 낱말 중간에서 끊기지 않는다(긴 이름은 카드 안에서 줄바꿈)
         const fits = await tailoredCard.evaluate((el) => el.scrollWidth <= el.clientWidth + 1);
         expect(fits).toBe(true);

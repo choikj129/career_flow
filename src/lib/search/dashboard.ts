@@ -126,12 +126,13 @@ export function searchApplications(
       status: a.status,
       interviewRound: a.interviewRound,
       fitScore: a.postingId != null ? (fitByPosting.get(a.postingId) ?? null) : null,
-      resumeLabel: resumeLabel(
-        sr,
-        a.submittedDocs,
-        { revNo: rev?.revNo, profile: rev?.profileId, profileName: rev?.profileName, versionNo },
-        'short',
-      ),
+      // 예전 기록(base)인데 버전 행이 없으면 파일 라벨(없으면 모름)로
+      resumeLabel:
+        sr.kind === 'base' && versionNo == null
+          ? resumeDocFile
+            ? docLabel(resumeDocFile)
+            : null
+          : resumeLabel(sr, a.submittedDocs, { revNo: rev?.revNo, profile: rev?.profileId, profileName: rev?.profileName, versionNo }, 'short'),
       resumeBaseVersionNo: versionNo,
       tailored: sr.kind === 'tailored',
       resumeKitTrack: sr.kind === 'kit' ? sr.track : null,
