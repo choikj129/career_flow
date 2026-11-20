@@ -1,50 +1,72 @@
-# Career Flow 3단계(맞춤 이력서 + PDF) 구현 계획
+# Career Flow 3단계(맞춤 이력서: 프로필 방식 + PDF) 구현 계획
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-- 상태: 재설계 (2026-11-20). 처음 계획(2026-11-16)을 지금 코드(1·2단계, 지난 기록·서류 파일, 과제·코딩테스트, 통계)에 맞춰 고쳤다. 작업 기록: [docs/work/tailored-resume.md](../work/tailored-resume.md)
-- 이 계획은 **D-23·D-24·D-25의 추천안**을 기준으로 쓴다(작업 기록 "정할 것 초안"). 다른 선택지면 아래 "선택지별 차이"대로 바꾼다.
-  - D-23 a: [지원 완료]가 실제로 낸 서류(이력서·경력기술서·포트폴리오)를 기록한다. 맞춤본이 있으면 이력서 칸 기본값은 맞춤본.
-  - D-24 a: 통계에 "맞춤 이력서 효과" 칸(맞춤본 / 맞춤 안 함 비교)을 더한다.
-  - D-25 a: 맞춤본 PDF는 파일로 보관하지 않는다. 리비전 내용으로 그때그때 다시 만든다.
+- 상태: **재설계 1** (2026-11-20). 작업 기록: [docs/work/tailored-resume.md](../work/tailored-resume.md) "재설계 1"
+- 결정됨: D-23 a(지원 완료 때 실제로 낸 서류 기록), D-24 a(통계 "맞춤 이력서 효과"), D-25 a(맞춤본 PDF 파일 보관 안 함, 다시 만듦)
+- 이 계획은 **D-26~D-29 추천안**을 기준으로 쓴다(결정 대기). 다른 선택지면 아래 "선택지별 차이"대로 바꾼다.
+  - D-26 a: 맞춤 이력서를 **프로필 방식**으로 만든다. 사용자의 기본 서류(직무별 이력서·경력기술서 md)에 프로필 레시피를 앱 코드가 적용하고, AI는 허용 범위 안의 공고 용어 맞추기와 다듬기만 한다. 처음 설계의 "AI가 앱 기본 이력서(JSON)를 다시 씀", 사이트 이력서 수정 안내, 포트폴리오 활용 제안, 앱 기본 이력서 PDF는 뺀다.
+  - D-27 a: 서류 키트(가이드·작성 규칙·마스터스토리·기본 서류·PDF 스타일)는 앱 화면에서 파일을 골라 올린다. 올릴 때마다 새 키트 버전으로 보관한다.
+  - D-28 a: 프로필 추천은 규칙(공고 단어 세기)으로 하고 사용자가 확정한다. AI 호출 없음.
+  - D-29 a: 통계 "맞춤 이력서 효과"에 프로필별 서류 통과율 표를 더한다.
 
-**Goal:** 공고 화면에서 맞춤 이력서를 만들고(기준본 대비 변경 내역, 확인 필요 경고, 사이트 이력서 수정 안내, 포트폴리오 활용 제안), 대화로 다듬고, PDF로 받는다. 지원 완료 때 실제로 낸 서류(맞춤본 또는 이력서 파일, 경력기술서·포트폴리오 파일)를 기록하고, 통계에서 맞춤본으로 낸 지원과 아닌 지원의 서류 통과율을 비교한다. (기획서 7.4·7.5·7.9·7.10·9.4·11장)
+**Goal:** 공고마다 (1) 직무·프로필·추가 조정을 추천받아 확정하고, (2) 기본 서류에 레시피(자기소개 교체, 핵심 역량·주요 성과·경력기술서 장 순서, 개인 프로젝트 선택)를 적용한 맞춤본을 즉시 만들고, (3) 원하면 AI로 공고 용어를 허용 범위 안에서 맞추고 대화로 다듬고, (4) 자동 검사와 제출 전 체크리스트를 확인한 뒤, (5) 이력서·경력기술서 PDF(사용자 서류와 같은 스타일)와 md를 받는다. 지원 완료 때 프로필·추가 조정·맞춤 여부가 기록되고, 통계에서 맞춤 효과와 프로필별 서류 통과율을 본다.
 
-**Architecture:** 작업 큐에 `tailor_resume`, `revise_tailored`를 더한다. 맞춤본은 기본 이력서와 같은 `ResumeContent`로 받아 공고별 리비전으로 저장한다. 사실 칸(기본 정보·학력·자격, 경력의 회사·기간·직무, 프로젝트 이름·소속·기간·링크)은 **코드가 기준본 값으로 되돌린다.** 변경 내역은 AI 설명이 아니라 **코드가 기준본과 비교해 계산**하고, 기준본에 없는 수치·기술·경력은 코드 검사로 "확인 필요" 경고를 띄운다. PDF는 HTML 템플릿(한글 글꼴 내장)을 Playwright로 A4 출력한다(브라우저 전역 잠금 공유). 지원 기록의 `submitted_resume` JSON에 `tailored`·`file` 종류를 더하고, 제출 서류 칸(`submitted_docs`)을 [지원 완료]와 수정 창에서 채운다. DB에는 테이블 2개(`tailored_resumes`, `tailored_revisions`)만 더한다.
+**Architecture:**
+- **서류 키트**: 사용자가 올린 md 파일들을 `data/kit/<키트 id>/`에 보관하고, 가이드를 코드로 읽어 구조(직무·프로필·레시피·추가 조정·자기소개 후보·부품 번호표·표현 허용 범위·체크리스트)를 `kits` 테이블에 JSON으로 저장한다. 읽기 실패는 키트 화면에 항목별로 보인다.
+- **1단계 조립(코드, 즉시, 호출 0)**: 기본 서류 md를 제목·목록 단위로 읽어 레시피대로 부품을 바꾸고 순서를 바꾼다. 번호를 다시 매긴다. 구조로 옮길 수 없는 추가 조정은 "AI 또는 직접 할 일"로 남긴다.
+- **2단계 용어 맞추기(AI, 선택)**: 1단계 결과, 공고, 공고 단어, 허용 범위 표, 작성 규칙, 마스터스토리(사실 원본)를 넣고 문장 표현만 바꾼 md를 받는다. 다듬기도 같은 제약의 새 실행이다(D-11).
+- **자동 검사(코드)**: 1단계 결과와 비교해 새 수치(마스터스토리에 있음/없음 구분), 쓰면 안 되는 표현, 자기소개 변경(되돌림), 기술 스택 줄 변경, 구조(제목·성과 수·장 순서) 변경, 다른 회사 이름을 찾는다.
+- **PDF**: md → HTML(사용자 PDF 도구와 같은 구조: 제목·프로필 상자, 2단계 제목마다 섹션) + 키트의 CSS + 내장 글꼴 → Playwright A4. 파일은 보관하지 않는다(D-25).
+- 앱 안 기본 이력서(JSON)는 **공고 분석용으로만** 남는다.
 
-**Tech Stack:** 1·2단계와 동일. `pretendard`는 이미 설치되어 있다(`node_modules/pretendard/dist/web/static/woff2/Pretendard-{Regular,Bold}.woff2` 확인, 2026-11-20). 새 패키지 없음.
+**Tech Stack:** 1·2단계와 동일 + `marked`(md → HTML, 새 의존성 1개. 설치 전 버전·라이선스 확인). `pretendard`는 이미 설치됨.
 
-**Spec:** `docs/spec/product.md` 7.4·7.5·7.9·7.10·10·11장, 화면 `docs/spec/screens.md` 1장·3.3·3.4·3.7·3.9·3.10·5.2·5.3·5.5·10장, 구조 `docs/spec/architecture.md`
-**선행 계획:** `phase-1-2-mvp.md`, `phase-2-past-records.md`(Task 1~8), `phase-2-stats.md` (모두 완료)
+**Spec:** `docs/spec/product.md` 7.4·7.5·7.9·7.10·7.11·10·11장, 화면 `docs/spec/screens.md` 1장·3.4·3.7·3.9·3.10·5.3·5.5·5.6·10장, 구조 `docs/spec/architecture.md`
+**선행 계획:** `phase-1-2-mvp.md`, `phase-2-past-records.md`, `phase-2-stats.md` (모두 완료)
 
 ## Global Constraints
 
-- 1·2단계 계획의 Global Constraints와 "시험 구현에서 확인된 사항", 지난 기록·통계 계획의 Global Constraints 전부 적용.
-- **기본 이력서는 절대 수정하지 않는다.** 맞춤본은 공고별 사본(리비전)으로만 저장한다.
-- **맞춤본은 기본 이력서에 없는 사실을 추가하지 않는다.** 표현 조정, 순서 변경, 강조, 축소만 허용한다. 지키는 방법은 셋이다.
-  1. 프롬프트 맨 위 규칙(Task 3)
-  2. 사실 칸을 기준본 값으로 되돌림(`normalizeTailored`, Task 2)
-  3. 기준본에 없는 수치·기술·경력·프로젝트를 "확인 필요"로 표시(`checkFabrication`, Task 2). 사이트 수정 안내와 포트폴리오 활용 문구의 수치도 검사한다.
-- 새 작업 종류: `tailor_resume`, `revise_tailored`. 시간 제한 각 300초, 도구 없음(`tools: []`), 기본 모델 `opus`(D-05).
-- (D-11) 다듬기는 이전 세션을 이어 붙이지 않는다(`resumeSessionId` 없음). 기준 이력서·공고·분석·현재 리비전·요청을 모두 넣은 새 실행이다. 형식 오류 재요청(`runValidated`)만 같은 세션을 쓴다.
-- `tailor_resume`은 언제나 **최신 기본 이력서**를 기준으로 새 리비전을 만든다(처음 만들기와 "최신 기준으로 다시 만들기"가 같은 작업). `revise_tailored`는 **최신 리비전의 기준 버전**을 그대로 쓴다. 변경 내역·경고는 항상 그 리비전의 기준 버전과 비교한다(리비전끼리 비교 아님).
-- PDF: A4, 여백 15mm, 한글 글꼴(Pretendard Regular/Bold, base64 내장). 템플릿 1종. 본문 CSS에 `word-break: keep-all; overflow-wrap: anywhere`(한글 낱말이 중간에서 끊기지 않게, 긴 영문·주소는 줄바꿈). 파일명 `이름_회사_포지션_YYYYMMDD.pdf`(경력기술서만이면 `_경력기술서` 접미사). Playwright 실행은 `src/lib/pdf/render.ts`에서만, `acquireBrowserLock`을 함께 쓴다(`.claude/rules/code-structure.md`).
-- (D-25 a) 맞춤본 PDF는 파일로 저장하지 않는다. `data/documents/`에 쓰지 않고, 서류 파일 목록(5.5)에 나오지 않는다.
-- (D-23 a) 지원 기록의 제출 서류는 사용자가 실제로 낸 것을 적는다. [지원 완료]는 지금처럼 "저장" 한 번이면 끝나야 한다(반목표: 입력이 늘지 않음). 모든 칸에 기본값을 채운다.
-- 실제 `claude` 호출: **개발·검증 중 0회.** 가짜 runner(Vitest)와 가짜 `claude`(E2E)만 쓴다. 실제 확인은 병합 뒤 사용자의 첫 실사용(TC-TAILOR-M1, opus 2회: 생성 1 + 다듬기 1)으로 한다.
-- 변경 내역 경로 표기(코드와 프롬프트가 같이 쓰는 약속):
-  `summary`, `careerNarrative`, `experiences.<id>`, `experiences.<id>.description`, `experiences.<id>.achievements`, `projects.<id>`, `projects.<id>.role`, `projects.<id>.achievements`, `projects.<id>.techStack`, `skills.<category>`, `order.experiences`, `order.projects`, `portfolio`
+- 1·2단계, 지난 기록, 통계 계획의 Global Constraints 전부 적용.
+- 앱은 데이터 폴더 밖(`D:\` 등)을 읽지 않는다. 서류 키트는 브라우저 파일 선택으로 **사용자가 올린 사본**만 쓴다(D-27 a).
+- **지어내기 금지**: 마스터스토리에 없는 사실·숫자를 만들지 않는다. 맞춤은 "부품 교체·순서 변경(코드)"과 "허용 범위 안의 용어 바꾸기(AI)"뿐이다. 지키는 방법:
+  1. 1단계는 코드가 하므로 새 문장이 생기지 않는다.
+  2. 2단계·다듬기 프롬프트 맨 위 규칙 + 작성 규칙·허용 범위 표·마스터스토리를 함께 넣는다.
+  3. 자동 검사(Task 3)가 결과를 1단계와 비교해 경고를 낸다. 자기소개는 AI가 바꿔도 1단계 값으로 되돌린다.
+- **개인 정보**: 키트 파일은 `data/` 아래에만 있다(git 제외). 테스트는 `tests/fixtures/kit/`의 **지어낸 예시 키트**만 쓴다. 사용자 파일 내용을 테스트·문서·프롬프트 파일에 옮기지 않는다.
+- 새 작업 종류: `tailor_resume`(공고 용어 맞추기), `revise_tailored`(다듬기). 각 300초, 도구 없음(`tools: []`), 기본 모델 opus(D-05).
+- (D-11) 다듬기는 이전 세션을 이어 붙이지 않는 새 실행이다.
+- (D-25 a) 맞춤본 PDF·md는 파일로 저장하지 않는다. 리비전에 md 원문이 있어 언제든 다시 만든다. `data/documents/`에 쓰지 않는다.
+- (D-23 a) [지원 완료]는 저장 한 번으로 끝나야 한다. 모든 칸에 기본값이 있다.
+- 실제 `claude` 호출: **개발·검증 중 0회.** 실제 확인은 병합 뒤 사용자의 첫 실사용(TC-TAILOR-M1).
+- PDF 파일명은 키트 가이드의 규칙을 따른다: `{이름}_{이력서|경력기술서}_{직무}.pdf`(회사·버전·날짜 없음). 이름은 기본 이력서 md 첫 제목의 "·" 앞부분.
+
+## 서류 키트 형식 (앱이 읽는 규칙)
+
+키트 = 가이드 1개 + 작성 규칙 1개 + 마스터스토리 1개 + 직무마다 이력서·경력기술서 md 1개씩 + (선택) PDF 스타일 1개. 가이드는 아래 구획을 **제목 글자**로 찾는다(번호는 무관). 형식이 맞지 않으면 키트 화면에 어느 구획·어느 줄인지 보인다.
+
+| 구획 (제목에 들어갈 글자) | 앱이 읽는 것 |
+|---|---|
+| "기본 서류" 표 (열: 직무 / 이력서 / 경력기술서 / 기본 프로필) | 직무 목록, 직무별 기본 서류 파일 이름, 기본 프로필 id |
+| "번호표" (굵은 줄 `**{직무} 이력서**` 아래 `- 핵심 역량: ⓐ 이름 ⓑ 이름…`, `- 주요 성과: 1 이름 · 2 이름…`, `- 경력기술서: 1 이름 · …`, `- 개인 프로젝트: 이름 · 이름…`) | 부품 이름과 기본 순서 |
+| `### {직무}` 아래 프로필 표 (열: 프로필 / 공고 단어 / ① 자기소개 / ② 핵심 역량 / ③ 주요 성과 / ⑤ 경력기술서 / ④ 개인 프로젝트) | 프로필 id·이름·기본 여부(`(기본)`), 공고 단어(쉼표), 자기소개 후보 id, 순서(ⓐ… / 숫자), 개인 프로젝트 이름(쉼표) |
+| "추가 조정" 목록 (`- 공고에 **단어, 단어**가 있으면: 할 일`) | 직무별 추가 조정: 트리거 단어, 할 일 문장 |
+| "자기소개 후보" (`**{id} 이름**` 다음 인용 블록 `> …`) | 후보 id → 자기소개 본문(※ 줄 제외) |
+| "허용 범위" 표 (열: 원래 표현 / 바꿔도 되는 표현 / 쓰면 안 되는 표현) | 용어 바꾸기 허용·금지 목록 |
+| "체크리스트" (`- [ ] …`) | 제출 전 체크리스트 문장 |
+
+기본 서류 md에서 찾는 부품(제목 글자로 찾음): 이력서의 `자기소개`(2단계 제목 본문), `핵심 역량`(그 제목 아래 첫 단계 `-` 목록), `주요 성과`(첫 단계 `1.` 번호 목록, 들여쓴 하위 줄 포함), `개인 프로젝트`로 시작하는 2단계 제목 아래 3단계 제목들, `기술 스택` 2단계 구획. 경력기술서의 `## N. …` 장(하위 `### N-k.` 포함). 번호표 개수와 md에서 찾은 개수가 다르면 키트 오류. 개인 프로젝트 이름은 공백을 뺀 글자가 제목에 들어 있거나 이름의 낱말이 모두 제목에 들어 있으면 짝짓는다(짝이 0개나 2개 이상이면 오류).
 
 ## Review Focus
 
-1. **AI가 수치·기술을 지어냄** (기준본에 없는 "응답속도 40% 개선", 써 본 적 없는 "Kafka") — 저장은 하되 "확인 필요"로 눈에 띄게 표시. 사이트 수정 안내 문구에 섞인 수치도 잡는다. → Task 2 TC-TAILOR-05·06·08.
-2. **AI가 회사명·기간·직무를 바꿈** — 기준본 값으로 되돌리고 "되돌림"을 알린다. PDF에는 기준본 값만 나간다. → Task 2 TC-TAILOR-07.
-3. **다듬기가 현재 리비전을 무시함** — 새 실행에는 이전 대화가 없으므로 프롬프트에 현재 리비전 전체가 들어가야 한다. → Task 3 TC-TAILOR-10.
-4. **기본 이력서가 바뀜** — 리비전은 만든 때의 기준 버전에 묶이고, 화면에 "기준 이력서가 바뀌었습니다" 안내. → Task 3 TC-TAILOR-13, Task 6 E2E-04.
-5. **제출 서류가 틀리게 남음** — 맞춤본이 있으면 기본값이 맞춤본, 다른 공고의 맞춤본은 고를 수 없음, 가져온 기록의 종류(`imported`)는 유지. → Task 4 TC-SUBMIT-01~03.
-6. **한글·특수문자 파일명** (`홍길동_(주)토스/Server Dev`) — 경로 문자 제거, UTF-8 파일명. → Task 5 TC-PDF-03·04.
-7. **HTML 특수문자** (`<`, `&`, `"`) — PDF·미리보기에 글자로 나오고 태그로 해석되지 않음. 미리보기 응답에 CSP. → Task 5 TC-PDF-01·08.
-8. **글자 잘림·한글 낱말 끊김** — 폭 1440·1024에서 긴 회사명·기술명·제안 문구가 잘리지 않음. → Task 6 E2E-09.
+1. **AI가 숫자·사실을 더함** — 1단계 결과에 없는 수치는 경고(마스터스토리에도 없으면 "확인 필요", 있으면 "새로 넣은 사실"). → TC-KIT-20.
+2. **AI가 자기소개·구조·기술 스택을 바꿈** — 자기소개는 되돌림, 구조·기술 스택 변경은 경고. → TC-KIT-21·22.
+3. **"쓰면 안 되는 표현"** — 기본 서류에 없던 금지 표현이 생기면 경고. → TC-KIT-23.
+4. **가이드 형식이 조금 바뀜** — 읽기 실패를 조용히 넘기지 않고 키트 화면에 구획·줄을 보인다. 실패한 키트로는 맞춤본을 만들 수 없다. → TC-KIT-02·03.
+5. **레시피 적용 오류** — 순서·번호 다시 매기기·개인 프로젝트 선택이 번호표와 맞는지. 주요 성과의 하위 줄이 따라 움직이는지. → TC-KIT-10~13.
+6. **개인 정보가 저장소로 감** — 테스트 고정 데이터는 지어낸 예시뿐, 키트는 `data/` 아래뿐. → 검증 에이전트가 `tests/fixtures/kit/` 내용을 확인.
+7. **HTML 특수문자·경로 문자** — md 안의 `<script>`, 파일명의 `/` 등. → TC-PDF-01·03.
+8. **글자 잘림·한글 낱말 끊김** — 폭 1440·1024. → E2E-09.
 
 ---
 
@@ -52,556 +74,384 @@
 
 ```
 prompts/
-  tailor-resume.md                   (새) 맞춤 이력서 생성
-  revise-tailored.md                 (새) 다듬기 규칙 조각(buildRevisionPrompt의 extraRules)
+  tailor-resume.md                 (새) 공고 용어 맞추기
+  revise-tailored.md               (새) 다듬기 규칙 조각(buildRevisionPrompt의 extraRules)
 src/lib/
-  domain/types.ts                    (수정) JobType 2종, SubmittedResume 타입(여기로 옮김)
-  db/schema.ts                       (수정) tailoredResumes, tailoredRevisions, applications.submittedResume 타입
-  ai/queue.ts                        (수정) JOB_TIMEOUT_MS 2종
-  ai/prompt.ts                       (수정) PromptName 2종
-  ai/job-text.ts                     (수정) 진행 문구 2종
-  ai/revision.ts                     (새) buildRevisionPrompt (4단계도 사용, D-11)
-  ai/tasks/tailor-schemas.ts         (새) TailorOutput, SiteGuideItem, PortfolioTip, ChangeReason
-  ai/tasks/tailor-resume.ts          (새) tailorResume / reviseTailored 처리기
-  ai/tasks/index.ts                  (수정) 처리기 등록
-  settings.ts                        (수정) DEFAULT_MODELS 2종
-  resume/diff.ts                     (새) diffResume, arrayLineDiff, changePathLabel (순수, 클라이언트에서도 씀)
-  resume/fabrication.ts              (새) normalizeTailored, checkFabrication (순수)
-  tailored/repo.ts                   (새) 맞춤본·리비전 저장소, 작업 요청
-  applications/submitted.ts          (새) ResumeChoice, 기본값, 칸 변환, 라벨 (순수, 클라이언트에서도 씀)
-  applications/repo.ts               (수정) markApplied·updateApplication 제출 서류, resolveSubmittedResume
-  postings/repo.ts                   (수정) deletePosting이 맞춤 작업도 취소·거부
-  search/dashboard.ts                (수정) 맞춤 라벨, 이력서별 "맞춤 이력서" 묶음
-  stats/load.ts, stats/aggregate.ts  (수정) tailored 표시, 서류 버전별 맞춤 묶음, tailoredCompare
-  pdf/fonts.ts                       (새) fontFaceCss
-  pdf/template.ts                    (새) renderResumeHtml
-  pdf/render.ts                      (새) renderPdf, pdfFileName, contentDisposition
+  domain/types.ts                  (수정) JobType 2종, SubmittedResume 종류
+  db/schema.ts                     (수정) kits, tailoredResumes, tailoredRevisions
+  config.ts                        (수정) kitDir = data/kit
+  ai/queue.ts, ai/prompt.ts, ai/job-text.ts, settings.ts  (수정) 작업 종류 2개
+  ai/revision.ts                   (새) buildRevisionPrompt (D-11, 4단계도 사용)
+  ai/tasks/tailor-schemas.ts       (새) KitTailorOutput
+  ai/tasks/tailor-resume.ts        (새) tailorResume / reviseTailored 처리기
+  ai/tasks/index.ts                (수정)
+  kit/types.ts                     (새) KitParsed, Track, Profile, Adjustment, TermRule … (순수)
+  kit/parse-guide.ts               (새) 가이드 md → KitGuide (순수)
+  kit/md-doc.ts                    (새) 기본 서류 md → 블록, 부품 찾기, 다시 쓰기 (순수)
+  kit/assemble.ts                  (새) 레시피 적용(1단계) (순수)
+  kit/recommend.ts                 (새) 공고 단어 세기, 직무·프로필·추가 조정 추천 (순수)
+  kit/checks.ts                    (새) 자동 검사 (순수)
+  kit/line-diff.ts                 (새) 줄 단위 비교 (순수, 클라이언트에서도 씀)
+  kit/repo.ts                      (새) 키트 올리기·보관·최신 키트
+  tailored/repo.ts                 (새) 맞춤본·리비전, 조립, 작업 요청
+  applications/submitted.ts        (새) 제출 서류 선택 값·기본값·라벨 (순수)
+  applications/repo.ts             (수정) markApplied·updateApplication 제출 서류
+  postings/repo.ts                 (수정) deletePosting이 맞춤 작업도 취소·거부
+  search/dashboard.ts              (수정) 라벨, 이력서별 묶음
+  stats/load.ts, stats/aggregate.ts (수정) tailored·profile, 서류 버전별, tailoredCompare, byProfile
+  resume/diff.ts                   (새) diffResume (기본 이력서 버전 비교 전용, 5.3)
+  pdf/fonts.ts, pdf/md-html.ts, pdf/render.ts  (새)
 src/app/
-  api/pdf/tailored/[revisionId]/route.ts           (새) 맞춤본 PDF
-  api/pdf/tailored/[revisionId]/preview/route.ts   (새) 미리보기 HTML
-  api/pdf/base/[versionId]/route.ts                (새) 기본 이력서 PDF
-  api/jobs/active/route.ts           (수정) 맞춤 작업이면 ?tab=tailored로 링크
-  _actions/tailored.ts               (새) 생성·다듬기 액션
-  _actions/applications.ts           (수정) 제출 서류 입력
-  _actions/settings.ts               (수정) 모델 작업 종류 enum
-  _components/DocSelects.tsx         (새) 이력서·경력기술서·포트폴리오 select 3개 (지원 완료 창·수정 창 공용)
-  _components/SubmittedDocs.tsx      (수정) 맞춤본 줄
-  _components/ApplicationEditModal.tsx (수정) 제출 서류
-  _components/RecordPanel.tsx        (수정) 수정 창에 서류 목록 전달
-  _components/AnalysisView.tsx       (수정) 맞춤 이력서 조언 옆 탭 링크
-  postings/[id]/page.tsx             (수정) 탭 추가, 지원 기록 라벨
-  postings/[id]/TailoredTab.tsx      (새) 맞춤 이력서 탭(서버)
-  postings/[id]/TailoredControls.tsx (새) 리비전 선택·PDF 메뉴·복사·다듬기 입력(클라이언트)
-  postings/[id]/ApplyForm.tsx        (수정) 제출 서류
-  page.tsx                           (수정) 대시보드: 수정 창용 서류 목록
-  resume/page.tsx, resume/VersionHistory.tsx (수정) PDF 받기, 직전 버전과 비교
-  stats/page.tsx                     (수정) 맞춤 이력서 효과 칸, 서류 버전별 보조 글자
-  settings/ModelSelects.tsx, settings/page.tsx (수정) 모델 2종
+  api/kit/route.ts                 (새) 키트 올리기(POST, multipart)
+  api/tailored/[revisionId]/[doc]/route.ts     (새) doc = resume|career, ?format=pdf|md|html&inline=1
+  api/tailored/[revisionId]/posting-md/route.ts (새) 공고 요약 md 받기
+  api/kit/[kitId]/[track]/[doc]/route.ts       (새) 기본 서류 PDF 보기(지원 기록 [보기])
+  api/jobs/active/route.ts         (수정) 맞춤 작업이면 ?tab=tailored
+  _actions/tailored.ts             (새) 조립·용어 맞추기·다듬기 액션
+  _actions/applications.ts, _actions/settings.ts (수정)
+  _components/DocSelects.tsx       (새) 제출 서류 select 3개
+  _components/{SubmittedDocs,ApplicationEditModal,RecordPanel,AnalysisView}.tsx (수정)
+  postings/[id]/page.tsx, ApplyForm.tsx (수정)
+  postings/[id]/TailoredTab.tsx    (새, 서버) postings/[id]/ProfilePicker.tsx, TailoredControls.tsx (새, 클라이언트)
+  resume/KitTab.tsx                (새) 서류 키트 탭  resume/page.tsx, ResumeTabs.tsx, VersionHistory.tsx (수정)
+  page.tsx, stats/page.tsx, settings/{ModelSelects.tsx,page.tsx} (수정)
 tests/
-  tailored-repo.test.ts, resume-diff.test.ts, fabrication.test.ts, tailor-task.test.ts,
-  pdf.test.ts, submitted.test.ts (새) / stats.test.ts, search.test.ts, prompts.test.ts (수정)
-  fixtures/fake-claude-e2e.mjs (수정: 맞춤 이력서 응답), e2e/14-tailored.spec.ts (새)
-drizzle/0005_tailored.sql            (drizzle-kit generate --name tailored)
+  fixtures/kit/                    (새) 지어낸 예시 키트(가이드·기본 서류 2직무·규칙·마스터스토리·스타일)
+  kit-parse.test.ts, kit-assemble.test.ts, kit-recommend.test.ts, kit-checks.test.ts,
+  tailored-repo.test.ts, tailor-task.test.ts, submitted.test.ts, pdf.test.ts, resume-diff.test.ts (새)
+  stats.test.ts, search.test.ts, prompts.test.ts (수정), fixtures/fake-claude-e2e.mjs (수정), e2e/14-tailored.spec.ts (새)
+drizzle/0005_tailored.sql
 ```
 
-Task 묶음(PM 위임 단위 제안): A = Task 1·2, B = Task 3, C = Task 4·7, D = Task 5, E = Task 6. 순서대로 한다(E는 A~D 뒤).
+Task 묶음(PM 위임 단위 제안): A = Task 1·2, B = Task 3, C = Task 4, D = Task 5·8, E = Task 6, F = Task 7. 순서대로.
 
 ---
 
-### Task 1: 데이터 구조 (맞춤본 테이블, 작업 종류, 제출 이력서 종류)
+### Task 1: 데이터 구조
 
-**Files:**
-- Modify: `src/lib/domain/types.ts`, `src/lib/db/schema.ts`, `src/lib/ai/queue.ts`, `src/lib/settings.ts`, `src/lib/ai/job-text.ts`, `src/lib/postings/repo.ts`
-- Create: `src/lib/tailored/repo.ts`(저장 함수만, 작업 요청 함수는 Task 3), 마이그레이션 `drizzle/0005_tailored.sql`, `tests/tailored-repo.test.ts`
+**Files:** Modify `src/lib/domain/types.ts`, `src/lib/db/schema.ts`, `src/lib/config.ts`, `src/lib/ai/queue.ts`, `src/lib/settings.ts`, `src/lib/ai/job-text.ts`, `src/lib/postings/repo.ts`. Create 마이그레이션, `tests/tailored-repo.test.ts`(저장 부분).
 
 **Interfaces:**
 - `types.ts`
-  - `JobType`에 `'tailor_resume' | 'revise_tailored'`. `JOB_TIMEOUT_MS` 각 `300_000`, `DEFAULT_MODELS` 각 `'opus'`, `estimateText`: `'맞춤 이력서 작성 중… (보통 1~3분)'`, `'맞춤 이력서 다듬는 중… (보통 1~3분)'`.
-  - `SubmittedResume`를 여기로 옮기고 종류를 넓힌다(JSON 칸이라 마이그레이션 없음):
-
-    ```ts
+  - `JobType`에 `'tailor_resume' | 'revise_tailored'`. 시간 제한 각 300초, 기본 모델 opus. 진행 문구 `'공고 용어 맞추는 중… (보통 1~3분)'`, `'맞춤 이력서 다듬는 중… (보통 1~3분)'`.
+  - ```ts
     export type SubmittedResume =
-      | { kind: 'base'; versionId: number }              // 3단계 전 [지원 완료] 기록. 새로 만들지 않는다
-      | { kind: 'imported' }                             // 가져오기·직접 입력·메일 기록
-      | { kind: 'file' }                                 // 3단계 [지원 완료]: 이력서는 제출 서류 칸(파일 또는 모름)
-      | { kind: 'tailored'; tailoredRevisionId: number }; // 맞춤본(PDF든 사이트 수정이든)
+      | { kind: 'tailored'; tailoredRevisionId: number }                        // 맞춤본
+      | { kind: 'kit'; kitId: number; track: string; profileId: string; profileName: string } // 기본 서류 그대로(사이트 등록 이력서·기본 PDF)
+      | { kind: 'file' }                                                        // 이력서 파일(제출 서류 칸) 또는 모름
+      | { kind: 'imported' }                                                    // 가져오기·직접 입력·메일 기록
+      | { kind: 'base'; versionId: number };                                    // 3단계 전 [지원 완료]. 새로 만들지 않는다
     ```
-- `schema.ts`
-  - `tailoredResumes`: `id`, `postingId`(fk postings, **unique**, **on delete cascade**, D-02), `createdAt`
-  - `tailoredRevisions`: `id`, `tailoredResumeId`(fk, on delete cascade), `revNo`(int), `baseResumeVersionId`(fk resume_versions), `content`(json `ResumeContent`), `changes`(json `ResumeChange[]`), `changeReasons`(json `ChangeReason[]`), `warnings`(json `FabricationWarning[]`), `siteGuide`(json `SiteGuideItem[]`), `portfolioTips`(json `PortfolioTip[]`), `notes`(text, not null, 빈 문자열 허용), `userRequest`(text, null = 처음 생성·다시 만들기), `jobId`(fk ai_jobs), `createdAt`. 유일: (`tailoredResumeId`, `revNo`). 인덱스: `tailoredResumeId`.
-  - `applications.submittedResume`의 `$type<SubmittedResume>()`.
-  - 처음 계획의 `tailoredResumes.baseResumeVersionId`와 `rebaseTailored`는 두지 않는다. 기준 버전은 리비전마다 있다.
-- `tailored/repo.ts`
+- `schema.ts` (D-26 a: 테이블 3개)
+  - `kits`: `id`, `label`(text, 예 기본 서류 파일 이름의 버전 조각 `v5_20261119`, 없으면 `키트 {id}`), `files`(json `{ role: KitRole; track?: string; name: string; sha256: string; bytes: number }[]`), `parsed`(json `KitParsed | null`), `errors`(json `KitError[]`), `createdAt`.
+  - `tailoredResumes`: `id`, `postingId`(fk, unique, on delete cascade), `createdAt`.
+  - `tailoredRevisions`: `id`, `tailoredResumeId`(fk cascade), `revNo`, `kitId`(fk kits), `track`, `profileId`, `profileName`, `adjustments`(json `{ id: string; label: string }[]`), `source`(`'recipe' | 'terms' | 'revise'`), `resumeMd`, `careerMd`, `pendingAdjustments`(json string[] — 코드가 못 옮긴 추가 조정 할 일), `changeReasons`(json `{ doc: 'resume'|'career'; after: string; reason: string }[]`), `warnings`(json `KitWarning[]`), `notes`(text), `userRequest`(text?), `jobId`(fk ai_jobs, **nullable** — 조립은 작업 없음), `createdAt`. 유일 (`tailoredResumeId`, `revNo`).
+  - `applications.submittedResume`: `$type<SubmittedResume>()`.
+- `config.kitDir = join(dataDir, 'kit')`, `ensureDataDirs`에 추가.
+- `deletePosting`: 대기·실행 중 작업 종류를 `analyze_posting`, `tailor_resume`, `revise_tailored`로 넓힘. 맞춤 행은 cascade.
 
-  ```ts
-  type ChangeReason = { path: string; reason: string };            // tailor-schemas.ts에서 정의
-  type NewRevision = {
-    baseResumeVersionId: number; content: ResumeContent; changes: ResumeChange[];
-    changeReasons: ChangeReason[]; warnings: FabricationWarning[]; siteGuide: SiteGuideItem[];
-    portfolioTips: PortfolioTip[]; notes: string; userRequest: string | null; jobId: number;
-  };
-  type TailoredRevision = NewRevision & { id: number; tailoredResumeId: number; revNo: number; createdAt: string };
-  type RevisionSummary = { id: number; revNo: number; baseResumeVersionId: number; userRequest: string | null; createdAt: string };
-
-  getTailoredForPosting(postingId: number, db?): { id: number; postingId: number; createdAt: string } | null
-  ensureTailored(postingId: number, db?): number               // 있으면 그 id, 없으면 만든다
-  addRevision(tailoredResumeId: number, rev: NewRevision, db?): { id: number; revNo: number }  // revNo = 최대+1, 트랜잭션
-  getRevision(id: number, db?): TailoredRevision | null        // content를 ResumeContent.safeParse, 실패하면 null
-  getLatestRevision(tailoredResumeId: number, db?): TailoredRevision | null
-  listRevisionsForPosting(postingId: number, db?): RevisionSummary[]   // 최신순(revNo ↓)
-  revisionPostingId(revisionId: number, db?): number | null    // 그 리비전이 속한 공고(제출 서류 검증용)
-  ```
-  타입 `ResumeChange`·`FabricationWarning`은 Task 2, `SiteGuideItem`·`PortfolioTip`·`ChangeReason`은 Task 3에서 정의한다. 이 Task에서는 같은 이름으로 먼저 만들어 두고 Task 2·3에서 채워도 된다.
-- `postings/repo.ts` `deletePosting`: 대기·실행 중 작업을 찾는 종류를 `analyze_posting`, `tailor_resume`, `revise_tailored`로 넓힌다(실행 중이면 "작업이 끝난 뒤 삭제하세요", 대기는 취소). 맞춤본 행은 FK cascade로 지워진다(`foreign_keys = ON`, `src/lib/db/client.ts:13`).
-
-- [ ] **Step 1: 실패하는 테스트** (`tests/tailored-repo.test.ts`)
-
-```ts
-test('revisions are numbered per posting and keep their own base version (TC-TAILOR-01)', () => {
-  const db = makeTestDb();
-  const v1 = saveResumeVersion(emptyResume(), undefined, db);
-  const { postingId } = registerPosting({ pastedText: '공고' }, db);
-  const tid = ensureTailored(postingId, db);
-  expect(ensureTailored(postingId, db)).toBe(tid);
-  const r1 = addRevision(tid, rev({ baseResumeVersionId: v1.id }), db);
-  const v2 = saveResumeVersion({ ...emptyResume(), summary: 'v2' }, undefined, db);
-  const r2 = addRevision(tid, rev({ baseResumeVersionId: v2.id, userRequest: '짧게' }), db);
-  expect([r1.revNo, r2.revNo]).toEqual([1, 2]);
-  expect(getRevision(r1.id, db)!.baseResumeVersionId).toBe(v1.id);
-  expect(getLatestRevision(tid, db)!.userRequest).toBe('짧게');
-  expect(listRevisionsForPosting(postingId, db).map((r) => r.revNo)).toEqual([2, 1]);
-  expect(revisionPostingId(r2.id, db)).toBe(postingId);
-});
-test('deleting a posting removes tailored rows and cancels queued tailor jobs (TC-TAILOR-02)', () => {
-  // 맞춤본 + 리비전 + 대기 중 tailor_resume 작업 → deletePosting → 행 0, 작업 canceled
-  // 실행 중 revise_tailored 작업이 있으면 '작업이 끝난 뒤 삭제하세요'로 거부, 아무것도 지워지지 않음
-});
-```
-(`rev()`는 테스트 헬퍼: 빈 리비전 값을 만든다.)
-
-- [ ] **Step 2:** FAIL 확인. **Step 3:** 구현 + `npx drizzle-kit generate --name tailored`. **Step 4:** PASS + 전체 테스트 PASS.
-- [ ] **Step 5:** 커밋 `feat: tailored resume tables and repo`.
+- [ ] Step 1 테스트 TC-TAILOR-01(리비전 번호·최신순·리비전의 공고), TC-TAILOR-02(공고 삭제 cascade, 대기 작업 취소, 실행 중 거부). Step 2 FAIL → Step 3 구현 + `npx drizzle-kit generate --name tailored` → Step 4 PASS → Step 5 커밋 `feat: kit and tailored resume tables`.
 
 ---
 
-### Task 2: 변경 내역 계산, 사실 칸 되돌리기, "지어낸 내용" 검사
+### Task 2: 서류 키트 읽기·보관
 
-**Files:**
-- Create: `src/lib/resume/diff.ts`, `src/lib/resume/fabrication.ts`, `tests/resume-diff.test.ts`, `tests/fabrication.test.ts`
-
-**Interfaces:** 두 파일 모두 순수 함수다. DB·파일을 import하지 않는다(`diff.ts`는 클라이언트 컴포넌트에서도 쓴다).
-
-```ts
-// resume/diff.ts
-export type ResumeChange = {
-  path: string;                                   // Global Constraints의 경로 표기
-  kind: 'modified' | 'added' | 'removed' | 'reordered';
-  before: string | string[] | null;
-  after: string | string[] | null;
-};
-export function diffResume(base: ResumeContent, tailored: ResumeContent): ResumeChange[];
-/** 배열 줄 비교: 기준에만 있는 줄 del, 맞춤에만 있는 줄 ins, 둘 다 있으면 same. 맞춤 순서를 따르고 del은 원래 자리 근처에 둔다 */
-export function arrayLineDiff(before: string[], after: string[]): { text: string; op: 'same' | 'del' | 'ins' }[];
-/** 경로를 화면 이름으로: '한 줄 소개', '경력기술서', '경력 > A사', '경력 > A사 > 성과', '경력 > A사 > 담당 업무',
- *  '프로젝트 > 이름', '프로젝트 > 이름 > 성과|사용 기술|역할', '기술 > 분류', '경력 순서', '프로젝트 순서', '포트폴리오'.
- *  id로 이름을 못 찾으면 id를 그대로 쓴다 */
-export function changePathLabel(path: string, base: ResumeContent, tailored: ResumeContent): string;
-
-// resume/fabrication.ts
-export type FabricationWarning = {
-  kind: 'new_experience' | 'new_project' | 'new_skill' | 'new_number' | 'changed_fact';
-  path: string;
-  detail: string;                                 // 화면에 그대로 보여 줄 한국어 문장
-};
-/** 사실 칸을 기준본 값으로 되돌린다. 되돌린 곳마다 changed_fact 경고 1개 */
-export function normalizeTailored(base: ResumeContent, tailored: ResumeContent): { content: ResumeContent; restored: FabricationWarning[] };
-/** extraTexts: 사이트 수정 안내 제안 문구·포트폴리오 활용 문구(path 예 'siteGuide.0', 'portfolioTips.1'). 수치만 검사한다 */
-export function checkFabrication(base: ResumeContent, tailored: ResumeContent, extraTexts?: { path: string; text: string }[]): FabricationWarning[];
-```
-
-- 규칙
-  - `diffResume`
-    - 경험·프로젝트는 `id`로 짝짓는다. 문자열 칸이 다르면 `modified`. 배열(성과·기술)은 내용이 다르면 `modified`(before/after 배열). 기준본에만 있으면 `removed`, 맞춤본에만 있으면 `added`(before/after는 회사명 또는 프로젝트 이름).
-    - 짝지은 항목끼리 순서가 다르면 `order.experiences`/`order.projects`에 `reordered`(before/after = id 배열).
-    - `skills`는 `category`로 짝짓는다. `portfolio`는 전체를 한 덩어리로 비교(제목 배열).
-    - `basics`, `education`, `certifications`, 경력의 `company/start/end/role`, 프로젝트의 `name/org/start/end/link`는 비교하지 않는다(`normalizeTailored`가 되돌린 뒤라 늘 같다).
-  - `normalizeTailored`
-    - `basics`, `education`, `certifications`를 기준본 값으로 바꾼다.
-    - 기준본과 id가 같은 경력의 `company`, `start`, `end`, `role`, id가 같은 프로젝트의 `name`, `org`, `start`, `end`, `link`를 기준본 값으로 바꾼다.
-    - 바뀐 값이 있었으면 `changed_fact` 경고: `되돌림: {경로 이름}의 {회사명·기간·직무 등}을 기본 이력서 값으로 되돌렸습니다`.
-    - id가 기준본에 없는 경력·프로젝트는 지우지 않는다(경고는 `checkFabrication`이 낸다).
-  - `checkFabrication`
-    - 기준본에 없는 경력 id → `new_experience`(`새 경력: {회사} — 기본 이력서에 없는 경력입니다`). 프로젝트 id → `new_project`.
-    - 기술 이름(`skills[].items`, `projects[].techStack`)을 소문자·앞뒤 공백 제거해 기준본 전체 텍스트(모든 문자열 칸을 이어 붙여 소문자화)에서 찾는다. 없으면 `new_skill`(`새 기술: {이름} ({경로 이름}) — 기본 이력서에 없는 기술입니다`).
-    - 수치: 정규식 `/\d+(?:[.,]\d+)*\s*(%|퍼센트|배|건|명|억|만|천|ms|초|분|시간|개월|개|년|x|tps|qps|gb|tb|mb)?/gi`로 뽑는다. 쉼표·공백을 지우고 소문자로 맞춘다. 기준본 전체 텍스트에서도 같은 방식으로 뽑아 두 집합(숫자+단위, 숫자만)을 만든다. 단위가 있으면 "숫자+단위"가 기준본에 없을 때, 단위가 없으면 "숫자"가 기준본에 없을 때 `new_number`(`새 수치: "{원문 조각}" ({경로 이름}) — 기본 이력서에 없는 숫자입니다`). 같은 경로·같은 수치는 1번만.
-    - `extraTexts`는 수치만 같은 방식으로 검사한다(경로 이름: `사이트 수정 안내 {n}번째`, `포트폴리오 활용 {n}번째`).
-
-- [ ] **Step 1: 실패하는 테스트**
-
-```ts
-test('detects modified achievements, removed project and reorder (TC-TAILOR-03)', () => {
-  const base = resume({ experiences: [exp('exp-1', ['A 개선']), exp('exp-2', ['B 구축'])], projects: [prj('prj-1')] });
-  const t = resume({ experiences: [exp('exp-2', ['B 구축']), exp('exp-1', ['A 개선 (결제)'])], projects: [] });
-  expect(diffResume(base, t)).toEqual(expect.arrayContaining([
-    { path: 'experiences.exp-1.achievements', kind: 'modified', before: ['A 개선'], after: ['A 개선 (결제)'] },
-    { path: 'projects.prj-1', kind: 'removed', before: expect.any(String), after: null },
-    { path: 'order.experiences', kind: 'reordered', before: ['exp-1', 'exp-2'], after: ['exp-2', 'exp-1'] },
-  ]));
-});
-test('identical resumes have no changes', () => { expect(diffResume(base, structuredClone(base))).toEqual([]); });
-test('labels and line diff (TC-TAILOR-04)', () => {
-  // changePathLabel('experiences.exp-1.achievements', …) === '경력 > A사 > 성과', 모르는 id는 id 그대로
-  // arrayLineDiff(['a','b'], ['b','c']) → a del, b same, c ins
-});
-test('flags numbers absent from base (TC-TAILOR-05)', () => {
-  const w = checkFabrication(resume({ experiences: [exp('exp-1', ['응답속도 개선'])] }),
-                             resume({ experiences: [exp('exp-1', ['응답속도 40% 개선'])] }));
-  expect(w).toEqual([expect.objectContaining({ kind: 'new_number', path: 'experiences.exp-1.achievements' })]);
-});
-test('numbers already in base are fine', () => { /* 기준 '처리량 3배 향상' → 맞춤 '3배 향상된 처리량' → []. 단위 없는 '2021'이 기준 날짜에 있으면 [] */ });
-test('years of experience absent from base are flagged', () => { /* 맞춤 summary '백엔드 5년차', 기준에 '5년' 없음 → new_number */ });
-test('flags skills absent from base, new experience and project (TC-TAILOR-06)', () => { /* Kafka → new_skill, exp-9 → new_experience, prj-9 → new_project */ });
-test('restores fact fields from base (TC-TAILOR-07)', () => {
-  // 맞춤본 exp-1.company 'A사(주)', start 변경, basics.email 변경, education 추가
-  // → content는 기준 값, restored에 changed_fact 경고, diffResume 결과에 이 칸들 없음
-});
-test('checks numbers in site guide and portfolio texts (TC-TAILOR-08)', () => {
-  // extraTexts [{ path: 'siteGuide.0', text: '일 1,200만 건 처리' }], 기준에 '1200만' 없음 → new_number, path 'siteGuide.0'
-});
-```
-
-- [ ] **Step 2:** FAIL. **Step 3:** 구현. **Step 4:** PASS. **Step 5:** 커밋 `feat: resume diff, fact restore and fabrication checks`.
-
----
-
-### Task 3: 맞춤 이력서 작업 (생성·다듬기)
-
-**Files:**
-- Create: `prompts/tailor-resume.md`, `prompts/revise-tailored.md`, `src/lib/ai/revision.ts`, `src/lib/ai/tasks/tailor-schemas.ts`, `src/lib/ai/tasks/tailor-resume.ts`, `tests/tailor-task.test.ts`
-- Modify: `src/lib/ai/tasks/index.ts`, `src/lib/ai/prompt.ts`, `src/lib/tailored/repo.ts`(요청 함수), `tests/prompts.test.ts`
+**Files:** Create `src/lib/kit/{types,parse-guide,md-doc,repo}.ts`, `tests/fixtures/kit/*`(지어낸 예시), `tests/kit-parse.test.ts`.
 
 **Interfaces:**
-- `tailor-schemas.ts`
 
 ```ts
-export const SiteGuideItem = z.object({
-  field: z.string(),                                         // 사이트 이력서의 항목 이름(사이트 용어)
-  action: z.enum(['replace', 'add', 'remove', 'reorder']),  // 화면: 수정 / 추가 / 삭제 / 순서
-  current: z.string().nullable(),
-  suggested: z.string(),                                     // 붙여넣을 문구. remove면 빈 문자열
-  reason: z.string(),
-});
-export const PortfolioTip = z.object({ title: z.string(), emphasis: z.string() });
-export const ChangeReason = z.object({ path: z.string(), reason: z.string() });
-export const TailorOutput = z.object({
-  resume: ResumeContent,
-  changeReasons: z.array(ChangeReason),
-  siteGuide: z.array(SiteGuideItem),
-  portfolioTips: z.array(PortfolioTip),
-  notes: z.string(),
-});
+// kit/types.ts
+export type KitRole = 'guide' | 'rules' | 'master' | 'resume' | 'career' | 'style';
+export type Track = { name: string; resumeFile: string; careerFile: string; defaultProfileId: string;
+  parts: { competencies: string[]; achievements: string[]; chapters: string[]; projects: string[] } };
+export type Profile = { id: string; name: string; track: string; isDefault: boolean; keywords: string[];
+  introId: string; competencyOrder: number[]; achievementOrder: number[]; chapterOrder: number[]; projects: string[] };
+export type Adjustment = { id: string; track: string; triggers: string[]; instruction: string; label: string };
+export type TermRule = { original: string; allowed: string[]; forbidden: string[] };
+export type KitGuide = { tracks: Track[]; profiles: Profile[]; adjustments: Adjustment[];
+  intros: Record<string, string>; terms: TermRule[]; checklist: string[] };
+export type KitParsed = KitGuide & { styleCss: string | null };
+export type KitError = { file: string; where: string; message: string };   // 화면에 그대로 보임
+
+// kit/parse-guide.ts
+export function parseGuide(md: string): { guide: KitGuide | null; errors: KitError[] };
+
+// kit/md-doc.ts
+export type MdBlock = { level: number; title: string; lines: string[]; children: MdBlock[] };  // level 0 = 문서 머리
+export function parseMdDoc(md: string): MdBlock;
+export function renderMdDoc(doc: MdBlock): string;          // parse → render 왕복이 원문과 같다(줄 끝 공백 제외)
+export function findSection(doc: MdBlock, match: (title: string) => boolean): MdBlock | null;
+export function listItems(lines: string[], kind: 'bullet' | 'ordered'): { items: string[][]; before: string[]; after: string[] };
+export function checkBaseDoc(doc: MdBlock, track: Track, kind: 'resume' | 'career'): KitError[];  // 번호표 개수와 md 부품 개수 비교, 개인 프로젝트 짝짓기
+
+// kit/repo.ts
+export function saveKit(files: { name: string; data: Buffer }[], db?, dir?): { kitId: number; errors: KitError[] };
+export function getKit(id: number, db?): { id; label; files; parsed: KitParsed | null; errors: KitError[]; createdAt } | null;
+export function getLatestKit(db?): ReturnType<typeof getKit>;           // 오류 있는 키트도 돌려준다(화면에 오류 표시용)
+export function getUsableKit(db?): (NonNullable<ReturnType<typeof getKit>> & { parsed: KitParsed }) | null; // 오류 없는 가장 최근 키트
+export function readKitDoc(kitId: number, track: string, doc: 'resume' | 'career', db?, dir?): string;
+export function readKitText(kitId: number, role: 'guide' | 'rules' | 'master', db?, dir?): string;
 ```
 
-- `revision.ts` (D-11)
+- 올리기 규칙(`saveKit`)
+  - 받는 파일: `.md` 최대 10개 + 스타일 1개(`.css`, 또는 `build_pdf.py` 같은 `.py`에서 `CSS = """…"""` 문자열만 글자로 꺼낸다. 실행하지 않는다). 파일당 1MB, 합계 5MB.
+  - 역할 정하기: 가이드 = 이름에 "가이드" 또는 내용에 "번호표"와 "자기소개 후보"가 모두 있음. 작성 규칙 = 이름에 "규칙" 또는 `rules`. 마스터스토리 = 이름에 "마스터" 또는 `master`. 기본 서류 = 가이드 "기본 서류" 표에 적힌 파일 이름과 정확히 같은 것. 역할이 없는 파일은 오류("이 파일이 어디에 쓰이는지 모릅니다").
+  - 필수: 가이드·작성 규칙·마스터스토리 각 1개, 가이드 표의 모든 기본 서류. 빠지면 오류. 오류가 있어도 키트는 저장하고(화면에서 보고 고치게) `getUsableKit`은 그 키트를 건너뛴다.
+  - 저장: `data/kit/<id>/<원래 이름>`(경로 부분 버림), sha256. 이전 키트는 지우지 않는다(옛 리비전의 [기본 서류 보기]·다시 조립 기준).
+  - `label`: 기본 서류 파일 이름에서 `_v<숫자>_<8자리>` 조각을 찾으면 그것, 아니면 `키트 {id}`.
+
+- [ ] Step 1 테스트(예시 키트로)
+  - TC-KIT-01 `parseGuide` 정상: 직무 2개, 프로필 수, 기본 프로필, 공고 단어, 순서 배열(ⓐ→0), 추가 조정 트리거·할 일, 자기소개 후보(※ 줄 제외), 허용 범위, 체크리스트.
+  - TC-KIT-02 구획 빠짐·표 열 개수 틀림 → 오류 메시지에 구획 이름, `guide: null`.
+  - TC-KIT-03 `checkBaseDoc`: 핵심 역량 개수가 번호표와 다름 → 오류. 개인 프로젝트 이름 짝 0개·2개 → 오류.
+  - TC-KIT-04 `parseMdDoc`/`renderMdDoc` 왕복이 같음.
+  - TC-KIT-05 `saveKit`: 역할 판정, 필수 빠짐 오류, `.py`에서 CSS만 꺼냄, 경로 문자 제거, 이전 키트 유지, `getUsableKit`이 오류 키트를 건너뜀.
+- [ ] Step 2~4 FAIL → 구현 → PASS. Step 5 커밋 `feat: document kit upload and parsing`.
+
+---
+
+### Task 3: 추천, 1단계 조립, 자동 검사
+
+**Files:** Create `src/lib/kit/{recommend,assemble,checks,line-diff}.ts`, `tests/kit-recommend.test.ts`, `tests/kit-assemble.test.ts`, `tests/kit-checks.test.ts`.
+
+**Interfaces:**
 
 ```ts
-/** 다듬기·추가 요청용 새 실행 프롬프트. basePrompt(원래 작업의 전체 프롬프트) + extraRules + 현재 결과 JSON + 요청.
- *  이전 세션을 이어 붙이지 않는다. 4단계 면접 준비 추가 요청도 이 함수를 쓴다. */
+// kit/recommend.ts (D-28 a)
+export type WordCount = { word: string; count: number };
+export type Recommendation = {
+  track: string; trackReason: string;
+  profiles: { id: string; name: string; score: number; matched: WordCount[]; recommended: boolean }[];  // 그 직무의 프로필, 점수 ↓
+  adjustments: { id: string; label: string; matched: WordCount[]; suggested: boolean }[];
+  topWords: WordCount[];                 // 모든 프로필·추가 조정 단어 중 많이 나온 3개
+};
+export function recommend(kit: KitGuide, posting: { title: string | null; text: string }): Recommendation;
+
+// kit/assemble.ts
+export type Recipe = { track: string; profileId: string; adjustmentIds: string[] };
+export type Assembled = { resumeMd: string; careerMd: string; applied: string[]; pending: string[] };
+export function assemble(kit: KitGuide, base: { resumeMd: string; careerMd: string }, recipe: Recipe): Assembled;
+
+// kit/checks.ts
+export type KitWarning = {
+  kind: 'new_number' | 'new_fact_from_master' | 'forbidden_term' | 'intro_restored' | 'structure_changed' | 'stack_changed' | 'other_company';
+  doc: 'resume' | 'career'; detail: string;            // 화면 문장
+};
+export function checkTailored(input: {
+  kit: KitGuide; stage1: { resumeMd: string; careerMd: string }; final: { resumeMd: string; careerMd: string };
+  base: { resumeMd: string; careerMd: string }; masterMd: string; otherCompanyNames: string[];
+}): { final: { resumeMd: string; careerMd: string }; warnings: KitWarning[] };   // final은 자기소개를 되돌린 결과
+
+// kit/line-diff.ts
+export function lineDiff(a: string, b: string): { text: string; op: 'same' | 'del' | 'ins' }[];
+```
+
+- 추천 규칙
+  - 셀 글: 분석 결과의 주요 업무·필수 요건·우대 사항·기술 스택을 이어 붙인 글(분석이 있으면), 없으면 공고 본문. 소문자로, 단어는 부분 일치로 센다(영문은 대소문자 무시).
+  - 직무: 공고 포지션명에 직무 이름(예 `FDE`)이 들어 있으면 그 직무. 아니면 직무별로 "프로필 단어 수 합"이 큰 쪽, 같으면 가이드 표의 첫 직무. `trackReason`에 이유("포지션명에 'FDE'", "공고 단어 수 7 대 2").
+  - 프로필: 그 직무 프로필마다 단어 수 합. 가장 큰 프로필 추천. 0이거나 같으면 기본 프로필.
+  - 추가 조정: 트리거 단어가 하나라도 나오면 `suggested`.
+- 조립 규칙(`assemble`, 번호표의 기본 순서 기준)
+  - 자기소개: 이력서 `자기소개` 구획의 본문(하위 제목 앞까지)을 후보 본문으로 바꾼다.
+  - 핵심 역량: 목록 항목을 `competencyOrder`대로. 주요 성과: 번호 목록 항목(하위 줄 포함)을 `achievementOrder`대로 두고 `1.`부터 다시 매김.
+  - 개인 프로젝트: 이력서 `개인 프로젝트` 구획의 3단계 제목 블록을 `projects` 순서로 남기고 나머지는 뺀다. 경력기술서에도 같은 구획이 있으면 같은 규칙.
+  - 경력기술서 장: `## N.` 장을 `chapterOrder`대로 두고 장 번호와 하위 `### N-k.` 번호를 다시 매김.
+  - 추가 조정: 할 일 문장에서 다음 두 모양만 코드로 옮긴다. ① `주요 성과 N을 K번째로` → 원래 번호 N 항목을 K번째로. ② `{구획}를 {구획} 바로 위로` → 이력서 2단계 구획 이동. 나머지 문장은 `pending`(AI 또는 직접 할 일). `applied`에는 사람이 읽는 요약("자기소개: B3 후보", "주요 성과 순서: 5 4 2 1 3 7 6", "추가 조정: …").
+- 자동 검사 규칙(`checkTailored`)
+  - 자기소개: `final`의 자기소개 본문이 `stage1`과 다르면 `stage1` 값으로 되돌리고 `intro_restored`.
+  - 수치: Task 3 정규식(`/\d+(?:[.,]\d+)*\s*(%|배|건|명|억|만|천|ms|초|분|시간|개월|개|년|x|tps|qps|gb|tb|mb)?/gi`, 쉼표·공백 제거·소문자)으로 `final`에서 뽑은 수치가 `stage1`에 없으면: 마스터스토리에 있으면 `new_fact_from_master`("새로 넣은 사실: … — 마스터스토리에 있는 수치입니다"), 없으면 `new_number`("확인 필요: … — 기본 서류와 마스터스토리에 없는 수치입니다").
+  - 금지 표현: `terms[].forbidden` 각 표현이 `final`에 있고 `base`에 없으면 `forbidden_term`.
+  - 구조: 두 문서의 제목 목록(단계·글자), 주요 성과 항목 수, 경력기술서 장 순서가 `stage1`과 다르면 `structure_changed`(무엇이 다른지).
+  - 기술 스택: 이력서·경력기술서 `기술 스택` 구획의 줄 집합(순서 무시)이 다르면 `stack_changed`.
+  - 다른 회사: `otherCompanyNames`(앱에 있는 다른 회사 표시명, 2자 이상, 이 공고 회사 제외) 중 `final`에 있고 `base`에 없는 것 → `other_company`.
+
+- [ ] Step 1 테스트(예시 키트)
+  - TC-KIT-10 자기소개 교체, 핵심 역량 순서. TC-KIT-11 주요 성과 순서·하위 줄 함께 이동·번호 다시 매김. TC-KIT-12 경력기술서 장 순서·`N-k` 번호. TC-KIT-13 개인 프로젝트 선택·순서·빠짐. TC-KIT-14 추가 조정 ①② 코드 적용, 나머지 `pending`. TC-KIT-15 같은 입력이면 같은 결과(결정적).
+  - TC-KIT-16 추천: 단어 수로 프로필, 0이면 기본, 포지션명으로 직무, 추가 조정 제안, 상위 단어 3개.
+  - TC-KIT-20 수치 두 종류. TC-KIT-21 자기소개 되돌림. TC-KIT-22 구조·기술 스택 경고. TC-KIT-23 금지 표현(기본 서류에 원래 있으면 경고 없음). TC-KIT-24 다른 회사 이름. TC-KIT-25 `lineDiff`.
+- [ ] Step 2~4. Step 5 커밋 `feat: profile recommendation, recipe assembly and checks`.
+
+---
+
+### Task 4: 맞춤본 저장과 AI 작업 (용어 맞추기·다듬기)
+
+**Files:** Create `prompts/tailor-resume.md`, `prompts/revise-tailored.md`, `src/lib/ai/revision.ts`, `src/lib/ai/tasks/{tailor-schemas,tailor-resume}.ts`, `src/lib/tailored/repo.ts`, `tests/tailor-task.test.ts`. Modify `ai/tasks/index.ts`, `ai/prompt.ts`, `tests/prompts.test.ts`, `tests/tailored-repo.test.ts`.
+
+**Interfaces:**
+
+```ts
+// ai/tasks/tailor-schemas.ts
+export const KitTailorOutput = z.object({
+  resumeMd: z.string(), careerMd: z.string(),
+  changeReasons: z.array(z.object({ doc: z.enum(['resume', 'career']), after: z.string(), reason: z.string() })),
+  notes: z.string(),                // 다른 프로필이 더 맞아 보이면 여기에(D-28 a: 추천은 하지 않음)
+});
+
+// ai/revision.ts (D-11)
 export function buildRevisionPrompt(input: { basePrompt: string; currentJson: unknown; request: string; extraRules?: string }): string;
-```
-  모양: `basePrompt` → `\n\n## 다듬기\n` → `extraRules` → `\n\n### 현재 결과(JSON)\n` + 들여쓴 JSON → `\n\n### 사용자 요청\n` + 요청.
 
-- `tailored/repo.ts` 작업 요청 함수
-
-```ts
-/** 진행 중(대기·실행)인 tailor_resume·revise_tailored 중 이 공고 것. 없으면 undefined */
-export function activeTailorJob(postingId: number, db?): JobSummary | undefined;
-/** 두 종류 중 가장 최근 작업(실패 표시용) */
-export function latestTailorJob(postingId: number, db?): JobSummary | undefined;
-/** 처음 만들기와 "최신 기준으로 다시 만들기" 공용. 진행 중 작업이 있으면 그 jobId를 돌려준다 */
-export function requestTailoredResume(postingId: number, db?): number;
+// tailored/repo.ts
+export function getTailoredForPosting(postingId, db?): { id; postingId; createdAt } | null;
+export function getRevision(id, db?): TailoredRevision | null;
+export function listRevisionsForPosting(postingId, db?): RevisionSummary[];   // { id, revNo, source, profileId, profileName, userRequest, kitId, createdAt }, 최신순
+export function revisionPostingId(revisionId, db?): number | null;
+/** 1단계 조립. 작업 큐 없이 바로 저장(호출 0). 키트가 없거나 오류면 예외 */
+export function createRecipeRevision(postingId: number, recipe: Recipe, db?): { id: number; revNo: number };
+/** 2단계. 최신 리비전(조립본)의 레시피로 tailor_resume 작업. 진행 중이면 그 jobId */
+export function requestTermsMatch(postingId: number, db?): number;
 export function requestTailoredRevision(postingId: number, request: string, db?): number;
-```
-  - `requestTailoredResume` 예외: 공고 없음 "공고를 찾을 수 없습니다", 분석 없음 "공고 분석이 끝난 뒤 만들 수 있습니다", 기본 이력서 없음 "기본 이력서를 먼저 등록하세요." payload `{ postingId }`.
-  - `requestTailoredRevision` 예외: 요청이 비었음 "고칠 내용을 적어 주세요", 2000자 초과 "요청은 2000자까지 쓸 수 있습니다", 맞춤본 없음 "맞춤 이력서를 먼저 만드세요", 진행 중 작업 있음 "진행 중인 작업이 끝난 뒤 요청하세요". payload `{ postingId, request }`(앞뒤 공백 제거).
-
-- 처리기 (`tailor-resume.ts`)
-  - 공통 마무리 `finishRevision(base: ResumeVersion, out: TailorOutput, ctx)`: `normalizeTailored(base.content, out.resume)` → `diffResume(base.content, normalized)` → 경고 = `restored` + `checkFabrication(base.content, normalized, extraTexts)`(extraTexts = `siteGuide[i].suggested`, `portfolioTips[i].emphasis`) → `addRevision`.
-  - `tailor_resume` `{ postingId }`: 최신 기본 이력서·최신 분석·공고 본문을 읽는다. `ensureTailored`. 프롬프트 `tailor-resume` 변수: `today`, `resume_json`, `posting_text`, `analysis_json`, `site_label`(공고 사이트 표시명), `site_guide_note`(사이트가 홈페이지 지원·기타면 "사이트 이력서 화면이 없으므로 일반적인 지원서 항목 이름을 쓴다", 아니면 "그 사이트 이력서 화면의 항목 이름을 쓴다"). `runValidated(TailorOutput)`, `tools: []`, 모델 `getModelFor('tailor_resume')`. 결과 `{ postingId, revisionId, revNo }`.
-  - `revise_tailored` `{ postingId, request }`: 맞춤본의 최신 리비전과 **그 리비전의 기준 버전**을 읽는다. `basePrompt` = 그 기준 버전으로 렌더한 `tailor-resume` 프롬프트, `extraRules` = `revise-tailored.md`, `currentJson` = `{ resume, changeReasons, siteGuide, portfolioTips, notes }`(현재 리비전). `resumeSessionId` 없음. `userRequest` 저장.
-  - 분석·기본 이력서·리비전이 없으면 `AiError('cli', '…')`(요청 뒤에 지워진 경우).
-- 프롬프트 필수 규칙
-  - `tailor-resume.md` 맨 위: "기준 이력서에 없는 경력·프로젝트·수치·기술·자격을 추가하지 않는다. 바꿀 수 있는 것은 표현, 순서, 강조, 축소뿐이다. 모르면 바꾸지 않는다."
-  - 경력·프로젝트 `id`는 기준본 그대로. 회사명·기간·직무·학력·자격·연락처는 바꾸지 않는다.
-  - 한 경력의 성과로 옮겨 적는 사실은 기준본에서 그 회사에서 한 일로 확인되는 것만(예: 프로젝트 `org`가 그 회사).
-  - `changeReasons.path`는 경로 표기 규칙을 따른다(규칙 목록을 프롬프트에 넣는다).
-  - `siteGuide`는 `{{site_label}}` 이력서 화면에서 고칠 항목을 `{{site_guide_note}}`. 기준본에 없는 수치를 쓰지 않는다.
-  - 출력은 한국어. 분석 결과의 "이력서에서 보완 가능" 항목을 우선 반영한다.
-  - `revise-tailored.md`: "요청과 관계없는 곳은 현재 결과 그대로 둔다. 요청이 기준 이력서에 없는 사실을 넣으라는 것이면 넣지 않고 notes에 이유를 쓴다. 위 규칙은 요청보다 우선한다."
-
-- [ ] **Step 1: 실패하는 테스트** (가짜 runner: 요청을 기록, 설정된 출력 반환 또는 오류)
-
-```ts
-test('tailor_resume stores normalized content, computed diff and warnings (TC-TAILOR-09)', async () => {
-  // 기본 이력서(성과 '응답속도 개선'), 분석 완료 공고. 가짜 출력: 성과 '응답속도 40% 개선', exp-1.company 바꿈
-  await handlers.tailor_resume({ jobId, payload: { postingId }, runner, workDir, db });
-  const r = getLatestRevision(getTailoredForPosting(postingId, db)!.id, db)!;
-  expect(r.content.experiences[0].company).toBe(baseCompany);
-  expect(r.changes).toEqual([expect.objectContaining({ path: 'experiences.exp-1.achievements', kind: 'modified' })]);
-  expect(r.warnings.map((w) => w.kind).sort()).toEqual(['changed_fact', 'new_number']);
-  expect(runner.lastReq.tools).toEqual([]);
-  expect(runner.lastReq.model).toBe('opus');
-  expect(runner.lastReq.prompt.split('\n').slice(0, 5).join('\n')).toContain('기준 이력서에 없는');
-});
-test('revise runs a fresh call with the current revision and request (TC-TAILOR-10)', async () => {
-  // lastReq.resumeSessionId 없음, prompt에 현재 리비전 JSON·요청·'기준 이력서에 없는' 규칙,
-  // 리비전 2 생성, userRequest 저장, changes는 기준 버전과 비교한 결과
-});
-test('revise propagates auth error without creating a revision (TC-TAILOR-11)', async () => { /* AiError('auth') → reject, 리비전 1개 그대로 */ });
-test('request guards (TC-TAILOR-12)', () => {
-  // 분석 없음 → '공고 분석이 끝난 뒤', 기본 이력서 없음 → throw, 진행 중이면 같은 jobId
-  // 다듬기: 빈 요청·2001자·맞춤본 없음·진행 중 → 각 메시지
-});
-test('tailor after base change uses the latest base; old revisions keep theirs (TC-TAILOR-13)', async () => { /* r1 v1, v2 저장 → 다시 만들기 → r2.baseResumeVersionId = v2, r1은 v1 */ });
-test('buildRevisionPrompt contains base prompt, rules, current json and request (TC-TAILOR-14)', () => {});
-// tests/prompts.test.ts: tailor-resume 변수 누락 없음, 첫 규칙 줄에 '기준 이력서에 없는' (TC-TAILOR-15)
-// 새 작업 종류가 JOB_TIMEOUT_MS·DEFAULT_MODELS·estimateText·설정 액션 enum에 모두 있음 (TC-TAILOR-16)
+export function activeTailorJob(postingId, db?): JobSummary | undefined;
+export function latestTailorJob(postingId, db?): JobSummary | undefined;
 ```
 
-- [ ] **Step 2:** FAIL. **Step 3:** 구현. **Step 4:** PASS + 전체 테스트.
-- [ ] **Step 5:** 커밋 `feat: tailor and revise resume tasks`.
-- 실제 `claude` 확인은 하지 않는다(병합 뒤 TC-TAILOR-M1).
+- `createRecipeRevision`: `getUsableKit` → 기본 서류 읽기 → `assemble` → `source: 'recipe'`, 경고 없음, `pendingAdjustments = pending`. 예외: "서류 키트를 먼저 올리세요 → 기본 이력서 > 서류 키트", "서류 키트에 오류가 있습니다", "그 직무·프로필이 키트에 없습니다".
+- `requestTermsMatch` 예외: 맞춤본 없음 "먼저 맞춤본을 조립하세요", 진행 중이면 그 jobId. payload `{ postingId, revisionId }`(기준이 될 리비전 = 최신).
+- `requestTailoredRevision` 예외: 빈 요청, 2000자 초과, 맞춤본 없음, 진행 중 작업(문구는 처음 설계와 같다).
+- 처리기
+  - 공통: 기준 리비전의 `kitId`·레시피로 `stage1 = assemble(...)`를 다시 만든다(결정적). 결과는 `checkTailored`로 자기소개를 되돌리고 경고를 붙여 `addRevision`.
+  - `tailor_resume` `{ postingId, revisionId }`: 프롬프트 `tailor-resume` 변수 `today`, `posting_text`, `analysis_json`(없으면 `{}`), `top_words`, `profile`(id·이름·공고 단어), `pending_adjustments`, `writing_rules`(키트 작성 규칙 전문), `terms_table`(허용 범위 표를 md로), `master_story`(키트 마스터스토리 전문), `resume_md`, `career_md`(1단계 결과). `source: 'terms'`.
+  - `revise_tailored` `{ postingId, request }`: 최신 리비전 기준. `basePrompt` = 위 프롬프트(그 리비전의 레시피로), `extraRules` = `revise-tailored.md`, `currentJson` = `{ resumeMd, careerMd, changeReasons, notes }`. `source: 'revise'`, `userRequest`.
+- 프롬프트 필수 규칙(`tailor-resume.md` 맨 위): "마스터스토리에 없는 사실·숫자를 만들지 않는다. 바꿀 수 있는 것은 허용 범위 표 안의 공고 용어와 남은 추가 조정뿐이다. 자기소개, 제목, 항목 순서, 기술 스택, 숫자는 바꾸지 않는다. 모르면 바꾸지 않는다." / 출력은 md 원문 그대로의 모양(제목·목록 기호 유지) / 한국어 / 다른 프로필이 더 맞아 보이면 `notes`에 한 줄.
+- 프롬프트 파일에는 사용자 내용이 들어가지 않는다. 모든 개인 내용은 실행할 때 키트에서 읽어 변수로 넣는다.
+
+- [ ] Step 1 테스트(가짜 runner, 예시 키트)
+  - TC-TAILOR-03 `createRecipeRevision`: r1, source recipe, `pending` 저장, jobId 없음. 키트 없음·오류 → 메시지.
+  - TC-TAILOR-09 용어 맞추기: 가짜 출력이 자기소개를 바꾸고 새 숫자를 넣음 → 저장된 자기소개는 조립본 값, `intro_restored`·`new_number` 경고, `tools: []`, opus, 첫 규칙 줄 포함, 프롬프트에 마스터스토리·허용 범위 표.
+  - TC-TAILOR-10 다듬기: 세션 없음, 현재 리비전 md·요청 포함, r3, `userRequest`.
+  - TC-TAILOR-11 로그인 오류면 리비전 없음. TC-TAILOR-12 요청 검사. TC-TAILOR-13 키트가 바뀐 뒤에도 옛 리비전의 다듬기는 그 리비전의 키트로 1단계를 다시 만든다.
+  - TC-TAILOR-14 `buildRevisionPrompt`. TC-TAILOR-15 프롬프트 변수·첫 규칙. TC-TAILOR-16 작업 종류 등록.
+- [ ] Step 2~4. Step 5 커밋 `feat: tailored revisions, terms match and revise tasks`.
 
 ---
 
-### Task 4: 제출 서류 기록 (D-23 a)
+### Task 5: 제출 서류 기록 (D-23 a, 프로필 포함)
 
-**Files:**
-- Create: `src/lib/applications/submitted.ts`, `tests/submitted.test.ts`
-- Modify: `src/lib/applications/repo.ts`, `src/lib/search/dashboard.ts`, `tests/search.test.ts`
+**Files:** Create `src/lib/applications/submitted.ts`, `tests/submitted.test.ts`. Modify `applications/repo.ts`, `search/dashboard.ts`, `tests/search.test.ts`.
 
 **Interfaces:**
-- `applications/submitted.ts` (순수, 클라이언트에서도 씀)
 
 ```ts
 export type ResumeChoice =
   | { kind: 'tailored'; tailoredRevisionId: number }
+  | { kind: 'kit'; kitId: number; track: string }         // 기본 서류 그대로. 프로필 = 그 직무의 기본 프로필
   | { kind: 'file'; fileName: string }
   | { kind: 'unknown' }
-  | { kind: 'base'; versionId: number };          // 예전 기록을 그대로 둘 때만. 새로 고를 수 없다
-/** 이력서 칸 + 경력기술서·포트폴리오 값(파일 이름 | DOC_NONE | null=모름) */
+  | { kind: 'base'; versionId: number };                   // 예전 기록 유지 전용
 export type SubmittedInput = { resume: ResumeChoice; career: string | null; portfolio: string | null };
-
-export function encodeResumeChoice(c: ResumeChoice): string;      // 'tailored:12' | 'file:이력서_20261102.pdf' | 'unknown' | 'base:3'
+export function encodeResumeChoice(c: ResumeChoice): string;   // 'tailored:12' | 'kit:3:백엔드' | 'file:…' | 'unknown' | 'base:3'
 export function decodeResumeChoice(s: string): ResumeChoice | null;
-/** 지금 기록 값 → 선택 값 */
 export function currentSubmitted(sr: SubmittedResume, docs: SubmittedDocs | null): SubmittedInput;
-/** [지원 완료] 기본값: 이력서 = 최신 맞춤 리비전(있으면) → 지원일 기준 이력서 파일 → 모름. 경력기술서·포트폴리오 = pickDocFile */
-export function defaultSubmitted(appliedAt: string, files: DocFile[], latestTailoredRevisionId: number | null): SubmittedInput;
-/** 칸에 쓸 값. prevKind가 'imported'면 file·unknown일 때 종류를 imported로 둔다 */
-export function toColumns(input: SubmittedInput, prevKind?: SubmittedResume['kind']): { submittedResume: SubmittedResume; submittedDocs: SubmittedDocs };
-/** short: '맞춤 r2' | '기본 v3' | '이력서 2026-11-02' | null. long: '맞춤 이력서 r2' | '기본 이력서 v3' | '이력서 2026-11-02' | null */
-export function resumeLabel(sr: SubmittedResume, docs: SubmittedDocs | null, names: { revNo?: number | null; versionNo?: number | null }, style: 'short' | 'long'): string | null;
+/** 이력서 기본값: 최신 맞춤 리비전 → (키트가 있으면) 추천 직무의 기본 서류 → 지원일 기준 이력서 파일 → 모름 */
+export function defaultSubmitted(i: { appliedAt: string; files: DocFile[]; latestRevisionId: number | null; kit: { id: number; track: string } | null }): SubmittedInput;
+export function toColumns(input: SubmittedInput, ctx: { prevKind?: SubmittedResume['kind']; kitProfile?: { profileId: string; profileName: string } }): { submittedResume: SubmittedResume; submittedDocs: SubmittedDocs };
+/** short: '맞춤 r2 · B3' | '기본 서류 백엔드 · B1' | '이력서 2026-11-02' | '기본 v3' | null. long: '맞춤 이력서 r2 (B3 정합성)' … */
+export function resumeLabel(sr: SubmittedResume, docs: SubmittedDocs | null, names: { revNo?: number | null; profile?: string | null; versionNo?: number | null }, style: 'short' | 'long'): string | null;
 ```
-  - `toColumns`: tailored → `{kind:'tailored', tailoredRevisionId}`, docs `{ resume: null, career, portfolio }`. file → `{kind: prevKind==='imported' ? 'imported' : 'file'}`, docs.resume = 파일 이름. unknown → 같은 종류, docs.resume = null. base → `{kind:'base', versionId}`, docs.resume = null.
-- `applications/repo.ts`
-  - `markApplied(input: { postingId; appliedAt?; site?; siteNote?; notes?; submitted?: SubmittedInput }, db?, docsDir?)`: `submitted`가 없으면 `defaultSubmitted(appliedAt, listDocFiles(docsDir).files, 이 공고 최신 리비전 id)`. 검증 뒤 `toColumns`로 저장. 기본 이력서가 없어도 저장된다(이제 기본 이력서 버전을 쓰지 않으므로 "기본 이력서를 먼저 등록하세요." 검사를 뺀다).
-  - `updateApplication(id, patch: { …기존; submitted?: SubmittedInput }, db?, docsDir?)`: `toColumns(input, app.submittedResume.kind)`.
-  - 검증(`assertSubmittedValid`, 저장 전, 실패하면 아무것도 저장하지 않음):
-    - tailored: 그 리비전이 있고 `revisionPostingId === 이 기록의 postingId`. 아니면 "이 공고의 맞춤 이력서가 아닙니다".
-    - file: 이력서 종류이고 폴더에 있음(`isDocsForKind('resume')`, `docFileExists`). 이력서는 `DOC_NONE` 불가.
-    - base: 지금 기록 값과 같을 때만. 아니면 "기본 이력서 버전은 새로 고를 수 없습니다".
-    - career·portfolio: 기존 `assertDocsValid` 규칙.
-  - `resolveSubmittedResume(sr: SubmittedResume, db?): { label: string; content: ResumeContent } | null` — tailored → 리비전 내용(`맞춤 이력서 r2`), base → 버전 내용(`기본 이력서 v3`), file·imported → null(앱은 PDF 내용을 읽지 않는다). 4단계 면접 준비가 쓴다.
-- `search/dashboard.ts`
-  - `DashboardRow`에 `tailored: boolean`. `resumeLabel` = `resumeLabel(…, 'short')`(리비전 번호는 `tailoredRevisions`의 id→revNo를 한 번 읽어 둔다). `resumeBaseVersionNo`는 base일 때만.
-  - `groupDashboardRows(rows, 'resume')`: **"맞춤 이력서"**(key `tailored`, 맞춤본으로 낸 기록 전부) → 기본 v{n}(번호 큰 순) → 이력서 파일(날짜 늦은 순) → 모름.
 
-- [ ] **Step 1: 실패하는 테스트** (`tests/submitted.test.ts`, 임시 서류 폴더에 가짜 PDF)
-  - TC-SUBMIT-01 `markApplied({postingId})` 기본값: 맞춤본 있는 공고 → `tailored`(최신 리비전), 경력기술서·포트폴리오는 지원일 기준 파일 또는 없음. 맞춤본 없는 공고 → `file` + `이력서_…` 파일. 파일이 하나도 없으면 이력서 모름(종류 `file`, docs.resume null).
-  - TC-SUBMIT-02 명시 값 저장. 다른 공고의 리비전 → 거부, 폴더에 없는 파일 → 거부(아무것도 저장 안 됨), 이력서 `none` → 거부.
-  - TC-SUBMIT-03 `updateApplication`: file → tailored → file 바꾸기. 가져온 기록은 파일을 바꿔도 종류 `imported` 유지. 예전 `base` 기록은 이력서를 안 바꾸면 그대로, 다른 base 버전은 거부.
-  - TC-SUBMIT-04 `resumeLabel`과 `searchApplications`: 맞춤 → `'맞춤 r2'`, base → `'기본 v3'`, 파일 → `'이력서 2026-11-02'`, 모름 → null. `tailored` 플래그.
-  - TC-SUBMIT-05 `groupDashboardRows('resume')`: 맞춤 이력서 → 기본 v2 → 이력서 2026-11-02 → 모름 순서, 묶음 통과율은 그대로 Tally.
-  - TC-SUBMIT-06 `resolveSubmittedResume`: tailored·base는 내용과 라벨, file·imported는 null.
-  - TC-SUBMIT-07 `encodeResumeChoice`/`decodeResumeChoice` 왕복, 잘못된 문자열 → null.
-- [ ] **Step 2:** FAIL. **Step 3:** 구현. **Step 4:** PASS(기존 `search.test.ts`·`repos.test.ts`의 base 기대값이 바뀌면 이 규칙에 맞춰 고친다). **Step 5:** 커밋 `feat: record submitted documents and tailored resume on apply`.
+- 경력기술서·포트폴리오 칸은 지금 규칙(지원일 기준 파일 / 없음 / 모름) 그대로다. 맞춤본·기본 서류의 경력기술서를 함께 냈는지는 따로 기록하지 않는다(맞춤 여부와 프로필은 이력서 칸으로 센다). 미룬 것에 적는다.
+- `markApplied`·`updateApplication`·검증·`resolveSubmittedResume`은 처음 설계와 같다. 추가: `kit` 선택은 그 키트가 있고 직무가 키트에 있어야 한다. `resolveSubmittedResume`은 `tailored`·`kit`이면 `null`(앱 JSON 이력서가 아니므로) — 4단계는 대신 "맞춤본 md"를 쓰는 방법을 4단계 설계 때 정한다.
+- 대시보드 이력서별 묶음: "맞춤 이력서" → "기본 서류 {직무}" → "기본 v{n}" → 이력서 파일 → 모름.
+
+- [ ] Step 1 테스트 TC-SUBMIT-01~07(처음 설계와 같고 `kit` 종류 추가: 기본값 순서, 키트 없는 직무 거부, 라벨에 프로필). Step 2~4. Step 5 커밋 `feat: record submitted resume with profile on apply`.
 
 ---
 
-### Task 5: PDF 출력 (D-25 a)
+### Task 6: PDF·md 내려받기 (D-25 a)
 
-**Files:**
-- Create: `src/lib/pdf/fonts.ts`, `src/lib/pdf/template.ts`, `src/lib/pdf/render.ts`, `src/app/api/pdf/tailored/[revisionId]/route.ts`, `src/app/api/pdf/tailored/[revisionId]/preview/route.ts`, `src/app/api/pdf/base/[versionId]/route.ts`, `tests/pdf.test.ts`
+**Files:** Create `src/lib/pdf/{fonts,md-html,render}.ts`, `src/app/api/tailored/[revisionId]/[doc]/route.ts`, `src/app/api/tailored/[revisionId]/posting-md/route.ts`, `src/app/api/kit/[kitId]/[track]/[doc]/route.ts`, `tests/pdf.test.ts`. `npm i marked`.
 
 **Interfaces:**
-- `fontFaceCss(): string` — `node_modules/pretendard/dist/web/static/woff2/Pretendard-{Regular,Bold}.woff2`를 base64로 읽어 `@font-face` 두 개(`font-family: 'CF Pretendard'`, 400·700). 한 번 읽고 메모리에 둔다.
-- `type PdfPart = 'resume' | 'narrative' | 'both'`
-- `renderResumeHtml(content: ResumeContent, opts: { part: PdfPart; fontCss?: string }): string` — 순수 함수. 모든 텍스트를 HTML 이스케이프. `resume` = 기본 정보·요약·경력·프로젝트·기술·학력·자격·포트폴리오(제목·링크·요약), `narrative` = 경력기술서, `both` = 둘 다(경력기술서는 새 페이지 `page-break-before: always`). 경력기술서가 비면 `both`는 이력서만. 본문 CSS `word-break: keep-all; overflow-wrap: anywhere`. 링크는 http/https만 `<a>`로, 나머지는 글자로.
-- `renderPdf(html: string): Promise<Buffer>` — `acquireBrowserLock(30_000)` → `chromium.launch()`(영구 프로필 아님) → `page.setContent(html, { waitUntil: 'load' })` → `page.pdf({ format: 'A4', printBackground: true, margin: 15mm 사방 })` → 닫고 잠금 해제(`finally`). 잠금을 못 얻으면 `BrowserLockTimeoutError` 그대로.
-- `pdfFileName(i: { name: string; company?: string; position?: string; date: Date; part: PdfPart }): string` — 조각마다 `\ / : * ? " < > |`와 공백 제거, 빈 조각 생략, `_` 연결, 날짜는 로컬 `YYYYMMDD`, `narrative`면 `_경력기술서`, `.pdf`.
-- `contentDisposition(fileName: string, inline = false): string` — `${inline ? 'inline' : 'attachment'}; filename="resume.pdf"; filename*=UTF-8''<encodeURIComponent>`
-- 라우트 (모두 `runtime` 기본, 동적)
-  - `GET /api/pdf/tailored/[revisionId]?part=both|resume|narrative&inline=1` → `application/pdf`. 파일명: 기본 정보 이름, 공고 회사 표시명, 공고 포지션, 오늘. 없는 리비전 404 "맞춤 이력서를 찾을 수 없습니다". `part=narrative`인데 경력기술서가 비면 400 "경력기술서 내용이 없습니다". 잘못된 part는 `both`. 브라우저 잠금 시간 초과 503 "다른 작업이 브라우저를 쓰고 있습니다. 잠시 뒤 다시 받으세요".
-  - `GET /api/pdf/tailored/[revisionId]/preview` → `text/html; charset=utf-8`, `renderResumeHtml(content, { part: 'both', fontCss })`. 헤더 `Content-Security-Policy: default-src 'none'; style-src 'unsafe-inline'; font-src data:; img-src data:`, `X-Content-Type-Options: nosniff`. (맞춤 탭의 미리보기 `iframe`과 "새 탭에서 크게 보기"가 쓴다. 브라우저를 띄우지 않는다.)
-  - `GET /api/pdf/base/[versionId]?part=…` → 같은 방식, 파일명은 이름과 날짜만.
-- 템플릿 디자인: 흑백 위주 1단. 이름 크게(22pt), 연락처 한 줄, 섹션 제목 + 얇은 구분선, 경력은 "회사 · 직무 · 기간" 한 줄 + 담당 업무 + 성과 글머리표. 기간 표기 `2021.03 – 현재`. 세부 스타일은 구현자 재량.
+- `fontFaceCss()`: Pretendard Regular·Bold를 base64 `@font-face`로, `font-family: 'Pretendard'`(키트 CSS가 쓰는 이름과 같게).
+- `mdToSectionHtml(md: string): string` — 사용자 PDF 도구와 같은 구조: 주석 제거 → `marked`(표·목록·줄바꿈) → 첫 `h1`과 첫 `hr` 전까지를 제목 + `div.box.profile`(제목이 "이름 · 직함"이면 이름은 `.name`) → `h2`마다 `section.sec > h2 + div.body`. 원문 HTML 태그는 이스케이프한다(`marked`의 html 토큰을 글자로).
+- `buildPdfHtml(md: string, css: string | null): string` — `<style>` = `fontFaceCss()` + (키트 CSS 또는 앱 기본 CSS) + 줄바꿈 규칙(`word-break: keep-all; overflow-wrap: anywhere`), 본문 `div.sheet`.
+- `renderPdf(html)` — `acquireBrowserLock(30_000)`, `chromium.launch()`, A4, `preferCSSPageSize: true`(키트 CSS의 `@page` 여백을 따름), 잠금 해제는 `finally`.
+- `kitPdfFileName(i: { name: string; doc: 'resume' | 'career'; track: string }): string` → `{이름}_{이력서|경력기술서}_{직무}.pdf`(경로 문자·공백 제거). 이름이 없으면 `{이력서|경력기술서}_{직무}.pdf`.
+- `contentDisposition(fileName, inline = false)` — 처음 설계와 같다.
+- 라우트
+  - `GET /api/tailored/[revisionId]/[doc]?format=pdf|md|html&inline=1` — `doc` = `resume|career`. pdf = 위 파일명, md = 같은 이름 `.md`(`text/markdown; charset=utf-8`), html = 미리보기(CSP `default-src 'none'; style-src 'unsafe-inline'; font-src data:; img-src data:`). 없는 리비전 404, 잘못된 doc 400, 잠금 시간 초과 503.
+  - `GET /api/tailored/[revisionId]/posting-md` — 공고 요약 md 받기: 회사·포지션·사이트·링크·마감, 상위 공고 단어 3개, 고른 직무·프로필·추가 조정, 공고 본문. 파일명 `공고.md`(사용자 지원 폴더 양식과 같은 이름).
+  - `GET /api/kit/[kitId]/[track]/[doc]?inline=1` — 기본 서류 그대로의 PDF(지원 기록 [보기]).
 
-- [ ] **Step 1: 실패하는 테스트** (`tests/pdf.test.ts`)
-
-```ts
-test('escapes html in content (TC-PDF-01)', () => {
-  const html = renderResumeHtml({ ...sample, summary: '<script>x</script> & "따옴표"' }, { part: 'resume' });
-  expect(html).toContain('&lt;script&gt;x&lt;/script&gt; &amp; &quot;따옴표&quot;');
-  expect(html).not.toContain('<script>x');
-});
-test('part selects sections (TC-PDF-02)', () => {
-  expect(renderResumeHtml(sample, { part: 'resume' })).not.toContain(sample.careerNarrative);
-  expect(renderResumeHtml(sample, { part: 'narrative' })).not.toContain(sample.experiences[0].company);
-  expect(renderResumeHtml(sample, { part: 'both' })).toContain('page-break-before');
-  expect(renderResumeHtml({ ...sample, careerNarrative: '' }, { part: 'both' })).not.toContain('page-break-before');
-});
-test('pdfFileName sanitizes (TC-PDF-03)', () => {
-  expect(pdfFileName({ name: '홍길동', company: '(주)토스/Bank', position: 'Server Dev', date: new Date('2026-11-16T09:00:00'), part: 'both' }))
-    .toBe('홍길동_(주)토스Bank_ServerDev_20261116.pdf');
-  expect(pdfFileName({ name: '홍길동', date: new Date('2026-11-16T09:00:00'), part: 'narrative' }))
-    .toBe('홍길동_20261116_경력기술서.pdf');
-});
-test('content-disposition encodes utf-8 filename (TC-PDF-04)', () => {
-  expect(contentDisposition('홍길동_토스.pdf')).toBe(`attachment; filename="resume.pdf"; filename*=UTF-8''${encodeURIComponent('홍길동_토스.pdf')}`);
-  expect(contentDisposition('a.pdf', true)).toMatch(/^inline;/);
-});
-test('renderPdf produces a PDF with embedded font and waits for the browser lock (TC-PDF-05)', async () => {
-  const buf = await renderPdf(renderResumeHtml(sample, { part: 'both', fontCss: fontFaceCss() }));
-  expect(buf.subarray(0, 5).toString()).toBe('%PDF-');
-  expect(buf.length).toBeGreaterThan(5_000);
-  // 잠금을 잡은 상태에서 renderPdf → 잠금을 풀기 전에는 끝나지 않음
-}, 60_000);
-test('template keeps Korean words together (TC-PDF-06)', () => { /* html에 'word-break: keep-all' */ });
-// TC-PDF-07 라우트: 없는 id 404, 잘못된 part → both, narrative 비었으면 400, Content-Type·Content-Disposition
-// TC-PDF-08 미리보기 라우트: text/html, CSP 헤더, 내용이 이스케이프됨
-```
-
-- [ ] **Step 2:** FAIL. **Step 3:** 구현. **Step 4:** PASS.
-- [ ] **Step 5:** 커밋 `feat: resume pdf rendering, preview and download routes`.
+- [ ] Step 1 테스트 TC-PDF-01 이스케이프(md 안 `<script>`), TC-PDF-02 섹션 구조(`h1` 다음 `.profile`, `h2`마다 `section.sec`), TC-PDF-03 `kitPdfFileName`, TC-PDF-04 `contentDisposition`, TC-PDF-05 `renderPdf`(`%PDF-`, 글꼴 포함, 잠금 대기), TC-PDF-06 줄바꿈 규칙, TC-PDF-07 라우트(404·400·형식별 Content-Type), TC-PDF-08 미리보기 CSP, TC-PDF-09 공고 요약 md 항목. Step 2~4. Step 5 커밋 `feat: kit-styled pdf and md downloads`.
 
 ---
 
-### Task 6: 화면 (맞춤 이력서 탭, 지원 완료·수정 창, 지원 기록, 기본 이력서)
+### Task 7: 화면
 
-**Files:**
-- Create: `src/app/postings/[id]/TailoredTab.tsx`, `src/app/postings/[id]/TailoredControls.tsx`, `src/app/_actions/tailored.ts`, `src/app/_components/DocSelects.tsx`, `tests/e2e/14-tailored.spec.ts`
-- Modify: `src/app/postings/[id]/page.tsx`, `ApplyForm.tsx`, `src/app/_components/{ApplicationEditModal,RecordPanel,SubmittedDocs,AnalysisView}.tsx`, `src/app/page.tsx`, `src/app/_actions/{applications,settings}.ts`, `src/app/api/jobs/active/route.ts`, `src/app/settings/{ModelSelects.tsx,page.tsx}`, `src/app/resume/{page.tsx,VersionHistory.tsx}`, `tests/fixtures/fake-claude-e2e.mjs`
+**Files:** 위 File Structure의 `src/app/**` 항목, `tests/e2e/14-tailored.spec.ts`, `tests/fixtures/fake-claude-e2e.mjs`.
 
-**Interfaces:**
-- 서버 액션 (`_actions/tailored.ts`): `requestTailoredResumeAction(postingId: number): Promise<ActionResult>`, `requestTailoredRevisionAction(postingId: number, request: string): Promise<ActionResult>`. 성공 알림 "맞춤 이력서를 만들기 시작했습니다" / "수정 요청을 보냈습니다". `revalidatePath('/postings/<id>')`.
-- `markAppliedAction`·`updateApplicationAction` 입력에 `submitted: { resume: string /* encodeResumeChoice */; career: string | null; portfolio: string | null }`. 액션이 `decodeResumeChoice`로 풀고, 못 풀면 "제출한 이력서 값이 올바르지 않습니다".
-- `DocSelects` props: `{ appliedAt: string; files: DocFile[]; revisions: { id: number; revNo: number; createdAt: string }[]; value: SubmittedInput; onChange(v): void; keepBase?: { versionId: number; versionNo: number } }`. 지원일이 바뀌면 사용자가 직접 고르지 않은 칸만 다시 고른다(이력서 칸이 맞춤본이면 그대로).
-
-- [ ] **Step 1: 맞춤 이력서 탭** (화면 문서 3.4 그대로)
-  - 탭 순서: 분석 / 맞춤 이력서 / 공고 원문 / 지원 기록(`?tab=tailored`). 탭 상태 점: 맞춤 작업 진행 중 "…", 실패 "!".
-  - 맞춤본 없음 / 진행 중 / 실패 / 결과 / 저장된 리비전을 읽을 수 없음 — 화면 문서 3.4 상황별 표.
-  - 결과: 리비전 선택(`?rev=<id>`), [PDF 받기 ▾], 확인 필요 경고, 되돌림 알림, 기준 이력서 바뀜 안내, 변경 내역, 사이트 수정 안내([복사]), 포트폴리오 활용, 참고 메모, 미리보기(iframe), 다듬기 입력.
-  - 배치: 폭 1100px 이상은 `minmax(0,1fr) 360px` 두 칸(오른쪽 미리보기 sticky), 그보다 좁으면 한 칸(미리보기는 아래). 사이트 수정 안내는 3열 표(항목 / 할 일 / 제안 문구). 화면 문서 3.4 "글자 잘림 방지" 규칙.
-  - 분석 탭 "맞춤 이력서 조언" 줄 오른쪽에 `맞춤 이력서 탭으로 →` 링크.
-  - 진행 중 작업 표시(내비)의 링크: 맞춤 작업이면 `/postings/<id>?tab=tailored`.
-- [ ] **Step 2: 지원 완료 창·수정 창·지원 기록**
-  - 지원 완료 창(3.7)과 수정 창(3.10)에 `DocSelects`. 대시보드의 기록만 행 수정 창에도 서류 목록을 넘긴다(맞춤본 선택지는 없음).
-  - 지원 기록 탭(3.9): "제출한 이력서" 라벨 `resumeLabel(…, 'long')`(없으면 "모름"). 맞춤본이면 라벨이 맞춤 탭 링크(`?tab=tailored&rev=<id>`). 제출 서류 카드는 값이 하나라도 있거나 맞춤본이면 보인다. 맞춤본 줄: `이력서  맞춤 이력서 r2  [보기]`(보기 = `/api/pdf/tailored/<id>?part=both&inline=1`, 새 탭).
-- [ ] **Step 3: 설정·기본 이력서**
-  - 설정 작업별 모델에 "맞춤 이력서", "맞춤 이력서 다듬기"(기본 opus).
-  - 기본 이력서 화면(5.2): [PDF 받기 ▾](현재 버전, 세 가지). 버전 기록(5.3): 버전 보기에 [내용 | 직전 버전과 비교] 전환. 비교는 `diffResume(직전, 선택)`을 맞춤 탭 변경 내역과 같은 모양으로(이유 없음). v1은 "첫 버전입니다". 같은 내용 저장 판단은 지금의 `sameResume`을 그대로 둔다.
-- [ ] **Step 4: E2E** (`tests/e2e/14-tailored.spec.ts`, 가짜 `claude`) — 아래 테스트 케이스 TC-TAILOR-E2E-01~11. E2E-09는 긴 내용 고정 데이터(회사명 30자, 직무 25자, 기술 `Spring Cloud Data Flow`, 제안 문구 200자, 공백 없는 영문 60자 주소)로 폭 1440·1024 화면을 찍어 글자 잘림·한글 낱말 끊김이 없는지 본다.
-- [ ] **Step 5:** 커밋 `feat: tailored resume tab, submitted documents on apply, pdf download`.
+- [ ] Step 1 **서류 키트 탭**(`/resume?tab=kit`, 화면 문서 5.6): 키트 버전·올린 날·파일 목록(역할), [키트 파일 올리기](여러 파일), 읽은 결과(직무·프로필 표·추가 조정·허용 범위 수·체크리스트 수·부품 짝짓기 표), 오류 목록, 키트 기록(이전 버전).
+- [ ] Step 2 **맞춤 이력서 탭**(3.4): 키트 없음/오류, 프로필 고르기(추천), 조립 결과, 용어 맞추기·다듬기 진행·실패, 리비전 선택, 자동 검사, 바뀐 곳, 남은 추가 조정, 제출 전 체크리스트, 미리보기(이력서|경력기술서), 내려받기, 키트가 바뀜 안내.
+- [ ] Step 3 **지원 완료 창·수정 창·지원 기록**(3.7·3.9·3.10): `DocSelects`에 "기본 서류" 선택지. 지원 기록 라벨에 프로필.
+- [ ] Step 4 **설정·기본 이력서**: 모델 2종("맞춤 이력서 공고 용어 맞추기", "맞춤 이력서 다듬기"). 버전 기록 "직전 버전과 비교"(`resume/diff.ts`의 `diffResume`, 5.3). 앱 기본 이력서 PDF 버튼은 만들지 않는다(D-26 a).
+- [ ] Step 5 E2E TC-TAILOR-E2E-01~12(아래 표). Step 6 커밋 `feat: kit tab, profile-based tailored resume tab, submitted resume with profile`.
 
 ---
 
-### Task 7: 통계 "맞춤 이력서 효과" (D-24 a)
+### Task 8: 통계 (D-24 a + D-29 a)
 
-**Files:**
-- Modify: `src/lib/stats/load.ts`, `src/lib/stats/aggregate.ts`, `src/app/stats/page.tsx`, `tests/stats.test.ts`, `tests/e2e/13-stats.spec.ts`
+**Files:** Modify `stats/load.ts`, `stats/aggregate.ts`, `app/stats/page.tsx`, `tests/stats.test.ts`, `tests/e2e/13-stats.spec.ts`.
 
 **Interfaces:**
-- `StatItem`에 `tailored: boolean`(`submittedResume.kind === 'tailored'`).
-- `byDocVersion(items, 'resume')`: 맨 앞에 `{ key: 'tailored', label: '맞춤 이력서' }` 묶음(맞춤본 기록 전부). 나머지 순서는 그대로(기본 v{n} → 파일 → 모름). 맞춤본 기록은 다른 묶음에 넣지 않는다. 경력기술서·포트폴리오는 바뀌지 않는다(맞춤본 기록도 그 종류의 파일 값으로 센다).
-- 새 함수
+- `StatItem`에 `tailored: boolean`, `profile: { id: string; name: string } | null`(tailored면 리비전의, kit이면 기록의).
+- `byDocVersion(items, 'resume')`: "맞춤 이력서" → "기본 서류 {직무}"(키트 기본 서류 그대로) → 기본 v{n} → 파일 → 모름.
+- `tailoredCompare(items): TailoredCompare | null` — 처음 설계와 같다.
+- `byProfile(items): { id: string; name: string; tailored: Tally; plain: Tally; all: Tally }[]` — 프로필 있는 기록만, 프로필 id 순(가이드 표 순서가 아닌 글자 순). 프로필 없는 기록은 빠진다.
+- 화면: "맞춤 이력서 효과" 카드 아래쪽에 "프로필별" 표(프로필 / 지원 / 통과 / 불합격 / 무응답 / 대기 / 서류 통과율 / 그중 맞춤). 프로필 기록이 없으면 표 대신 한 줄 안내.
 
-```ts
-export type TailoredCompare = {
-  since: string;          // 필터 안에서 맞춤본으로 낸 가장 이른 지원일
-  tailored: Tally;        // 그날부터 맞춤본으로 낸 지원
-  plain: Tally;           // 그날부터 맞춤본이 아닌 지원(파일·예전 기본 버전·가져온 기록·모름 모두)
-};
-export function tailoredCompare(items: StatItem[]): TailoredCompare | null;   // 맞춤본 기록이 없으면 null
-```
-- `StatsData`에 `tailoredCompare: TailoredCompare | null`. 사이트·기간 필터는 그대로 적용된다.
-- 화면(화면 문서 10.3 "맞춤 이력서 효과"): 요약 카드 바로 아래 전체 폭 카드. 막대 2줄(맞춤 이력서 / 맞춤 안 함) + 표(구분 / 지원 / 통과 / 불합격 / 무응답 / 대기 / 서류 통과율) + 안내 줄. 비어 있으면 안내 문구만.
-
-- [ ] **Step 1: 실패하는 테스트**
-  - TC-STATS-15 `loadStatItems`가 `tailored`를 읽음. `byDocVersion('resume')` 순서: 맞춤 이력서 → 기본 v2 → 이력서 파일 → 모름. `career`는 맞춤 기록도 파일 값으로.
-  - TC-STATS-16 `tailoredCompare`: 맞춤 기록 없음 → null. 맞춤 첫 지원 2026-11-21이면 그 전 기록은 빠지고, 같은 날 기록은 들어감. 사이트 필터 뒤 맞춤 기록이 없으면 null.
-- [ ] **Step 2:** FAIL. **Step 3:** 구현(화면 포함). **Step 4:** PASS + E2E-08. **Step 5:** 커밋 `feat: tailored resume effect in stats`.
+- [ ] Step 1 TC-STATS-15(묶음 순서), TC-STATS-16(`tailoredCompare`), TC-STATS-17(`byProfile`: 맞춤·기본 서류 둘 다 셈, 프로필 없는 기록 제외). Step 2~4. Step 5 커밋 `feat: tailored effect and per-profile pass rates`.
 
 ---
 
 ## 선택지별 차이
 
-| 결정 | 추천안(이 계획) | 다른 선택지일 때 바뀌는 것 |
+| 결정 | 추천안(이 계획) | 다른 선택지일 때 |
 |---|---|---|
-| D-23 | a: 실제 낸 서류(맞춤본 또는 파일 3종) 기록 | **b**(맞춤본·기본 버전만): Task 4에서 `ResumeChoice`의 `file`·`unknown`과 `SubmittedResume`의 `file`을 빼고 `markApplied` 기본값을 "최신 맞춤 리비전 → 최신 기본 이력서 버전"으로. 지원 완료 창은 "제출한 이력서" select 하나(맞춤 리비전들 + 기본 이력서 현재 버전). 수정 창에는 제출 서류 select 3개를 그대로 둔다(지난 기록 계획 Task 8 약속). 통계·대시보드의 맞춤 묶음은 같다 |
-| D-24 | a: 통계에 맞춤 효과 칸 + 서류 버전별 맞춤 묶음 | **b**: Task 7에서 `tailoredCompare`와 카드를 뺀다(서류 버전별 "맞춤 이력서" 묶음은 남김, 없으면 맞춤 기록이 "모름"에 섞인다). **c**: Task 7 전체를 뺀다(맞춤 기록은 서류 버전별에서 "모름"으로 셈) |
-| D-25 | a: PDF 파일 보관 안 함 | **b**: Task 5에 `saveTailoredPdf(revisionId, part)`를 더해 [PDF 받기] 때 `data/documents/tailored/<회사>_<포지션>_r<번호>_YYYYMMDD.pdf`에 저장, 서류 파일 화면(5.5)에 "맞춤 이력서" 묶음, 이름 규칙·보기 라우트 확장, `ensureDataDirs`에 폴더 추가 |
+| D-26 | a: 프로필 방식(코드 조립 + AI 용어 맞추기). JSON 재작성·사이트 수정 안내·포트폴리오 제안·앱 기본 이력서 PDF 뺌 | **b**(둘 다): 이 계획 + 처음 설계(작업 기록 "1. 설계", 재설계 전 이 계획 파일의 git 기록)의 JSON 맞춤 Task를 "프로필 없이 만들기"로 더함. 크기 큼→매우 큼. **c**(처음 설계 유지 + 프로필 기록만): 처음 설계로 돌아가고, 지원 완료 창에 프로필 select만 더함(키트 없음, 프로필 목록은 설정에서 직접 입력) |
+| D-27 | a: 앱 화면에서 키트 올리기, 버전 보관 | **b**: Task 2의 올리기 라우트·화면을 빼고, 메인 세션이 승인 후 `data/kit/<id>/`에 복사한 뒤 앱의 [키트 다시 읽기] 버튼(폴더를 읽어 새 버전 등록)만 둔다 |
+| D-28 | a: 규칙 추천 + 사용자 확정 | **b**: 추천을 AI가(분석 프롬프트에 프로필 목록을 넣고 결과에 추천 프로필 칸 추가, 분석 스키마 변경). **c**: 둘 다(규칙 점수와 AI 의견을 나란히) |
+| D-29 | a: 프로필별 표 추가 | **b**: Task 8의 `byProfile`·표를 뺀다(맞춤 / 맞춤 안 함만) |
 
 ## 테스트 케이스
 
 | ID | 대상 | 기대 결과 | 위치 |
 |---|---|---|---|
-| TC-TAILOR-01 | 맞춤본 저장소 | 공고당 묶음 1개, r1·r2 번호, 리비전마다 기준 버전, 최신순 목록, 리비전의 공고 | `tailored-repo.test.ts` |
-| TC-TAILOR-02 | 공고 삭제 | 맞춤본 행 함께 삭제, 대기 맞춤 작업 취소, 실행 중이면 거부 | `tailored-repo.test.ts` |
-| TC-TAILOR-03 | `diffResume` | 수정·추가·삭제·순서, 같으면 [], 기술은 분류로 짝 | `resume-diff.test.ts` |
-| TC-TAILOR-04 | 경로 이름·줄 비교 | `경력 > A사 > 성과`, 모르는 id는 그대로, del/same/ins | `resume-diff.test.ts` |
-| TC-TAILOR-05 | 새 수치 | 40% 경고, 기준에 있는 3배·날짜 숫자는 통과, '5년차' 경고, 같은 수치 1번만 | `fabrication.test.ts` |
-| TC-TAILOR-06 | 새 기술·경력·프로젝트 | Kafka → new_skill, 새 id → new_experience/new_project | `fabrication.test.ts` |
-| TC-TAILOR-07 | 사실 칸 되돌림 | 회사·기간·직무·연락처·학력·자격·프로젝트 이름은 기준 값, changed_fact | `fabrication.test.ts` |
-| TC-TAILOR-08 | 안내 문구 수치 | 사이트 수정 안내·포트폴리오 문구의 새 수치 경고 | `fabrication.test.ts` |
-| TC-TAILOR-09 | 생성 처리기 | 되돌린 내용·변경 내역·경고 저장, 도구 없음, opus, 규칙이 맨 위 | `tailor-task.test.ts` |
-| TC-TAILOR-10 | 다듬기 처리기 | 새 실행(세션 없음), 현재 리비전·요청·규칙 포함, r2, 기준 버전과 비교 | `tailor-task.test.ts` |
-| TC-TAILOR-11 | 다듬기 실패 | 로그인 오류 그대로, 리비전 안 생김 | `tailor-task.test.ts` |
-| TC-TAILOR-12 | 요청 검사 | 분석·기본 이력서 없음, 빈 요청, 2001자, 맞춤본 없음, 진행 중 | `tailor-task.test.ts` |
-| TC-TAILOR-13 | 기준 바뀜 | 다시 만들기는 최신 기준, 옛 리비전은 옛 기준 | `tailor-task.test.ts` |
-| TC-TAILOR-14 | `buildRevisionPrompt` | 원래 프롬프트·규칙·현재 JSON·요청 순서 | `tailor-task.test.ts` |
-| TC-TAILOR-15 | 프롬프트 | 변수 누락 없음, 첫 규칙 '기준 이력서에 없는' | `prompts.test.ts` |
-| TC-TAILOR-16 | 작업 종류 등록 | 시간 제한·기본 모델·진행 문구·설정 enum | `tailor-task.test.ts` |
-| TC-SUBMIT-01~07 | 제출 서류(D-23) | Task 4 Step 1 | `submitted.test.ts`, `search.test.ts` |
-| TC-PDF-01~08 | PDF | Task 5 Step 1 | `pdf.test.ts` |
-| TC-STATS-15·16 | 통계 맞춤 | Task 7 Step 1 | `stats.test.ts` |
-| TC-TAILOR-E2E-01 | 생성 | 분석된 공고 → 탭 빈 상태 → [맞춤 이력서 만들기] → 진행 표시 → 결과: 경고·되돌림 알림·변경 내역·사이트 수정 안내([복사] → "복사됨")·포트폴리오·미리보기 | `14-tailored.spec.ts` |
-| TC-TAILOR-E2E-02 | 다듬기 | 빈 입력이면 [수정 요청] 비활성 → 요청 → r2 → 리비전 r1 고르면 r1 내용, 주소 `rev=` | `14-tailored.spec.ts` |
-| TC-TAILOR-E2E-03 | PDF | 세 메뉴 모두 `application/pdf`, 파일명 규칙, 경력기술서 없으면 "경력기술서만" 메뉴 없음 | `14-tailored.spec.ts` |
-| TC-TAILOR-E2E-04 | 기준 바뀜 | 기본 이력서 저장 → 안내 → [최신 기준으로 다시 만들기] → r3, 안내 사라짐 | `14-tailored.spec.ts` |
-| TC-TAILOR-E2E-05 | 분석 전 | 버튼 비활성 + "분석이 끝나면 만들 수 있습니다" | `14-tailored.spec.ts` |
-| TC-TAILOR-E2E-06 | 지원 완료 | 기본값 맞춤 r2·경력기술서 파일 → 저장만 → 지원 기록 "맞춤 이력서 r2" + [보기] PDF, 대시보드 "맞춤 r2", 이력서별 "맞춤 이력서" 묶음 | `14-tailored.spec.ts` |
-| TC-TAILOR-E2E-07 | 수정 창 | 이력서를 파일로 바꿈 → 라벨 바뀜. 기록만 행 수정 창의 서류 select(맞춤 선택지 없음) | `14-tailored.spec.ts` |
-| TC-TAILOR-E2E-08 | 통계 | 맞춤 효과 카드 두 줄·안내, 맞춤 기록 없으면 안내 문구, 서류 버전별 "맞춤 이력서" 묶음 | `13-stats.spec.ts` |
-| TC-TAILOR-E2E-09 | 배치 | 폭 1440·1024, 긴 내용에서 글자 잘림·한글 낱말 끊김 없음(스크린샷) | `14-tailored.spec.ts` |
-| TC-TAILOR-E2E-10 | 기본 이력서 | [PDF 받기] 세 메뉴, 버전 "직전 버전과 비교", v1 "첫 버전입니다" | `14-tailored.spec.ts` |
-| TC-TAILOR-E2E-11 | 공고 삭제 | 맞춤본 있는 미지원 공고 삭제 → 대시보드, 맞춤 탭 주소 404 | `14-tailored.spec.ts` |
-| TC-TAILOR-M1 | 실제 `claude`(수동, 병합 뒤 사용자) | 실제 공고 1건 생성 + 다듬기 1회(opus 2회): 형식 통과, 경력 id 유지, 경고가 지나치게 많지 않은지, 사이트 용어가 맞는지 | 수동 |
-| TC-TAILOR-M2 | 실제 PDF(수동) | 받은 PDF를 PDF 보기 프로그램에서 열어 한글·줄바꿈·쪽 넘김·파일명 확인 | 수동 |
+| TC-TAILOR-01·02 | 저장소·공고 삭제 | Task 1 | `tailored-repo.test.ts` |
+| TC-KIT-01~05 | 키트 읽기·올리기 | Task 2 | `kit-parse.test.ts` |
+| TC-KIT-10~16 | 조립·추천 | Task 3 | `kit-assemble.test.ts`, `kit-recommend.test.ts` |
+| TC-KIT-20~25 | 자동 검사·줄 비교 | Task 3 | `kit-checks.test.ts` |
+| TC-TAILOR-03, 09~16 | 조립 저장·AI 작업 | Task 4 | `tailor-task.test.ts`, `prompts.test.ts` |
+| TC-SUBMIT-01~07 | 제출 서류 | Task 5 | `submitted.test.ts`, `search.test.ts` |
+| TC-PDF-01~09 | PDF·md | Task 6 | `pdf.test.ts` |
+| TC-STATS-15~17 | 통계 | Task 8 | `stats.test.ts` |
+| TC-RESUME-DIFF-01 | 버전 비교 | 문장·목록·순서 변경, 같으면 [] | `resume-diff.test.ts` |
+| TC-TAILOR-E2E-01 | 키트 | 예시 키트 올리기 → 직무·프로필 표, 오류 키트 올리기 → 오류 목록, 맞춤 탭은 앞 키트 사용 | `14-tailored.spec.ts` |
+| TC-TAILOR-E2E-02 | 프로필 고르기·조립 | 추천 프로필에 "추천", 공고 단어 3개, 추가 조정 체크 → [맞춤본 만들기] → 바로 r1(진행 표시 없음), 남은 추가 조정 표시 | `14-tailored.spec.ts` |
+| TC-TAILOR-E2E-03 | 용어 맞추기 | [공고 용어 맞추기] → 진행 → r2, 자동 검사 경고(새 수치·자기소개 되돌림), 바뀐 곳에 이유 | `14-tailored.spec.ts` |
+| TC-TAILOR-E2E-04 | 다듬기 | 빈 입력 비활성, 요청 → r3, 리비전 선택 `rev=` | `14-tailored.spec.ts` |
+| TC-TAILOR-E2E-05 | 내려받기 | 이력서·경력기술서 PDF·md, 공고.md, 파일명 규칙 | `14-tailored.spec.ts` |
+| TC-TAILOR-E2E-06 | 키트 바뀜 | 새 키트 올림 → "키트가 바뀜" 안내 → [새 키트로 다시 조립] → 같은 프로필로 새 리비전 | `14-tailored.spec.ts` |
+| TC-TAILOR-E2E-07 | 키트 없음·분석 전 | 안내 문구와 비활성 | `14-tailored.spec.ts` |
+| TC-TAILOR-E2E-08 | 지원 완료 | 기본값 맞춤 r2 → 저장만 → 지원 기록 "맞춤 이력서 r2 (프로필)" [보기], 대시보드 이력서별 "맞춤 이력서" | `14-tailored.spec.ts` |
+| TC-TAILOR-E2E-09 | 배치 | 폭 1440·1024, 긴 내용(긴 프로필 이름, 긴 단어, 긴 경고 문장)에서 잘림·한글 끊김 없음(스크린샷) | `14-tailored.spec.ts` |
+| TC-TAILOR-E2E-10 | 수정 창 | 이력서를 "기본 서류 FDE"로 바꿈 → 라벨 바뀜 | `14-tailored.spec.ts` |
+| TC-TAILOR-E2E-11 | 통계 | 맞춤 효과 두 줄, 프로필별 표, 기록 없을 때 안내 | `13-stats.spec.ts` |
+| TC-TAILOR-E2E-12 | 체크리스트 | 가이드 체크리스트 문장이 보이고 체크는 새로고침 뒤에도 이 브라우저에 남음 | `14-tailored.spec.ts` |
+| TC-TAILOR-M1 | 실제(수동, 병합 뒤 사용자) | 실제 키트 올리기 → 오류 없음, 부품 짝짓기 표가 맞는지 / 실제 공고 1건 조립 → 사용자 가이드대로 손으로 한 결과와 같은지 / 용어 맞추기 1회 + 다듬기 1회(opus 2회) | 수동 |
+| TC-TAILOR-M2 | 실제 PDF(수동) | 앱 PDF를 사용자 PDF 도구 결과와 나란히 열어 모양·쪽 넘김 비교 | 수동 |
 
 ## Spec 대비 범위
 
 | 설계서 항목 | 이 계획 |
 |---|---|
-| 7.5 생성·규칙·출력 4종·대화로 다듬기·리비전·PDF | Task 1, 2, 3, 5, 6 |
-| 7.4 제출한 이력서·서류 기본값, 수정 창(D-01) | Task 4, 6 (D-23) |
-| 7.9 지원 기록의 제출 서류(앞으로의 [지원 완료]) | Task 4, 6 (D-23) |
-| 7.10 맞춤 이력서 효과, 서류 버전별 맞춤 묶음 | Task 7 (D-24) |
-| 9.4 대화로 다듬기(D-11: 매번 새 실행) | Task 3 (`buildRevisionPrompt`, 4단계에서 재사용) |
-| 11 PDF (A4, 글꼴 내장, 템플릿 1종, 파일명, 이력서/경력기술서 선택) | Task 5, 6 (D-25) |
-| 5.3 버전 "직전 버전과 비교"(D-07) | Task 6 Step 3 |
-| 반목표 "지어내기 금지" | 프롬프트 규칙 + Task 2 되돌림·검사 + Task 6 경고 표시 |
+| 7.5 맞춤 이력서(프로필 방식), 대화로 다듬기, 리비전, PDF | Task 1, 3, 4, 6, 7 |
+| 7.11 서류 키트 | Task 2, 7 |
+| 7.4·7.9 제출 서류(D-23) | Task 5, 7 |
+| 7.10 맞춤 효과(D-24), 프로필별(D-29) | Task 8 |
+| 9.4 다듬기 새 실행(D-11) | Task 4 |
+| 11 PDF | Task 6 |
+| 5.3 버전 비교(D-07) | Task 7 Step 4 |
+| 반목표 "지어내기 금지" | 코드 조립 + 프롬프트 규칙 + 자동 검사 |
 
-미룬 것: PDF 템플릿 추가, 맞춤 PDF에 경력기술서를 함께 냈는지 따로 기록하는 것(경력기술서 칸은 파일로 고른다), 기술 이름의 부분 일치 오탐 줄이기(예: `Java`가 `JavaScript` 안에 있으면 새 기술로 보지 않음).
-
-주의: 리비전마다 기준 버전이 다를 수 있으므로 변경 내역·경고·"기준 이력서 바뀜" 안내는 **각 리비전의 `baseResumeVersionId`** 를 쓴다.
+미룬 것: 공고 분석의 입력을 앱 JSON 이력서에서 기본 서류 md로 바꾸는 것(다음 작업 후보), 추가 조정별 통계, 지원 현황 표 내보내기, 체크리스트 체크를 기록으로 남기기, 경력기술서를 맞춤본·기본 서류로 냈는지 따로 기록하기.

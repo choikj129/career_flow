@@ -53,7 +53,7 @@ scripts/         실행·시드          data/            실행 데이터(git �
 | [docs/plans/phase-1-2-mvp.md](docs/plans/phase-1-2-mvp.md) | 1·2단계: 기반 + 공고 분석·지원 관리·대시보드 |
 | [docs/plans/phase-2-past-records.md](docs/plans/phase-2-past-records.md) | 2단계 추가: 지난 기록 직접 입력·제출 서류 파일(이력서·경력기술서·포트폴리오) 연결과 보기 |
 | [docs/plans/phase-2-stats.md](docs/plans/phase-2-stats.md) | 2단계 추가: 통계 화면 `/stats`(서류 통과율 기간·서류 버전·사이트·요일별, 단계별 흐름, SVG 그래프)와 대시보드 통과율 통일 |
-| [docs/plans/phase-3-tailored-resume.md](docs/plans/phase-3-tailored-resume.md) | 3단계: 맞춤 이력서·PDF, 지원 완료의 제출 서류 기록, 통계 "맞춤 이력서 효과" |
+| [docs/plans/phase-3-tailored-resume.md](docs/plans/phase-3-tailored-resume.md) | 3단계: 맞춤 이력서(프로필 방식: 서류 키트·프로필 추천·조립·공고 용어 맞추기)·PDF, 지원 완료의 제출 서류 기록, 통계 "맞춤 이력서 효과"·프로필별 |
 | [docs/plans/phase-4-interview-prep.md](docs/plans/phase-4-interview-prep.md) | 4단계: 면접 준비 |
 | [docs/plans/phase-5-site-sync-settings.md](docs/plans/phase-5-site-sync-settings.md) | 5단계: 사이트 반영 체크리스트·설정 |
 | [docs/guide/usage.md](docs/guide/usage.md) | 설치·실행·백업 안내 |
