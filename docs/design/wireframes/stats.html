@@ -71,7 +71,7 @@ details summary { cursor: pointer; color: var(--sub); font-size: 13px; margin-to
 
 <p class="page-title">와이어프레임 — 통계 <code>/stats</code></p>
 <p class="page-desc">배치·문구 확인용. 동작·문구는 <code>docs/spec/screens.md</code> 10장, 그래프 색은 <code>docs/design/design.md</code> 7장(D-18~D-21 결정 반영). 숫자는 모두 예시다(지난 기록을 불합격으로 정리한 뒤 새 지원 12건이 있다고 가정).</p>
-<div class="toc"><a href="#s1">S-1 기본</a><a href="#s2">S-2 연별·비율·필터</a><a href="#s3">S-3 표본 부족</a><a href="#s4">S-4 빈 상태</a><a href="#s5">S-5 대시보드 연결</a></div>
+<div class="toc"><a href="#s1">S-1 기본</a><a href="#s2">S-2 연별·비율·필터</a><a href="#s3">S-3 표본 부족</a><a href="#s4">S-4 빈 상태</a><a href="#s5">S-5 대시보드 연결</a><a href="#s6">S-6 맞춤 이력서 효과</a></div>
 
 <!-- S-1 -->
 <section class="frame" id="s1">
@@ -270,6 +270,32 @@ details summary { cursor: pointer; color: var(--sub); font-size: 13px; margin-to
     <div class="panel" style="margin-top:6px"><div class="row between"><span>▸ ● 그룹바이 <span class="sub">17</span></span><span>서류 통과 0 / 17 · 0.0% <span class="badge">표본 적음</span></span></div></div>
   </div></div>
   <ul class="notes"><li>"통계 보기 →"는 대시보드의 기간·사이트 필터를 넘긴다("이번 달"은 넘기지 않음).</li><li>묶음 머리 통과율은 통계 화면과 같은 정의다(D-18). 분모 0이면 "결과 대기".</li></ul>
+</section>
+
+<!-- S-6 -->
+<section class="frame" id="s6">
+  <p class="frame-name">S-6 맞춤 이력서 효과 <small>3단계, D-24 결정 + 프로필별 표 D-29 추천안. 요약 카드 바로 아래 전체 폭</small></p>
+  <div class="screen"><div class="body">
+    <div class="panel">
+      <div class="h2">맞춤 이력서 효과</div>
+      <div class="gap"></div>
+      <div class="hb"><span>맞춤 이력서</span><span class="track"><i style="width:45%"></i><i class="p" style="width:6%"></i></span><span class="rate">13.3% (2/15) <span class="badge">표본 적음</span></span></div>
+      <div class="hb"><span>맞춤 안 함</span><span class="track"><i style="width:100%"></i><i class="p" style="width:2%"></i></span><span class="rate">3.3% (1/30)</span></div>
+      <table><tr><th>구분</th><th>지원</th><th>통과</th><th>불합격</th><th>무응답</th><th>대기</th><th>서류 통과율</th></tr>
+        <tr><td>맞춤 이력서</td><td>24</td><td>2</td><td>13</td><td>0</td><td>9</td><td>13.3% (2/15) <span class="badge">표본 적음</span></td></tr>
+        <tr><td>맞춤 안 함</td><td>36</td><td>1</td><td>29</td><td>0</td><td>6</td><td>3.3% (1/30)</td></tr></table>
+      <p class="sub small">2026-11-21(맞춤본을 처음 낸 날)부터의 지원만 비교합니다. 지원 후 30일이 안 된 지원은 대기로 빠지므로, 처음 몇 주는 표본이 적습니다.</p>
+      <div class="gap"></div>
+      <div class="h2">프로필별 <span class="sub small">D-29 추천안</span></div>
+      <table><tr><th>프로필</th><th>지원</th><th>통과</th><th>불합격</th><th>무응답</th><th>대기</th><th>서류 통과율</th><th>그중 맞춤</th></tr>
+        <tr><td>B1 범용</td><td>20</td><td>1</td><td>15</td><td>0</td><td>4</td><td>6.3% (1/16) <span class="badge">표본 적음</span></td><td>2</td></tr>
+        <tr><td>B3 정합성</td><td>8</td><td>1</td><td>4</td><td>0</td><td>3</td><td>표본 부족 (n=5)</td><td>8</td></tr>
+        <tr><td>F1 범용</td><td>6</td><td>0</td><td>2</td><td>0</td><td>4</td><td class="sub">표본 부족 (n=2)</td><td>1</td></tr></table>
+    </div>
+    <div class="gap"></div>
+    <div class="panel"><div class="h2">맞춤 이력서 효과</div><p class="sub">아직 맞춤 이력서로 낸 지원이 없습니다. 지원 완료 때 제출 서류의 이력서를 '맞춤 이력서'로 고르면 여기서 비교됩니다.</p></div>
+  </div></div>
+  <ul class="notes"><li>위: 맞춤 기록 있음 / 아래: 없음. 기간·사이트 필터를 그대로 따른다.</li><li>서류 버전별(이력서)에도 맨 앞에 "맞춤 이력서" 묶음(보조 글자 "공고마다 맞춘 이력서")이 생긴다.</li><li>숫자는 예시다. 동작은 screens.md 10.3.</li></ul>
 </section>
 
 </body></html>
