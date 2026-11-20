@@ -185,15 +185,18 @@ test.describe.serial('지난 기록 직접 입력', () => {
     await expect(stats.getByText('내지 않은 지원')).toBeVisible();
   });
 
-  test('TC-PAST-E2E-09 폭 1024에서도 직접 입력 표의 선택·입력 칸 글자가 잘리지 않는다', async ({ page }) => {
+  test('TC-PAST-E2E-09 폭 1024에서도 직접 입력 표의 선택·입력 칸(회사·포지션·사이트·지원일·상태·서류) 글자가 잘리지 않는다', async ({ page }) => {
     put('portfolio', '포트폴리오_20261017.pdf');
     put('career', '경력기술서_20261102.pdf');
     await page.setViewportSize({ width: 1024, height: 800 });
     await openManual(page, '원티드');
+    await expect(page.locator('.doc-pick').first()).toContainText('이력서'); // 종류 이름은 select 왼쪽 라벨
     const r = rows(page).first();
+    await r.getByLabel('회사').fill('아주긴테스트회사 코리아');
+    await r.getByLabel('포지션').fill('[CS] Backend Engineer (경력)');
     await r.getByLabel('지원일').fill('2026-11-20');
     await r.getByLabel('상태').selectOption('assignment'); // 가장 긴 상태 이름
-    // 가장 긴 문구: 서류 select는 선택된 옵션 글자, 사이트·상태 select는 모든 옵션 글자
+    // 서류 select는 모든 옵션 글자(모름/없음/날짜), 사이트·상태 select는 모든 옵션 글자, 회사·포지션은 입력한 글자
     const clipped = await page.evaluate(() => {
       const ctxFor = (el: Element) => {
         const cs = getComputedStyle(el);
@@ -217,7 +220,11 @@ test.describe.serial('지난 기록 직접 입력', () => {
         }
       }
       const date = row.querySelector('input[aria-label="지원일"]') as HTMLInputElement;
-      check(date, '2026-10-20', 0, '지원일');
+      check(date, '2026-10-20', 28, '지원일'); // 달력 아이콘 자리
+      for (const label of ['회사', '포지션']) {
+        const input = row.querySelector(`input[aria-label="${label}"]`) as HTMLInputElement;
+        check(input, input.value, 0, label);
+      }
       const wrapScroll = document.documentElement.scrollWidth > document.documentElement.clientWidth;
       if (wrapScroll) bad.push('페이지가 가로로 스크롤됨');
       return bad;

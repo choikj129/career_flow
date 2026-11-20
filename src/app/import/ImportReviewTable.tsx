@@ -212,7 +212,7 @@ export function ImportReviewTable({
                   <input
                     className={`in${need("appliedAt")}`}
                     aria-label="지원일"
-                    placeholder="2026-10-03"
+                    type="date"
                     value={r.appliedAt}
                     onChange={(e) => setAppliedAt(r.key, e.target.value)}
                     onBlur={() => void recheck(r.key)}
@@ -229,29 +229,30 @@ export function ImportReviewTable({
                 </td>
                 <td>
                   {DOC_KINDS.map((k) => (
-                    <select
-                      key={k}
-                      className="in"
-                      style={{ display: "block", marginBottom: 2 }}
-                      aria-label={DOC_KIND_LABELS[k]}
-                      value={r.docs[k] ?? ""}
-                      onChange={(e) =>
-                        patch(r.key, {
-                          docs: { ...r.docs, [k]: e.target.value || null },
-                          touched: { ...r.touched, [k]: true },
-                        })
-                      }
-                    >
-                      <option value="">{DOC_KIND_LABELS[k]} 모름</option>
-                      {canBeNone(k) && <option value={DOC_NONE}>{DOC_KIND_LABELS[k]} 없음</option>}
-                      {docFiles
-                        .filter((f) => f.kind === k)
-                        .map((f) => (
-                          <option key={f.fileName} value={f.fileName}>
-                            {DOC_KIND_LABELS[k]} {f.date}
-                          </option>
-                        ))}
-                    </select>
+                    <label key={k} className="doc-pick">
+                      <span>{DOC_KIND_LABELS[k]}</span>
+                      <select
+                        className="in"
+                        aria-label={DOC_KIND_LABELS[k]}
+                        value={r.docs[k] ?? ""}
+                        onChange={(e) =>
+                          patch(r.key, {
+                            docs: { ...r.docs, [k]: e.target.value || null },
+                            touched: { ...r.touched, [k]: true },
+                          })
+                        }
+                      >
+                        <option value="">모름</option>
+                        {canBeNone(k) && <option value={DOC_NONE}>없음</option>}
+                        {docFiles
+                          .filter((f) => f.kind === k)
+                          .map((f) => (
+                            <option key={f.fileName} value={f.fileName}>
+                              {f.date}
+                            </option>
+                          ))}
+                      </select>
+                    </label>
                   ))}
                 </td>
                 <td>

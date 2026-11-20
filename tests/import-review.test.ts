@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { APPLICATION_STATUSES } from '@/lib/domain/types';
+import { APPLICATION_STATUSES, SITE_IDS, SITE_LABELS } from '@/lib/domain/types';
 import { bulkCreateApplications } from '@/lib/applications/repo';
 import { findExistingMatches, markExistingRows } from '@/lib/applications/import-review';
 import { checkedRowsSchema, missingFields, rowsToRegister, type ReviewRow } from '@/lib/applications/import-rows';
@@ -166,5 +166,21 @@ describe('none value in rows (TC-PAST-72)', () => {
   test('rowsToRegister passes none values through', () => {
     const [r] = rowsToRegister([{ ...row({ docs: { resume: null, career: 'none', portfolio: 'none' } }), checked: true }]);
     expect(r.submittedDocs).toEqual({ resume: null, career: 'none', portfolio: 'none' });
+  });
+});
+
+describe('homepage site (D-23)', () => {
+  test('homepage sits right above other, with a label', () => {
+    expect(SITE_IDS.slice(-2)).toEqual(['homepage', 'other']);
+    expect(SITE_LABELS.homepage).toBe('홈페이지 지원');
+  });
+  test('row schema accepts homepage and ignores the source note for it', () => {
+    expect(checkedRowsSchema.safeParse([{ ...row({ site: 'homepage' }), checked: true }]).success).toBe(true);
+    const [r] = rowsToRegister([{ ...row({ site: 'homepage', siteNote: '메모' }), checked: true }]);
+    expect(r.siteNote).toBeUndefined();
+  });
+  test('import prompt lists every site id', () => {
+    const prompt = readFileSync(join(process.cwd(), 'prompts', 'import-applications.md'), 'utf8');
+    for (const s of SITE_IDS) expect(prompt, s).toContain(s);
   });
 });

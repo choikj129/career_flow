@@ -14,12 +14,12 @@
   --r: 10px; --r-sm: 7px; --pad: 20px; --row: 13px;
   --shadow: 0 1px 2px rgba(22,33,58,.06), 0 4px 16px rgba(22,33,58,.06);
   /* 사이트 색: 상태 색(코발트·초록·주황)과 겹치지 않는 색, 흰 바탕 대비 4.5:1 이상 */
-  --site-remember: #0E7C86; --site-wanted: #6741D9; --site-groupby: #A15C00; --site-jobkorea: #B5179E; --site-other: #5B6475;
+  --site-remember: #0E7C86; --site-wanted: #6741D9; --site-groupby: #A15C00; --site-jobkorea: #B5179E; --site-homepage: #3F6212; --site-other: #5B6475;
 }
 /* 사이트 표시: 색 점 + 이름(상태 배지는 채운 알약이라 모양으로도 구분된다) */
 .site { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 13.5px; color: var(--c, var(--site-other)); white-space: nowrap; }
 .site::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex: none; }
-.site.remember { --c: var(--site-remember); } .site.wanted { --c: var(--site-wanted); } .site.groupby { --c: var(--site-groupby); } .site.jobkorea { --c: var(--site-jobkorea); } .site.other { --c: var(--site-other); }
+.site.remember { --c: var(--site-remember); } .site.wanted { --c: var(--site-wanted); } .site.groupby { --c: var(--site-groupby); } .site.jobkorea { --c: var(--site-jobkorea); } .site.homepage { --c: var(--site-homepage); } .site.other { --c: var(--site-other); }
 .site.lg { font-size: 15px; }
 .site.lg::before { width: 10px; height: 10px; }
 
@@ -39,7 +39,7 @@ h1, h2, h3 { font-family: var(--font-head); font-weight: var(--head-weight); let
 
 /* ───────── 내비게이션 ───────── */
 .nav { background: var(--nav-bg); border-bottom: 1px solid var(--nav-line); position: sticky; top: 0; z-index: 10; }
-.nav-inner { max-width: 1240px; margin: 0 auto; padding: 0 24px; height: 58px; display: flex; align-items: center; gap: 4px; }
+.nav-inner { max-width: 1440px; margin: 0 auto; padding: 0 24px; height: 58px; display: flex; align-items: center; gap: 4px; }
 .logo { font-family: var(--font-head); font-weight: var(--head-weight); font-size: 18px; color: var(--nav-cur); margin-right: 22px; letter-spacing: var(--head-track); white-space: nowrap; }
 .nav a { color: var(--nav-ink); padding: 8px 11px; border-radius: var(--r-sm); font-size: 14px; white-space: nowrap; }
 .nav a:hover { text-decoration: none; color: var(--nav-cur); }
@@ -53,7 +53,7 @@ h1, h2, h3 { font-family: var(--font-head); font-weight: var(--head-weight); let
 @keyframes pulse { 50% { opacity: .3; } }
 
 /* ───────── 공통 ───────── */
-.page { max-width: 1240px; margin: 0 auto; padding: 28px 24px 80px; }
+.page { max-width: 1440px; margin: 0 auto; padding: 28px 24px 80px; }
 .title-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
 .title-row h1 { font-size: 26px; }
 .desc { color: var(--sub); margin: 4px 0 0; }
@@ -287,7 +287,7 @@ details summary { cursor: pointer; font-weight: 600; margin: 22px 0 10px; }
 .group-head .rate { margin-left: auto; font-size: 13px; color: var(--sub); }
 .group-head .rate b { color: var(--ink); }
 .label-chip { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 6px; font-weight: 700; font-size: 14px; color: var(--c, var(--ink)); background: color-mix(in srgb, var(--c, var(--ink)) 11%, white); }
-.label-chip.remember { --c: var(--site-remember); } .label-chip.wanted { --c: var(--site-wanted); } .label-chip.groupby { --c: var(--site-groupby); } .label-chip.jobkorea { --c: var(--site-jobkorea); } .label-chip.other { --c: var(--site-other); }
+.label-chip.remember { --c: var(--site-remember); } .label-chip.wanted { --c: var(--site-wanted); } .label-chip.groupby { --c: var(--site-groupby); } .label-chip.jobkorea { --c: var(--site-jobkorea); } .label-chip.homepage { --c: var(--site-homepage); } .label-chip.other { --c: var(--site-other); }
 .group-body { display: none; margin: 2px 0 10px 22px; }
 .group[open-g] .group-body { display: block; }
 .res-tag { font-size: 12.5px; font-weight: 600; color: var(--sub); border: 1px solid var(--line-strong); border-radius: 5px; padding: 1px 6px; white-space: nowrap; }
@@ -358,12 +358,15 @@ textarea.in { height: auto; min-height: 70px; padding: 10px 12px; resize: vertic
 .review th, .review td { padding: 8px 6px; text-align: left; white-space: nowrap; }
 /* 표 칸의 min-width는 자동 레이아웃에서 무시되므로, 안의 입력·선택 요소에 최소 폭을 준다. */
 .review { width: max-content; min-width: 100%; }
-.review td:nth-child(2) .in, .review td:nth-child(3) .in { min-width: 130px; }
-.review td:nth-child(4) .in { min-width: 112px; }
-.review td:nth-child(5) .in { min-width: 126px; }
+.review td:nth-child(2) .in { min-width: 180px; }
+.review td:nth-child(3) .in { min-width: 200px; }
+.review td:nth-child(4) .in { min-width: 148px; }
+.review td:nth-child(5) .in { min-width: 148px; }
 .review td:nth-child(6) .in { min-width: 150px; }
-.review td:nth-child(7) .in { min-width: 214px; }
+.review td:nth-child(7) .in { min-width: 118px; }
 .review td:nth-child(8) .in { min-width: 150px; }
+.doc-pick { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
+.doc-pick > span { width: 66px; font-size: 12px; color: var(--sub); flex: none; }
 .review textarea.in { min-height: 34px; }
 .review .in { height: 34px; }
 .review select.in { padding-right: 24px; }

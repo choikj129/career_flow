@@ -1,10 +1,11 @@
-export type SiteId = 'remember' | 'wanted' | 'groupby' | 'jobkorea' | 'other';
-export const SITE_IDS: SiteId[] = ['remember', 'wanted', 'groupby', 'jobkorea', 'other'];
+export type SiteId = 'remember' | 'wanted' | 'groupby' | 'jobkorea' | 'homepage' | 'other';
+export const SITE_IDS: SiteId[] = ['remember', 'wanted', 'groupby', 'jobkorea', 'homepage', 'other'];
 export const SITE_LABELS: Record<SiteId, string> = {
   remember: '리멤버',
   wanted: '원티드',
   groupby: '그룹바이',
   jobkorea: '잡코리아',
+  homepage: '홈페이지 지원',
   other: '기타',
 };
 

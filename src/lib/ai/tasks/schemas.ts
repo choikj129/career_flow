@@ -40,7 +40,7 @@ export const ImportedApplications = z.object({
     z.object({
       companyName: z.string(),
       positionTitle: z.string(),
-      site: z.enum(['remember', 'wanted', 'groupby', 'jobkorea', 'other']).nullable(),
+      site: z.enum(['remember', 'wanted', 'groupby', 'jobkorea', 'homepage', 'other']).nullable(),
       appliedAt: z.string().nullable(),
       status: z.enum(APPLICATION_STATUSES as [ApplicationStatus, ...ApplicationStatus[]]).nullable(),
     }),
