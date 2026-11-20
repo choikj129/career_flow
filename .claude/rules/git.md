@@ -33,6 +33,7 @@
 ## 진행 방법
 
 - 코드 작업은 `feat/<주제>` 또는 `fix/<주제>` 브랜치에서 한다.
+  - **앱 폴더(`C:\project\career_flow`)는 항상 `main`에 둔다.** 실행 중인 앱과 자동 반영이 이 폴더를 쓰고, 사용자가 보는 문서(`docs/decisions.md` 등)도 여기 있다. 기능 작업은 `git worktree add ../career_flow-<주제> -b feat/<주제> main`으로 만든 별도 폴더에서 한다(node_modules는 복사). 설계 문서만 고치는 단계도 별도 폴더에서 하거나 끝나는 대로 `main`에 병합해 결정 항목이 보이게 한다.
 - 커밋 메시지는 `feat:`, `fix:`, `test:`, `docs:`, `chore:`, `perf:`, `refactor:` 중 하나로 시작한다.
 - 커밋은 경로를 지정해서 한다. `git add -A`, `git add .`는 쓰지 않는다.
 - `data/`, `data-*/`, `.env*`, 인증 정보, 개인 이력서 파일은 절대 커밋하지 않는다.
