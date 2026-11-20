@@ -48,6 +48,8 @@ export function checkTailored(input: {
   base: Docs;
   masterMd: string;
   otherCompanyNames: string[];
+  /** false면 자기소개를 되돌리지 않고 달라졌다는 경고(intro_changed)만 낸다(작업 공간 결과, Task 9). 기본 true */
+  restoreIntro?: boolean;
 }): { final: Docs; warnings: KitWarning[] } {
   const { kit, stage1, base, masterMd } = input;
   const warnings: KitWarning[] = [];
@@ -58,11 +60,18 @@ export function checkTailored(input: {
   const stage1Resume = parseMdDoc(stage1.resumeMd);
   const fi = introSection(finalResume);
   const si = introSection(stage1Resume);
+  const restore = input.restoreIntro !== false;
+  let introRestored = false;
   if (fi && si && bodyText(fi) !== bodyText(si)) {
-    fi.lines = [...si.lines];
-    warnings.push({ kind: 'intro_restored', doc: 'resume', detail: '자기소개는 AI가 바꿀 수 없어 조립본의 자기소개로 되돌렸습니다.' });
+    if (restore) {
+      fi.lines = [...si.lines];
+      introRestored = true;
+      warnings.push({ kind: 'intro_restored', doc: 'resume', detail: '자기소개는 AI가 바꿀 수 없어 조립본의 자기소개로 되돌렸습니다.' });
+    } else {
+      warnings.push({ kind: 'intro_changed', doc: 'resume', detail: '자기소개가 조립본과 다릅니다. 작업 공간 결과라 되돌리지 않았으니 내용이 맞는지 확인하세요.' });
+    }
   }
-  const final: Docs = { resumeMd: fi && si ? renderMdDoc(finalResume) : input.final.resumeMd, careerMd: input.final.careerMd };
+  const final: Docs = { resumeMd: introRestored ? renderMdDoc(finalResume) : input.final.resumeMd, careerMd: input.final.careerMd };
 
   for (const doc of ['resume', 'career'] as const) {
     const finalMd = doc === 'resume' ? final.resumeMd : final.careerMd;

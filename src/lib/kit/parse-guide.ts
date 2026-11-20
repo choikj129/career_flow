@@ -68,6 +68,8 @@ export function parseGuide(md: string): { guide: KitGuide | null; errors: KitErr
       }
   }
 
+  if (baseSec && baseTable && trackRows.length === 0) err('"기본 서류" 표', '직무가 하나도 없습니다(직무 줄이 1개 이상 있어야 합니다)');
+
   // 3. 번호표
   const partsByTrack = new Map<string, Track['parts']>();
   const numSec = findSection(doc, (t) => t.includes('번호표'));

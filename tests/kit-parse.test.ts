@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { existsSync, mkdtempSync, readFileSync, readdirSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { makeTestDb } from './helpers/db';
@@ -122,6 +122,15 @@ describe('md-doc round trip (TC-KIT-04)', () => {
   });
 });
 
+describe('parseGuide without tracks (TC-KIT-06)', () => {
+  test('a guide whose base-document table has no rows is an error, not a crash later', () => {
+    const empty = GUIDE.split('\n').filter((l) => !l.startsWith('| 백엔드 |') && !l.startsWith('| 데이터 |')).join('\n');
+    const { guide, errors } = parseGuide(empty);
+    expect(guide).toBeNull();
+    expect(errors.some((e) => e.where.includes('기본 서류') && e.message.includes('직무'))).toBe(true);
+  });
+});
+
 describe('saveKit (TC-KIT-05)', () => {
   test('roles, files on disk, label, usable kit', () => {
     const db = makeTestDb();
@@ -172,6 +181,24 @@ describe('saveKit (TC-KIT-05)', () => {
     expect(kit.parsed!.styleCss).toContain('color: red');
     expect(kit.parsed!.styleCss).not.toContain('print');
     expect(existsSync(join(dir, String(kitId), 'build_pdf.py'))).toBe(true);
+  });
+
+  test('file names: Windows-forbidden characters and colons are rejected, duplicates are an error (TC-KIT-07)', () => {
+    const db = makeTestDb();
+    const dir = mkdtempSync(join(tmpdir(), 'cf-kit-'));
+    for (const bad of ['메모:1.md', '메모?.md', '메모*.md', '메모\"x\".md', '메모<a>.md', '메모|a.md', 'CON.md', '끝점.md.']) {
+      expect(() => saveKit([...fixtureFiles(), { name: bad, data: Buffer.from('x') }], db, dir), bad).toThrow('파일 이름');
+    }
+    expect(() => saveKit([...fixtureFiles(), { name: '서류_가이드.md', data: Buffer.from('x') }], db, dir)).toThrow('같은 이름');
+    expect(getLatestKit(db)).toBeNull(); // 거부된 올리기는 키트 행을 남기지 않는다
+  });
+
+  test('a failure while writing files leaves no kit row behind (TC-KIT-08)', () => {
+    const db = makeTestDb();
+    const dir = join(mkdtempSync(join(tmpdir(), 'cf-kit-')), 'blocked');
+    writeFileSync(dir, 'a file where the kit folder should go'); // 폴더를 만들 수 없게 한다
+    expect(() => saveKit(fixtureFiles(), db, dir)).toThrow();
+    expect(getLatestKit(db)).toBeNull();
   });
 
   test('size limits', () => {

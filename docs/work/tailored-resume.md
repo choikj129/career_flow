@@ -186,6 +186,7 @@
 |---|---|---|---|---|
 | 묶음 A (Task 1·2) | `b441336`, `aaa8c43`(+ `775f295`) | 통과(로직·품질·화면) | 0 | 키트·맞춤본 테이블(`0005_tailored`), 키트 읽기·보관(`kit/types·md-doc·parse-guide·repo`). 지어낸 예시 키트 `tests/fixtures/kit/`. `npm test` 통과, lint·tsc·build 통과. 화면 없음(E2E 없음) |
 | 묶음 B (Task 3·3b) | `c5d7dfd`, `5f10618`, `67d902f` | 통과(로직·품질·화면, E2E 148 통과) | 0 | 추천·조립·검사·줄 비교, 분석에 프로필 추천(호출 수 그대로). `npm test` 448 통과, lint·tsc·build 통과. 분석 탭의 `?tab=tailored` 링크는 맞춤 탭(Task 6)이 생기기 전까지 분석 탭으로 간다 |
+| 묶음 C (Task 4·9) | (이 줄을 넣은 커밋) | | | 맞춤본 저장·AI 작업(`createRecipeRevision`·`requestTermsMatch`·`requestTailoredRevision`, `tailor_resume`·`revise_tailored` 처리기, 프롬프트 2개, `buildRevisionPrompt`), 작업 공간 요청(`tailored/handoff.ts`, `addExternalRevision`), A·B 권장 2건(직무 0개 오류, 키트 저장 안전). 화면·서버 액션·라우트는 묶음 D~F 몫이라 만들지 않음. 실제 `claude` 호출 0회 |
 
 A·B 검증의 권장·사소 항목(다음 묶음에서 처리):
 - 권장: 직무 0개인 가이드는 키트 오류로 처리(지금은 분석이 터짐).

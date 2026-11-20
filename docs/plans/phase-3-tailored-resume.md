@@ -513,6 +513,7 @@ export function addExternalRevision(postingId: number, input: { resumeMd: string
 |---|---|---|---|
 | TC-TAILOR-01·02 | 저장소·공고 삭제 | Task 1 | `tailored-repo.test.ts` |
 | TC-KIT-01~05 | 키트 읽기·올리기 | Task 2 | `kit-parse.test.ts` |
+| TC-KIT-06~08 | 직무 0개 가이드는 오류, 올리기 파일 이름(금지 문자·예약어·중복) 거부, 파일 쓰기 실패 시 키트 행 없음 | Task 2 보강(묶음 C) | `kit-parse.test.ts` |
 | TC-KIT-10~16 | 조립·추천 | Task 3 | `kit-assemble.test.ts`, `kit-recommend.test.ts` |
 | TC-KIT-20~25 | 자동 검사·줄 비교 | Task 3 | `kit-checks.test.ts` |
 | TC-TAILOR-03, 09~16 | 조립 저장·AI 작업 | Task 4 | `tailor-task.test.ts`, `prompts.test.ts` |

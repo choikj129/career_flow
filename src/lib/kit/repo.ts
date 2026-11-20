@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { desc, eq } from 'drizzle-orm';
 import { getDb, type Db } from '@/lib/db/client';
@@ -38,12 +38,31 @@ function cssFromPython(text: string): string | null {
 
 type Incoming = { name: string; data: Buffer };
 
+const FORBIDDEN_NAME_CHARS = /[<>:"|?*]/;
+const RESERVED_NAME = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i;
+
+/** Windows에서 파일로 만들 수 없는 이름이면 이유를 돌려준다. */
+function badFileName(name: string): string | null {
+  if (FORBIDDEN_NAME_CHARS.test(name)) return '파일 이름에 쓸 수 없는 글자(< > : " | ? *)가 있습니다';
+  if (/[. ]$/.test(name)) return '파일 이름이 점이나 공백으로 끝날 수 없습니다';
+  if (RESERVED_NAME.test(name.split('.')[0])) return 'Windows가 예약한 파일 이름입니다';
+  return null;
+}
+
 export function saveKit(
   files: Incoming[],
   db: Db = getDb(),
   dir: string = config.kitDir,
 ): { kitId: number; errors: KitError[] } {
   const named = files.map((f) => ({ name: safeName(f.name), data: f.data })).filter((f) => f.name);
+  const seen = new Set<string>();
+  for (const f of named) {
+    const why = badFileName(f.name);
+    if (why) throw new Error(`${f.name}: ${why}`);
+    const key = f.name.toLowerCase();
+    if (seen.has(key)) throw new Error(`같은 이름의 파일이 둘 이상입니다: ${f.name}`);
+    seen.add(key);
+  }
   const mdFiles = named.filter((f) => f.name.toLowerCase().endsWith('.md'));
   if (mdFiles.length > KIT_MAX_MD) throw new Error(`마크다운 파일은 최대 ${KIT_MAX_MD}개까지 올릴 수 있습니다`);
   for (const f of named) {
@@ -121,16 +140,26 @@ export function saveKit(
     .filter((f) => roles.has(f.name))
     .map((f) => ({ ...roles.get(f.name)!, name: f.name, sha256: createHash('sha256').update(f.data).digest('hex'), bytes: f.data.length }));
 
-  const id = db
-    .insert(kits)
-    .values({ label: label ?? '키트', files: stored, parsed, errors, createdAt: new Date().toISOString() })
-    .returning({ id: kits.id })
-    .get().id;
-  if (!label) db.update(kits).set({ label: `키트 ${id}` }).where(eq(kits.id, id)).run();
-
-  const kitDir = join(dir, String(id));
-  mkdirSync(kitDir, { recursive: true });
-  for (const f of named) writeFileSync(join(kitDir, f.name), f.data);
+  // 키트 번호가 폴더 이름이라 행을 먼저 만들되, 파일 쓰기가 실패하면 행을 되돌리고 만든 폴더도 지운다.
+  const kitRoot = (n: number) => join(dir, String(n));
+  let id = 0;
+  try {
+    id = db.transaction((tx) => {
+      const newId = tx
+        .insert(kits)
+        .values({ label: label ?? '키트', files: stored, parsed, errors, createdAt: new Date().toISOString() })
+        .returning({ id: kits.id })
+        .get().id;
+      if (!label) tx.update(kits).set({ label: `키트 ${newId}` }).where(eq(kits.id, newId)).run();
+      mkdirSync(kitRoot(newId), { recursive: true });
+      for (const f of named) writeFileSync(join(kitRoot(newId), f.name), f.data);
+      return newId;
+    });
+  } catch (e) {
+    const last = db.select({ id: kits.id }).from(kits).orderBy(desc(kits.id)).limit(1).get()?.id ?? 0;
+    rmSync(kitRoot(last + 1), { recursive: true, force: true }); // 되돌려진 행 번호의 폴더
+    throw e;
+  }
   return { kitId: id, errors };
 }
 

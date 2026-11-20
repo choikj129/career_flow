@@ -42,7 +42,7 @@ export type KitError = { file: string; where: string; message: string };
 export type KitFile = { role: KitRole; track?: string; name: string; sha256: string; bytes: number };
 
 export type KitWarning = {
-  kind: 'new_number' | 'new_fact_from_master' | 'forbidden_term' | 'intro_restored' | 'structure_changed' | 'stack_changed' | 'other_company';
+  kind: 'new_number' | 'new_fact_from_master' | 'forbidden_term' | 'intro_restored' | 'intro_changed' | 'structure_changed' | 'stack_changed' | 'other_company';
   doc: 'resume' | 'career';
   detail: string;
 };
