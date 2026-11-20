@@ -28,6 +28,7 @@ npm run start
 - **로그인 시 자동 실행**: 시작프로그램 폴더의 `career-flow.vbs`가 창 없이 `npm run start`를 켠다(이미 3939가 열려 있으면 아무것도 안 함). 로그는 `data\logs\server.log`. 그만두려면 그 파일을 지운다. 자원: 대기 중 CPU 0%, 메모리 약 200MB(2026-11-19 측정).
 - **병합 시 자동 반영**: `.git/hooks/post-merge`가 이 폴더의 `main`에 병합될 때만 백그라운드로 `.git/hooks/redeploy.ps1`을 부른다. 순서: 실행 중인 앱 끄기 → `npm run build` → 숨김 실행(앱 시작 때 DB 마이그레이션 적용). 기록은 `data\logs\deploy.log`, 빌드 출력은 `deploy-build.log`. 빌드가 실패하면 앱을 다시 켜지 않으니 로그를 보고 고친 뒤 직접 켠다. 반영 중 약 30~60초 앱이 꺼진다.
 - 작업 브랜치의 미완성 코드는 반영되지 않는다(검증을 거쳐 `main`에 병합된 것만).
+- **push 전 검사**: `.git/hooks/pre-push`(+ `check-push.cjs`)가 올릴 커밋에 개인 파일·실제 지원 회사 이름·비공개가 아닌 이메일이 있으면 push를 막는다.
 - 훅은 git이 추적하지 않는다. 저장소를 새로 받으면 다시 만들어야 한다.
 
 ## 서류 결과 메일 자동 반영 (매일 09:00, Claude 예약 작업)
