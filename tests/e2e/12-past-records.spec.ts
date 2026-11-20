@@ -184,4 +184,76 @@ test.describe.serial('지난 기록 직접 입력', () => {
     await expect(stats.getByTestId('hbar-absent')).toContainText('없음');
     await expect(stats.getByText('내지 않은 지원')).toBeVisible();
   });
+
+  test('TC-PAST-E2E-09 폭 1024: 직접 입력 표에 가로 스크롤이 없고 모든 칸 글자가 잘리지 않는다', async ({ page }) => {
+    put('portfolio', '포트폴리오_20261017.pdf');
+    put('career', '경력기술서_20261102.pdf');
+    await page.setViewportSize({ width: 1024, height: 800 });
+    await openManual(page, '원티드');
+    const r = rows(page).first();
+    await r.getByLabel('회사').fill('아주긴테스트회사 코리아 주식회사 (Very Long Test Company Co., Ltd.)');
+    await r.getByLabel('포지션').fill('[CS] Senior Backend Engineer (경력 5년 이상, 플랫폼)');
+    await r.getByLabel('지원일').fill('2026-11-20');
+    await r.getByLabel('상태').selectOption('assignment'); // 가장 긴 상태 이름
+    await expect(page.locator('.doc-pick').first()).toContainText('이력서'); // 종류 이름은 select 왼쪽 라벨
+    const problems = await page.evaluate(() => {
+      const bad: string[] = [];
+      const row = document.querySelector('table.review tbody tr') as HTMLElement;
+      const wrap = document.querySelector('.review-wrap') as HTMLElement;
+      if (document.documentElement.scrollWidth > document.documentElement.clientWidth) bad.push('페이지 가로 스크롤');
+      if (wrap.scrollWidth > wrap.clientWidth + 1) bad.push('표 영역 가로 스크롤');
+      // 모든 칸이 표 영역 안에 있다(서류·메모 포함)
+      const wr = wrap.getBoundingClientRect();
+      for (const el of Array.from(row.querySelectorAll('select, input, textarea')) as HTMLElement[]) {
+        const b = el.getBoundingClientRect();
+        if (b.right > wr.right + 1 || b.left < wr.left - 1) bad.push(`칸이 영역 밖: ${el.getAttribute('aria-label')}`);
+      }
+      // 회사·포지션: 줄바꿈으로 늘어나 글자가 잘리지 않는다
+      for (const label of ['회사', '포지션']) {
+        const t = row.querySelector(`textarea[aria-label="${label}"]`) as HTMLTextAreaElement;
+        if (t.scrollHeight > t.clientHeight + 1) bad.push(`${label} 세로로 잘림`);
+        if (t.scrollWidth > t.clientWidth + 1) bad.push(`${label} 가로로 잘림`);
+      }
+      // 선택 칸·날짜: 가장 긴 글자가 칸 안에 들어간다. 실제 렌더와 맞추려고 같은 글꼴의 span을 만들어 offsetWidth로 잰다.
+      // 칸 안쪽 글자 공간 = clientWidth(테두리 제외) - 좌우 padding - 화살표(select 20, 달력 아이콘 28)
+      const textWidth = (el: HTMLElement, text: string) => {
+        const cs = getComputedStyle(el);
+        const span = document.createElement('span');
+        span.textContent = text;
+        span.style.cssText = `position:absolute;visibility:hidden;white-space:nowrap;font:${cs.font};letter-spacing:${cs.letterSpacing}`;
+        document.body.appendChild(span);
+        const w = span.offsetWidth;
+        span.remove();
+        return w;
+      };
+      const measure = (el: HTMLElement, text: string, arrow: number, name: string) => {
+        const cs = getComputedStyle(el);
+        const inner = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - arrow;
+        const w = textWidth(el, text);
+        if (w > inner) bad.push(`${name}: "${text}" 글자 ${w}px > 칸 안쪽 ${Math.round(inner)}px`);
+      };
+      for (const sel of Array.from(row.querySelectorAll('select')) as HTMLSelectElement[]) {
+        for (const o of Array.from(sel.options)) measure(sel, o.text, 20, sel.getAttribute('aria-label') ?? '');
+      }
+      measure(row.querySelector('input[aria-label="지원일"]') as HTMLElement, '2026-10-20', 28, '지원일');
+      // 메모 칸: 비어 있어도 세로로 잘리지 않는다
+      const memo = row.querySelector('textarea[aria-label="메모"]') as HTMLTextAreaElement;
+      if (memo.scrollHeight > memo.clientHeight + 1) bad.push('메모 세로로 잘림');
+      return bad;
+    });
+    expect(problems).toEqual([]);
+  });
+
+  test('TC-PAST-E2E-10 대시보드·공고 상세의 지원일은 한 줄로 보인다', async ({ page }) => {
+    await page.setViewportSize({ width: 1024, height: 800 });
+    await page.goto('/');
+    const cell = page.locator('tbody tr.row-link td.nw').first();
+    await expect(cell).toBeVisible();
+    const oneLine = await cell.evaluate((el) => {
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      return getComputedStyle(el).whiteSpace === 'nowrap' && range.getClientRects().length === 1;
+    });
+    expect(oneLine).toBe(true);
+  });
 });

@@ -5,7 +5,7 @@ export const STAT_COLORS = {
   interview: "#2342C8",
   final: "#15803D",
   applied: "#5B6475",
-  rejected: "#98A0AE",
+  rejected: "#F4A9A8",
   noResponse: "#D5D9E1",
   pendingStroke: "#5B6475",
   rate: "#2342C8",

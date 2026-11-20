@@ -77,7 +77,7 @@ export function ApplicationTable({
                     <SiteBadge site={r.site} note={r.siteNote} />
                   </td>
                 )}
-                <td>{r.appliedAt}</td>
+                <td className="nw">{r.appliedAt}</td>
                 <td>
                   <StatusBadge status={r.status} round={r.interviewRound} />
                 </td>

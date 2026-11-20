@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { checkExistingAction, checkExistingMatchesAction, commitApplicationImportAction } from "@/app/_actions/import";
 import { useAction } from "@/app/_components/useAction";
 import {
@@ -21,6 +21,46 @@ import {
   type ApplicationStatus,
   type SiteId,
 } from "@/lib/domain/types";
+
+/** 길면 줄바꿈되며 높이가 늘어나는 한 줄 입력(회사·포지션). 줄바꿈 키는 막는다. */
+function AutoText({
+  value,
+  onChange,
+  onBlur,
+  className,
+  label,
+  placeholder,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  onBlur?: () => void;
+  className: string;
+  label: string;
+  placeholder: string;
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight + 2}px`;
+  }, [value]);
+  return (
+    <textarea
+      ref={ref}
+      rows={1}
+      className={`${className} autotext`}
+      aria-label={label}
+      placeholder={placeholder}
+      value={value}
+      onChange={(e) => onChange(e.target.value.replace(/\r?\n/g, " "))}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") e.preventDefault();
+      }}
+      onBlur={onBlur}
+    />
+  );
+}
 
 type Row = CheckedRow & {
   key: number;
@@ -170,22 +210,22 @@ export function ImportReviewTable({
                   <input type="checkbox" aria-label="등록할 행" checked={r.checked} onChange={(e) => patch(r.key, { checked: e.target.checked })} />
                 </td>
                 <td>
-                  <input
+                  <AutoText
                     className={`in${need("companyName")}`}
-                    aria-label="회사"
+                    label="회사"
                     placeholder="회사명"
                     value={r.companyName}
-                    onChange={(e) => patch(r.key, { companyName: e.target.value })}
+                    onChange={(v) => patch(r.key, { companyName: v })}
                     onBlur={() => void recheck(r.key)}
                   />
                 </td>
                 <td>
-                  <input
+                  <AutoText
                     className={`in${need("positionTitle")}`}
-                    aria-label="포지션"
+                    label="포지션"
                     placeholder="포지션"
                     value={r.positionTitle}
-                    onChange={(e) => patch(r.key, { positionTitle: e.target.value })}
+                    onChange={(v) => patch(r.key, { positionTitle: v })}
                     onBlur={() => manual && void recheck(r.key)}
                   />
                 </td>
@@ -212,7 +252,7 @@ export function ImportReviewTable({
                   <input
                     className={`in${need("appliedAt")}`}
                     aria-label="지원일"
-                    placeholder="2026-10-03"
+                    type="date"
                     value={r.appliedAt}
                     onChange={(e) => setAppliedAt(r.key, e.target.value)}
                     onBlur={() => void recheck(r.key)}
@@ -229,29 +269,30 @@ export function ImportReviewTable({
                 </td>
                 <td>
                   {DOC_KINDS.map((k) => (
-                    <select
-                      key={k}
-                      className="in"
-                      style={{ display: "block", marginBottom: 2 }}
-                      aria-label={DOC_KIND_LABELS[k]}
-                      value={r.docs[k] ?? ""}
-                      onChange={(e) =>
-                        patch(r.key, {
-                          docs: { ...r.docs, [k]: e.target.value || null },
-                          touched: { ...r.touched, [k]: true },
-                        })
-                      }
-                    >
-                      <option value="">{DOC_KIND_LABELS[k]} 모름</option>
-                      {canBeNone(k) && <option value={DOC_NONE}>{DOC_KIND_LABELS[k]} 없음</option>}
-                      {docFiles
-                        .filter((f) => f.kind === k)
-                        .map((f) => (
-                          <option key={f.fileName} value={f.fileName}>
-                            {DOC_KIND_LABELS[k]} {f.date}
-                          </option>
-                        ))}
-                    </select>
+                    <label key={k} className="doc-pick">
+                      <span>{DOC_KIND_LABELS[k]}</span>
+                      <select
+                        className="in"
+                        aria-label={DOC_KIND_LABELS[k]}
+                        value={r.docs[k] ?? ""}
+                        onChange={(e) =>
+                          patch(r.key, {
+                            docs: { ...r.docs, [k]: e.target.value || null },
+                            touched: { ...r.touched, [k]: true },
+                          })
+                        }
+                      >
+                        <option value="">모름</option>
+                        {canBeNone(k) && <option value={DOC_NONE}>없음</option>}
+                        {docFiles
+                          .filter((f) => f.kind === k)
+                          .map((f) => (
+                            <option key={f.fileName} value={f.fileName}>
+                              {f.date}
+                            </option>
+                          ))}
+                      </select>
+                    </label>
                   ))}
                 </td>
                 <td>

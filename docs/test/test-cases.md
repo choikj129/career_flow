@@ -559,6 +559,8 @@ AI 작업이 끝나면 `data/ai-work/<번호>/`를 바로 지운다. 올린 이�
 | TC-PAST-76 | 대시보드 이력서 라벨·묶음은 다른 종류의 none에 영향 없음 | `tests/search.test.ts` |
 | TC-PAST-E2E-08 | 직접 입력에서 지원일 2026-08-01 → 경력기술서 "없음" 자동 선택, 이력서 select에 없음 선택지 없음, 기록 펼침 "없음"·"이력서 모름", 통계 "없음" 막대·"내지 않은 지원" | `tests/e2e/12-past-records.spec.ts` (작성만, 검증 단계에서 실행) |
 | TC-PAST-M3 | 실제 데이터 없음 표시(수동): dry-run 수가 메인 세션이 따로 센 수와 맞는지, 실행 뒤 통계·기록 펼침 확인, 다시 dry-run → 0 | 수동 |
+| TC-PAST-80 | 사이트 "홈페이지 지원"(`homepage`)이 기타 바로 위, 표시명, 행 검증 통과, 출처 이름 무시, 가져오기 프롬프트에 모든 사이트 ID | `tests/import-review.test.ts` |
+| TC-PAST-E2E-09 | 폭 1024에서 직접 입력 표의 회사·포지션·사이트·지원일·상태·서류 칸 글자가 잘리지 않음, 서류 종류 이름은 select 왼쪽 라벨 | `tests/e2e/12-past-records.spec.ts` (작성만, 검증 단계에서 실행) |
 
 ## 11. 통계 화면 (브랜치 `feat/stats-dashboard`)
 

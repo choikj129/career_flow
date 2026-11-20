@@ -124,7 +124,7 @@ async function PostingDetail({
           {application ? (
             <div className="p-state">
               <StatusBadge status={application.status} round={application.interviewRound} />
-              <span className="muted small">{application.appliedAt}</span>
+              <span className="muted small nw">{application.appliedAt}</span>
               <SiteBadge site={application.site} note={application.siteNote} />
               <StatusChange
                 applicationId={application.id}
@@ -468,7 +468,7 @@ function RecordItem({
         <span>
           <span className="muted small">지원일</span>
           <br />
-          <b>{app.appliedAt}</b>
+          <b className="nw">{app.appliedAt}</b>
         </span>
         <span>
           <span className="muted small">사이트</span>
@@ -505,7 +505,7 @@ function RecordItem({
           {events.map((e) => (
             <li key={e.id}>
               <span>
-                {eventDate(e.at)}
+                <span className="nw">{eventDate(e.at)}</span>
                 {e.note ? <span className="tl-note">{e.note}</span> : null}
               </span>
               <StatusBadge status={e.status} round={e.interviewRound} />

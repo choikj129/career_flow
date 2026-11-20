@@ -63,7 +63,7 @@ export function RecordPanel({
           {[...record.events].reverse().map((ev) => (
             <li key={ev.id}>
               <span>
-                {eventDate(ev.at)}
+                <span className="nw">{eventDate(ev.at)}</span>
                 {ev.note ? <span className="tl-note">{ev.note}</span> : null}
               </span>
               <StatusBadge status={ev.status} round={ev.interviewRound} />

@@ -94,7 +94,7 @@ export function StatusBoard({
                   ) : null}
                   {r.status === "withdrawn" && <span>지원취소</span>}
                   {r.status === "rejected" && <span>불합격</span>}
-                  <span>{r.appliedAt.slice(5).replace("-", "/")}</span>
+                  <span className="nw">{r.appliedAt.slice(5).replace("-", "/")}</span>
                   <span className="fitn">{r.fitScore ?? ""}</span>
                 </div>
               </button>
