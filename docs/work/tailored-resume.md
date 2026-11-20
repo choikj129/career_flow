@@ -184,8 +184,14 @@
 
 | 회차 | 개발 커밋 범위 | 검증 결과 | 남은 필수 항목 | 비고 |
 |---|---|---|---|---|
-| 묶음 A (Task 1·2) | `b441336`, `aaa8c43`(+ `775f295`) | | | 키트·맞춤본 테이블(`0005_tailored`), 키트 읽기·보관(`kit/types·md-doc·parse-guide·repo`). 지어낸 예시 키트 `tests/fixtures/kit/`. `npm test` 통과, lint·tsc·build 통과. 화면 없음(E2E 없음) |
-| 묶음 B (Task 3·3b) | `c5d7dfd`, `5f10618`, `67d902f` | | | 추천·조립·검사·줄 비교, 분석에 프로필 추천(호출 수 그대로). `npm test` 448 통과, lint·tsc·build 통과. 분석 탭의 `?tab=tailored` 링크는 맞춤 탭(Task 6)이 생기기 전까지 분석 탭으로 간다 |
+| 묶음 A (Task 1·2) | `b441336`, `aaa8c43`(+ `775f295`) | 통과(로직·품질·화면) | 0 | 키트·맞춤본 테이블(`0005_tailored`), 키트 읽기·보관(`kit/types·md-doc·parse-guide·repo`). 지어낸 예시 키트 `tests/fixtures/kit/`. `npm test` 통과, lint·tsc·build 통과. 화면 없음(E2E 없음) |
+| 묶음 B (Task 3·3b) | `c5d7dfd`, `5f10618`, `67d902f` | 통과(로직·품질·화면, E2E 148 통과) | 0 | 추천·조립·검사·줄 비교, 분석에 프로필 추천(호출 수 그대로). `npm test` 448 통과, lint·tsc·build 통과. 분석 탭의 `?tab=tailored` 링크는 맞춤 탭(Task 6)이 생기기 전까지 분석 탭으로 간다 |
+
+A·B 검증의 권장·사소 항목(다음 묶음에서 처리):
+- 권장: 직무 0개인 가이드는 키트 오류로 처리(지금은 분석이 터짐).
+- 권장: 키트 저장은 파일을 먼저 쓰고 DB를 마지막에(실패 시 빈 키트 행이 남지 않게). 파일 이름에서 Windows 금지 문자·`:` 차단, 같은 이름 중복은 오류.
+- 권장: Task 6에서 추천 줄 E2E(보임/안 보임, `?tab=tailored` 연결).
+- 사소: 추천 줄 `overflow-wrap`, 추가 조정 소제목 직무 이름 부분 일치, 수치 정규식 한계, 프로젝트 이름 0·2개 일치 시 `pending`, `getUsableKit` SQL limit 1, `lineDiff` 상한(클라이언트 사용 전), `ProfileRec` 타입 위치, 부모 찾기 중복.
 
 ## 4. 결정 요청
 
