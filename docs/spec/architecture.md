@@ -54,7 +54,8 @@ src/lib/
 │  ├─ parse-guide.ts         가이드 md → 구조 (순수)
 │  ├─ md-doc.ts              기본 서류 md → 블록, 부품 찾기, 다시 쓰기 (순수)
 │  ├─ assemble.ts            레시피 적용(조립) (순수)
-│  ├─ recommend.ts           공고 단어 세기, 직무·프로필·추가 조정 추천 (순수)
+│  ├─ recommend.ts           공고 단어 세기 추천(AI 추천이 없을 때의 대체) (순수)
+│  ├─ profile-table.ts       분석 프롬프트용 프로필 표, AI 프로필 추천 정리 (D-28 b) (순수)
 │  ├─ checks.ts              자동 검사 (순수)
 │  ├─ line-diff.ts           줄 단위 비교 (순수, 클라이언트에서도 씀)
 │  └─ repo.ts                키트 올리기·버전 보관
@@ -77,7 +78,8 @@ src/lib/
 │  ├─ load.ts                지원 기록 읽기 → StatItem, getStats
 │  ├─ params.ts              /stats 주소 파라미터
 │  └─ chart-scale.ts         그래프 축 최대값·눈금 (순수)
-├─ tailored/repo.ts          맞춤 이력서·리비전, 조립, 용어 맞추기·다듬기 작업 요청
+├─ tailored/repo.ts          맞춤 이력서·리비전, 조립, 용어 맞추기·다듬기 작업 요청, 작업 공간 결과 올리기
+├─ tailored/handoff.ts       이력서 작업 공간 요청문, 권유 기준 (순수, D-30)
 ├─ interview/
 │  ├─ repo.ts                면접 준비·리비전·요청
 │  └─ sources.ts             출처 링크 정리
@@ -266,7 +268,7 @@ data/                       git 제외. 위치는 CAREER_FLOW_DATA_DIR로 바꿀
 ├─ career-flow.db           SQLite
 ├─ uploads/                 올린 이력서·캡처 원본 (resume/, import/)
 ├─ documents/               제출 서류 PDF 복사본 (resume/이력서_YYYYMMDD.pdf, career/경력기술서_…, portfolio/포트폴리오_…). 앱이 만든 맞춤본 PDF는 여기에 저장하지 않는다(D-25)
-├─ kit/<id>/                서류 키트 사본(가이드·작성 규칙·마스터스토리·기본 서류 md·스타일). 올릴 때마다 새 id (3단계, D-27 추천안)
+├─ kit/<id>/                서류 키트 사본(가이드·작성 규칙·마스터스토리·기본 서류 md·스타일). 올릴 때마다 새 id (3단계, D-27)
 ├─ ai-work/<jobId>/         작업별 Claude Code 작업 폴더 (입력 파일)
 ├─ browser-profile/         Playwright 영구 프로필 (사이트 로그인 유지)
 └─ backups/                 DB 백업 (자동 30개, 수동 10개)

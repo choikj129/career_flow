@@ -2,15 +2,15 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-- 상태: **재설계 1** (2026-11-20). 작업 기록: [docs/work/tailored-resume.md](../work/tailored-resume.md) "재설계 1"
-- 결정됨: D-23 a(지원 완료 때 실제로 낸 서류 기록), D-24 a(통계 "맞춤 이력서 효과"), D-25 a(맞춤본 PDF 파일 보관 안 함, 다시 만듦)
-- 이 계획은 **D-26~D-29 추천안**을 기준으로 쓴다(결정 대기). 다른 선택지면 아래 "선택지별 차이"대로 바꾼다.
-  - D-26 a: 맞춤 이력서를 **프로필 방식**으로 만든다. 사용자의 기본 서류(직무별 이력서·경력기술서 md)에 프로필 레시피를 앱 코드가 적용하고, AI는 허용 범위 안의 공고 용어 맞추기와 다듬기만 한다. 처음 설계의 "AI가 앱 기본 이력서(JSON)를 다시 씀", 사이트 이력서 수정 안내, 포트폴리오 활용 제안, 앱 기본 이력서 PDF는 뺀다.
-  - D-27 a: 서류 키트(가이드·작성 규칙·마스터스토리·기본 서류·PDF 스타일)는 앱 화면에서 파일을 골라 올린다. 올릴 때마다 새 키트 버전으로 보관한다.
-  - D-28 a: 프로필 추천은 규칙(공고 단어 세기)으로 하고 사용자가 확정한다. AI 호출 없음.
+- 상태: **재설계 2** (2026-11-20). 작업 기록: [docs/work/tailored-resume.md](../work/tailored-resume.md) "재설계 1"·"재설계 2"
+- 결정됨: D-23 a(지원 완료 때 실제로 낸 서류 기록), D-24 a(통계 "맞춤 이력서 효과"), D-25 a(맞춤본 파일 보관 안 함, 다시 만듦), D-26 a, D-27 a, D-28 b, D-29 a
+  - D-26 a: 맞춤 이력서를 **프로필 방식**으로 만든다. 기본 서류(직무별 이력서·경력기술서 md)에 프로필 레시피를 앱 코드가 적용하고, AI는 허용 범위 안의 공고 용어 맞추기와 다듬기만 한다. 사이트 이력서 수정 안내, 포트폴리오 활용 제안, 앱 기본 이력서 PDF는 뺀다. **추가**: 더 나은 결과가 필요해 보이면 사용자가 이력서를 만든 곳(이력서 작업 공간: 원본 폴더의 Claude Code 프로젝트)에 공고 특화 이력서를 요청하는 길을 둔다(Task 9, D-30).
+  - D-27 a: 서류 키트는 앱 화면에서 파일을 골라 올린다. 올릴 때마다 새 키트 버전으로 보관한다.
+  - **D-28 b**: 프로필 추천은 **공고 분석(AI) 때** 한다. 직무 + 프로필마다 추천도(%)와 근거 키워드, 추가 조정 추천을 분석 결과에 담는다(Task 3b). 사용자가 추천도 순 목록에서 확정한다. 규칙 기반 단어 세기는 AI 추천이 없을 때의 대체로만 남긴다.
   - D-29 a: 통계 "맞춤 이력서 효과"에 프로필별 서류 통과율 표를 더한다.
+- 결정 대기: **D-30 a(추천)** — 이력서 작업 공간 요청은 앱이 요청문을 만들어 [복사]·[받기]로 주고, 작업 공간에서 만든 결과 md를 앱에 올려 리비전으로 남긴다. 앱은 그 폴더에서 실행하거나 그 폴더에 쓰지 않는다.
 
-**Goal:** 공고마다 (1) 직무·프로필·추가 조정을 추천받아 확정하고, (2) 기본 서류에 레시피(자기소개 교체, 핵심 역량·주요 성과·경력기술서 장 순서, 개인 프로젝트 선택)를 적용한 맞춤본을 즉시 만들고, (3) 원하면 AI로 공고 용어를 허용 범위 안에서 맞추고 대화로 다듬고, (4) 자동 검사와 제출 전 체크리스트를 확인한 뒤, (5) 이력서·경력기술서 PDF(사용자 서류와 같은 스타일)와 md를 받는다. 지원 완료 때 프로필·추가 조정·맞춤 여부가 기록되고, 통계에서 맞춤 효과와 프로필별 서류 통과율을 본다.
+**Goal:** 공고마다 (1) 직무·프로필·추가 조정을 분석에서 추천받아(추천도 %) 확정하고, (2) 기본 서류에 레시피(자기소개 교체, 핵심 역량·주요 성과·경력기술서 장 순서, 개인 프로젝트 선택)를 적용한 맞춤본을 즉시 만들고, (3) 원하면 AI로 공고 용어를 허용 범위 안에서 맞추고 대화로 다듬고, (4) 자동 검사와 제출 전 체크리스트를 확인한 뒤, (5) 이력서·경력기술서 PDF(사용자 서류와 같은 스타일)와 md를 받는다. 지원 완료 때 프로필·추가 조정·맞춤 여부가 기록되고, 통계에서 맞춤 효과와 프로필별 서류 통과율을 본다.
 
 **Architecture:**
 - **서류 키트**: 사용자가 올린 md 파일들을 `data/kit/<키트 id>/`에 보관하고, 가이드를 코드로 읽어 구조(직무·프로필·레시피·추가 조정·자기소개 후보·부품 번호표·표현 허용 범위·체크리스트)를 `kits` 테이블에 JSON으로 저장한다. 읽기 실패는 키트 화면에 항목별로 보인다.
@@ -93,7 +93,10 @@ src/lib/
   kit/checks.ts                    (새) 자동 검사 (순수)
   kit/line-diff.ts                 (새) 줄 단위 비교 (순수, 클라이언트에서도 씀)
   kit/repo.ts                      (새) 키트 올리기·보관·최신 키트
-  tailored/repo.ts                 (새) 맞춤본·리비전, 조립, 작업 요청
+  tailored/repo.ts                 (새) 맞춤본·리비전, 조립, 작업 요청, 작업 공간 결과 올리기
+  tailored/handoff.ts              (새) 작업 공간 요청문, 권유 기준 (순수)
+  kit/profile-table.ts             (새) 분석 프롬프트용 프로필 표, AI 추천 정리 (순수)
+  ai/tasks/schemas.ts, ai/tasks/analyze-posting.ts, prompts/analyze-posting.md  (수정) 분석에 프로필 추천(D-28 b)
   applications/submitted.ts        (새) 제출 서류 선택 값·기본값·라벨 (순수)
   applications/repo.ts             (수정) markApplied·updateApplication 제출 서류
   postings/repo.ts                 (수정) deletePosting이 맞춤 작업도 취소·거부
@@ -123,7 +126,7 @@ tests/
 drizzle/0005_tailored.sql
 ```
 
-Task 묶음(PM 위임 단위 제안): A = Task 1·2, B = Task 3, C = Task 4, D = Task 5·8, E = Task 6, F = Task 7. 순서대로.
+Task 묶음(PM 위임 단위 제안): A = Task 1·2, B = Task 3·3b, C = Task 4·9, D = Task 5·8, E = Task 6, F = Task 7. 순서대로.
 
 ---
 
@@ -145,7 +148,7 @@ Task 묶음(PM 위임 단위 제안): A = Task 1·2, B = Task 3, C = Task 4, D =
 - `schema.ts` (D-26 a: 테이블 3개)
   - `kits`: `id`, `label`(text, 예 기본 서류 파일 이름의 버전 조각 `v5_20261119`, 없으면 `키트 {id}`), `files`(json `{ role: KitRole; track?: string; name: string; sha256: string; bytes: number }[]`), `parsed`(json `KitParsed | null`), `errors`(json `KitError[]`), `createdAt`.
   - `tailoredResumes`: `id`, `postingId`(fk, unique, on delete cascade), `createdAt`.
-  - `tailoredRevisions`: `id`, `tailoredResumeId`(fk cascade), `revNo`, `kitId`(fk kits), `track`, `profileId`, `profileName`, `adjustments`(json `{ id: string; label: string }[]`), `source`(`'recipe' | 'terms' | 'revise'`), `resumeMd`, `careerMd`, `pendingAdjustments`(json string[] — 코드가 못 옮긴 추가 조정 할 일), `changeReasons`(json `{ doc: 'resume'|'career'; after: string; reason: string }[]`), `warnings`(json `KitWarning[]`), `notes`(text), `userRequest`(text?), `jobId`(fk ai_jobs, **nullable** — 조립은 작업 없음), `createdAt`. 유일 (`tailoredResumeId`, `revNo`).
+  - `tailoredRevisions`: `id`, `tailoredResumeId`(fk cascade), `revNo`, `kitId`(fk kits), `track`, `profileId`, `profileName`, `adjustments`(json `{ id: string; label: string }[]`), `source`(`'recipe' | 'terms' | 'revise' | 'external'`, external = 이력서 작업 공간 결과 올리기, Task 9), `resumeMd`, `careerMd`, `pendingAdjustments`(json string[] — 코드가 못 옮긴 추가 조정 할 일), `changeReasons`(json `{ doc: 'resume'|'career'; after: string; reason: string }[]`), `warnings`(json `KitWarning[]`), `notes`(text), `userRequest`(text?), `jobId`(fk ai_jobs, **nullable** — 조립은 작업 없음), `createdAt`. 유일 (`tailoredResumeId`, `revNo`).
   - `applications.submittedResume`: `$type<SubmittedResume>()`.
 - `config.kitDir = join(dataDir, 'kit')`, `ensureDataDirs`에 추가.
 - `deletePosting`: 대기·실행 중 작업 종류를 `analyze_posting`, `tailor_resume`, `revise_tailored`로 넓힘. 맞춤 행은 cascade.
@@ -218,7 +221,7 @@ export function readKitText(kitId: number, role: 'guide' | 'rules' | 'master', d
 **Interfaces:**
 
 ```ts
-// kit/recommend.ts (D-28 a)
+// kit/recommend.ts (D-28 b 뒤: AI 추천이 없을 때만 쓰는 대체 추천 — 키트 없이 한 분석, 키트를 분석 뒤에 올림, 옛 분석)
 export type WordCount = { word: string; count: number };
 export type Recommendation = {
   track: string; trackReason: string;
@@ -274,6 +277,55 @@ export function lineDiff(a: string, b: string): { text: string; op: 'same' | 'de
 
 ---
 
+### Task 3b: 공고 분석에 프로필 추천 넣기 (D-28 b)
+
+**Files:** Modify `prompts/analyze-posting.md`, `src/lib/ai/tasks/schemas.ts`, `src/lib/ai/tasks/analyze-posting.ts`, `src/app/_components/AnalysisView.tsx`, `tests/tasks.test.ts`, `tests/prompts.test.ts`, `tests/fixtures/fake-claude*.mjs`. Create `src/lib/kit/profile-table.ts`, `tests/kit-profile-rec.test.ts`.
+
+**Interfaces:**
+
+```ts
+// ai/tasks/schemas.ts
+export const ProfileRecommendationOut = z.object({          // AI가 내는 모양
+  track: z.string(),                                         // 키트 직무 이름 중 하나
+  trackReason: z.string(),
+  profiles: z.array(z.object({
+    id: z.string(), fitPercent: z.number().int().min(0).max(100),
+    keywords: z.array(z.string()),                           // 근거가 된 공고 단어(공고 본문에 있는 것만)
+    reason: z.string(),                                      // 한 줄
+  })),                                                       // 그 직무의 프로필 전부
+  adjustments: z.array(z.object({ id: z.string(), recommended: z.boolean(), keywords: z.array(z.string()) })),
+});
+export type ProfileRec = z.infer<typeof ProfileRecommendationOut> & { kitId: number };
+/** CLI용 출력 스키마: 키트가 있으면 profileRecommendation 칸 필수, 없으면 칸 자체를 뺀다 */
+export function analysisOutputSchema(withProfiles: boolean): z.ZodTypeAny;
+/** 저장·화면용: 옛 분석 결과도 읽히도록 optional. kitId는 코드가 붙인다 */
+// AnalysisResult = 기존 + profileRecommendation: ProfileRec | null (optional)
+
+// kit/profile-table.ts (순수)
+/** 분석 프롬프트용 표: 직무, 프로필 id·이름·기본 여부·공고 단어, 추가 조정 id·트리거 단어. 자기소개·서류 내용은 넣지 않는다 */
+export function profileTableMd(kit: KitGuide): string;
+/** AI 결과 정리: 모르는 직무 → 기본 직무, 모르는 id 버림, 빠진 프로필 0%·근거 없음, 추천도 ↓(같으면 기본 프로필 먼저), 공고 본문에 없는 키워드 제거 */
+export function normalizeProfileRec(out: z.infer<typeof ProfileRecommendationOut>, kit: KitGuide, postingText: string, kitId: number): ProfileRec;
+```
+
+- 분석 처리기: `getUsableKit()`가 있으면 변수 `profile_table` = `profileTableMd(kit)`, 스키마 `analysisOutputSchema(true)`. 없으면 `profile_table` = "(키트 없음. profileRecommendation을 내지 않는다)", `analysisOutputSchema(false)`. 결과에 `normalizeProfileRec(…, kit.id)`를 붙여 저장. **호출 수는 그대로**(분석 1회).
+- 프롬프트 규칙 추가: "프로필 추천도는 프로필마다 따로 매기는 0~100 정수다(합이 100일 필요 없다). 공고가 원하는 것과 프로필의 공고 단어·설명이 얼마나 맞는지로 판단한다. 근거 키워드는 공고 본문에 실제로 있는 단어만 쓴다. 직무는 표의 직무 이름 중 하나다."
+- 맞춤 탭 프로필 고르기에서 추천을 쓰는 규칙
+  - 최신 분석에 추천이 있고 `kitId` = 지금 키트 → 추천도 순 목록, 1등에 "추천".
+  - `kitId` ≠ 지금 키트 → 지금 키트에 있는 프로필 id만 보이고 "이전 키트(…) 기준 추천" + `[AI 추천 다시 받기 (다시 분석)]`.
+  - 추천 없음(키트 없이 한 분석, 키트를 분석 뒤에 올림, 옛 분석, 분석 실패) → `kit/recommend.ts` 단어 세기 결과를 "단어 수 기준(AI 추천 아님)"으로 보이고 같은 버튼.
+  - 버튼은 기존 다시 분석 작업(opus 1회)이다. 분석 기록이 하나 늘고 적합도도 새로 매겨진다(이전 결과는 기록에 남음). 추천만 따로 하는 작업은 만들지 않는다(작업 종류가 늘고, 공고·기준을 거의 다시 보내야 해서 아끼는 양이 작다).
+- 분석 탭: 적합도 아래 한 줄 `추천 프로필 B3 정합성 82% · 다음 B1 55%  → 맞춤 이력서 탭`. 추천이 없으면 줄 없음.
+
+- [ ] Step 1 테스트
+  - TC-KIT-30 `profileTableMd`: 직무·프로필·단어·추가 조정만, 자기소개 본문 없음.
+  - TC-KIT-31 `normalizeProfileRec`: 모르는 id 버림, 빠진 프로필 0%, 정렬, 공고에 없는 키워드 제거, 모르는 직무 → 기본 직무.
+  - TC-KIT-32 분석 처리기: 키트 있으면 프롬프트에 표·스키마에 칸·결과에 `kitId`, 키트 없으면 칸 없음, 호출 1회.
+  - TC-KIT-33 옛 분석 결과(칸 없음)도 `AnalysisResult`로 읽힘.
+- [ ] Step 2~4. Step 5 커밋 `feat: profile recommendation in posting analysis`.
+
+---
+
 ### Task 4: 맞춤본 저장과 AI 작업 (용어 맞추기·다듬기)
 
 **Files:** Create `prompts/tailor-resume.md`, `prompts/revise-tailored.md`, `src/lib/ai/revision.ts`, `src/lib/ai/tasks/{tailor-schemas,tailor-resume}.ts`, `src/lib/tailored/repo.ts`, `tests/tailor-task.test.ts`. Modify `ai/tasks/index.ts`, `ai/prompt.ts`, `tests/prompts.test.ts`, `tests/tailored-repo.test.ts`.
@@ -285,7 +337,8 @@ export function lineDiff(a: string, b: string): { text: string; op: 'same' | 'de
 export const KitTailorOutput = z.object({
   resumeMd: z.string(), careerMd: z.string(),
   changeReasons: z.array(z.object({ doc: z.enum(['resume', 'career']), after: z.string(), reason: z.string() })),
-  notes: z.string(),                // 다른 프로필이 더 맞아 보이면 여기에(D-28 a: 추천은 하지 않음)
+  notes: z.string(),                // 다른 프로필이 더 맞아 보이면 한 줄(추천도는 분석이 정한다, D-28 b)
+  needsWorkspace: z.boolean(),      // 허용 범위 안에서는 공고에 잘 맞출 수 없다고 보면 true (Task 9 요청 제안 기준)
 });
 
 // ai/revision.ts (D-11)
@@ -404,13 +457,54 @@ export function resumeLabel(sr: SubmittedResume, docs: SubmittedDocs | null, nam
 
 ---
 
+### Task 9: 이력서 작업 공간에 공고 특화 이력서 요청 (D-26 추가, D-30 a)
+
+사용자는 이력서를 앱 밖의 자기 Claude Code 작업 공간(원본 폴더, 자체 작성 규칙)에서 만든다. 앱 조립·용어 맞추기로 부족해 보이면, 그 작업 공간에 "이 공고용 이력서를 만들어 달라"고 요청하고 결과를 앱에 다시 넣는다.
+
+**Files:** Create `src/lib/tailored/handoff.ts`, `tests/handoff.test.ts`. Modify `src/lib/tailored/repo.ts`(올리기), `src/app/api/tailored/…`(요청문 받기), `TailoredControls.tsx`, `_actions/tailored.ts`.
+
+**Interfaces:**
+
+```ts
+// tailored/handoff.ts (순수)
+export type HandoffReason = 'low_fit' | 'warnings' | 'pending_adjustments' | 'ai_suggested';
+/** 요청을 권할 이유. 비어 있으면 권하지 않는다(버튼은 늘 있다) */
+export function handoffReasons(i: { topFitPercent: number | null; warnings: KitWarning[]; pending: string[]; needsWorkspace: boolean }): HandoffReason[];
+export const LOW_FIT_PERCENT = 60;
+/** 작업 공간에 붙여 넣을 요청문(md). 개인 내용은 실행 때 DB·키트에서 넣고, 틀(문장)만 코드에 있다 */
+export function buildHandoffRequest(i: {
+  company: string; position: string; site: string; url: string | null; deadline: string | null;
+  postingText: string; topWords: string[];
+  recipe: { track: string; profileId: string; profileName: string; adjustments: string[] };
+  profileRanking: { id: string; name: string; fitPercent: number }[] | null;
+  recipeSummary: string[]; pending: string[]; warnings: KitWarning[]; userNote: string;
+  kitLabel: string; folderName: string;            // 사용자 지원 폴더 이름 제안: {지원 예정일}_{회사}_{직무}
+}): string;
+
+// tailored/repo.ts
+/** 작업 공간에서 만든 결과 md를 올려 새 리비전(source 'external'). 검사는 하되 자기소개를 되돌리지 않는다 */
+export function addExternalRevision(postingId: number, input: { resumeMd: string; careerMd: string; recipe: Recipe; note?: string }, db?): { id: number; revNo: number };
+```
+
+- 요청문 모양(고정 틀): 제목 "공고 특화 이력서 요청" → 지원 폴더 이름 제안 → 공고 정보(회사·포지션·사이트·링크·마감) → 공고에서 많이 나온 단어 → 앱이 고른 직무·프로필·추가 조정(+ 추천도 순위) → 앱 조립 요약과 남은 추가 조정 → 앱 자동 검사에서 걸린 것 → 사용자 메모 → 공고 본문 전문 → 맺음말 "작업 공간의 가이드·작성 규칙·마스터스토리를 따라 이력서.md·경력기술서.md를 만들어 주세요. 마스터스토리 밖의 사실·숫자는 쓰지 않습니다." 조립 결과 md 전문은 넣지 않는다(작업 공간에 기본 서류가 있다). 길이 제한 없음(붙여 넣기용).
+- 요청을 권하는 기준(`handoffReasons`): ① 분석 추천도 1등이 60% 미만(`low_fit`) ② 용어 맞추기·다듬기 뒤에도 "확인 필요" 경고가 남음(`warnings`, 알림 종류 제외) ③ 남은 추가 조정이 있음(`pending_adjustments`) ④ AI가 `needsWorkspace: true`(`ai_suggested`). 하나라도 있으면 결과 화면 위에 권유 줄을 보인다. 없어도 버튼은 늘 있다(사용자 판단).
+- 결과 올리기: md 2개(이력서·경력기술서, 각 1MB). 레시피는 지금 고른 직무·프로필·추가 조정이 기본값이고 바꿀 수 있다. 저장 뒤 `checkTailored`로 검사하되 `intro_restored` 대신 `intro_changed`(경고, 되돌리지 않음). 구조 변경 경고도 그대로 보인다(작업 공간이 구조를 바꾸는 것은 허용, 사용자가 확인).
+- 만들지 않는 방식: 앱이 작업 공간 폴더에서 `claude -p`를 실행하거나 그 폴더에 결과를 쓰는 것. 앱은 데이터 폴더 밖을 읽지도 쓰지도 않는다는 결정(기획서 7.9·7.11)과 맞지 않고, 작업 공간의 규칙·도구 권한(파일 쓰기 필요)을 앱이 대신 다루게 되며, 실행 비용이 사용자 모르게 커진다.
+- 실제 `claude` 호출: 0회(요청은 사용자가 자기 작업 공간에서 한다).
+
+- [ ] Step 1 테스트: TC-HANDOFF-01 `handoffReasons` 경계(60% 미만/이상, 알림 종류는 경고로 안 셈), TC-HANDOFF-02 요청문 구획 순서·공고 본문 포함·조립 md 미포함, TC-HANDOFF-03 `addExternalRevision`: source external, 자기소개 안 되돌림·`intro_changed`, 숫자 경고, 지원 완료 기본값이 이 리비전, 통계에서 맞춤으로 셈.
+- [ ] Step 2~4. Step 5 커밋 `feat: hand off tailored resume request to resume workspace`.
+
+---
+
 ## 선택지별 차이
 
 | 결정 | 추천안(이 계획) | 다른 선택지일 때 |
 |---|---|---|
 | D-26 | a: 프로필 방식(코드 조립 + AI 용어 맞추기). JSON 재작성·사이트 수정 안내·포트폴리오 제안·앱 기본 이력서 PDF 뺌 | **b**(둘 다): 이 계획 + 처음 설계(작업 기록 "1. 설계", 재설계 전 이 계획 파일의 git 기록)의 JSON 맞춤 Task를 "프로필 없이 만들기"로 더함. 크기 큼→매우 큼. **c**(처음 설계 유지 + 프로필 기록만): 처음 설계로 돌아가고, 지원 완료 창에 프로필 select만 더함(키트 없음, 프로필 목록은 설정에서 직접 입력) |
 | D-27 | a: 앱 화면에서 키트 올리기, 버전 보관 | **b**: Task 2의 올리기 라우트·화면을 빼고, 메인 세션이 승인 후 `data/kit/<id>/`에 복사한 뒤 앱의 [키트 다시 읽기] 버튼(폴더를 읽어 새 버전 등록)만 둔다 |
-| D-28 | a: 규칙 추천 + 사용자 확정 | **b**: 추천을 AI가(분석 프롬프트에 프로필 목록을 넣고 결과에 추천 프로필 칸 추가, 분석 스키마 변경). **c**: 둘 다(규칙 점수와 AI 의견을 나란히) |
+| D-28 | **결정 b**: 분석 때 AI가 추천도(%) — Task 3b. 규칙 단어 세기는 대체로만 | (결정됨) |
+| D-30 | a: 요청문 복사·받기 + 결과 md 올리기 — Task 9 | **b**: Task 9에서 결과 올리기를 빼고 요청문만(작업 공간 결과로 낸 지원은 지원 완료 때 "이력서 파일"·"모름"으로 기록, 프로필·맞춤 통계에 안 들어감). **c**: 앱이 작업 공간 폴더에서 직접 실행 — 만들지 않는 것으로 정리(아래 Task 9 "만들지 않는 방식") |
 | D-29 | a: 프로필별 표 추가 | **b**: Task 8의 `byProfile`·표를 뺀다(맞춤 / 맞춤 안 함만) |
 
 ## 테스트 케이스
@@ -427,7 +521,11 @@ export function resumeLabel(sr: SubmittedResume, docs: SubmittedDocs | null, nam
 | TC-STATS-15~17 | 통계 | Task 8 | `stats.test.ts` |
 | TC-RESUME-DIFF-01 | 버전 비교 | 문장·목록·순서 변경, 같으면 [] | `resume-diff.test.ts` |
 | TC-TAILOR-E2E-01 | 키트 | 예시 키트 올리기 → 직무·프로필 표, 오류 키트 올리기 → 오류 목록, 맞춤 탭은 앞 키트 사용 | `14-tailored.spec.ts` |
-| TC-TAILOR-E2E-02 | 프로필 고르기·조립 | 추천 프로필에 "추천", 공고 단어 3개, 추가 조정 체크 → [맞춤본 만들기] → 바로 r1(진행 표시 없음), 남은 추가 조정 표시 | `14-tailored.spec.ts` |
+| TC-KIT-30~33 | 분석의 프로필 추천(D-28 b) | Task 3b | `kit-profile-rec.test.ts`, `tasks.test.ts` |
+| TC-HANDOFF-01~03 | 작업 공간 요청·결과 올리기(D-30) | Task 9 | `handoff.test.ts` |
+| TC-TAILOR-E2E-02 | 프로필 고르기·조립 | 분석 추천이 있으면 추천도 % 순서·1등 "추천"·근거 키워드, 추가 조정 미리 체크 → [맞춤본 만들기] → 바로 r1(진행 표시 없음), 남은 추가 조정 표시. 추천 없는 공고는 "단어 수 기준(AI 추천 아님)" + [AI 추천 다시 받기] | `14-tailored.spec.ts` |
+| TC-TAILOR-E2E-13 | 분석 탭 추천 줄 | 키트가 있을 때 분석 → "추천 프로필 … %" 줄과 맞춤 탭 링크. 키트 없으면 줄 없음 | `14-tailored.spec.ts` |
+| TC-TAILOR-E2E-14 | 작업 공간 요청 | 권유 줄(추천도 60% 미만 고정 데이터), [요청문 복사] → "복사됨", [요청문 받기] md, [결과 올리기] md 2개 → r(n) "작업 공간" 리비전, 지원 완료 기본값이 이것 | `14-tailored.spec.ts` |
 | TC-TAILOR-E2E-03 | 용어 맞추기 | [공고 용어 맞추기] → 진행 → r2, 자동 검사 경고(새 수치·자기소개 되돌림), 바뀐 곳에 이유 | `14-tailored.spec.ts` |
 | TC-TAILOR-E2E-04 | 다듬기 | 빈 입력 비활성, 요청 → r3, 리비전 선택 `rev=` | `14-tailored.spec.ts` |
 | TC-TAILOR-E2E-05 | 내려받기 | 이력서·경력기술서 PDF·md, 공고.md, 파일명 규칙 | `14-tailored.spec.ts` |
@@ -449,6 +547,8 @@ export function resumeLabel(sr: SubmittedResume, docs: SubmittedDocs | null, nam
 | 7.11 서류 키트 | Task 2, 7 |
 | 7.4·7.9 제출 서류(D-23) | Task 5, 7 |
 | 7.10 맞춤 효과(D-24), 프로필별(D-29) | Task 8 |
+| 7.3 분석의 프로필 추천(D-28 b) | Task 3b |
+| 7.5 이력서 작업 공간 요청(D-26 추가, D-30) | Task 9 |
 | 9.4 다듬기 새 실행(D-11) | Task 4 |
 | 11 PDF | Task 6 |
 | 5.3 버전 비교(D-07) | Task 7 Step 4 |
