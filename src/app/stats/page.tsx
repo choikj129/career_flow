@@ -118,7 +118,7 @@ async function StatsLoader({ searchParams }: { searchParams: PageProps<"/stats">
             <StackedBarChart buckets={data.periods} mode={params.mode} unit={params.unit} />
             <div className="stat-legend">
               <span><i className="sw" style={{ background: "#0369A1" }} />서류 통과</span>
-              <span><i className="sw" style={{ background: "#98A0AE" }} />불합격</span>
+              <span><i className="sw" style={{ background: "#F4A9A8" }} />불합격</span>
               <span><i className="sw" style={{ background: "#D5D9E1" }} />무응답</span>
               <span><i className="sw" style={{ background: "#fff", border: "1px dashed #5B6475" }} />대기</span>
               <span>막대 위 숫자 = 서류 통과율 (분모 5 미만이면 –)</span>

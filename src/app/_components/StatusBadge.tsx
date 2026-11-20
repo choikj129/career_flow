@@ -6,7 +6,7 @@ const CLASS: Record<ApplicationStatus, string> = {
   assignment: "asg",
   interview: "go",
   final_passed: "ok",
-  rejected: "no",
+  rejected: "rej",
   withdrawn: "no",
 };
 

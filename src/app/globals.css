@@ -14,7 +14,7 @@
   --r: 10px; --r-sm: 7px; --pad: 20px; --row: 13px;
   --shadow: 0 1px 2px rgba(22,33,58,.06), 0 4px 16px rgba(22,33,58,.06);
   /* 사이트 색: 상태 색(코발트·초록·주황)과 겹치지 않는 색, 흰 바탕 대비 4.5:1 이상 */
-  --site-remember: #0E7C86; --site-wanted: #6741D9; --site-groupby: #A15C00; --site-jobkorea: #B5179E; --site-homepage: #3F6212; --site-other: #5B6475;
+  --site-remember: #111827; --site-wanted: #3366FF; --site-groupby: #16A34A; --site-jobkorea: #1E3A8A; --site-homepage: #8C7B6B; --site-other: #5B6475;
 }
 /* 사이트 표시: 색 점 + 이름(상태 배지는 채운 알약이라 모양으로도 구분된다) */
 .site { display: inline-flex; align-items: center; gap: 6px; font-weight: 600; font-size: 13.5px; color: var(--c, var(--site-other)); white-space: nowrap; }
@@ -78,6 +78,7 @@ h1, h2, h3 { font-family: var(--font-head); font-weight: var(--head-weight); let
 .st.ok { background: var(--good-tint); color: var(--good); }
 .st.pass { background: #E6F2F8; color: #0369A1; }
 .st.asg { background: #E8EEF7; color: #1F5FAD; }
+.st.rej { background: #FEE2E2; color: #B91C1C; }
 .st.no { background: transparent; color: var(--faint); font-weight: 500; padding: 0; }
 .st.warn { background: var(--mark-tint); color: var(--mark); }
 

@@ -13,7 +13,7 @@ const STATUS_COLUMN_COLORS: Record<string, string> = {
   assignment: "#1F5FAD",
   interview: "#2342C8",
   final_passed: "#15803D",
-  closed: "#98A0AE",
+  closed: "#B91C1C",
 };
 
 /** 서류 통과율. 결과가 나온 지원이 없으면 "결과 대기". */
