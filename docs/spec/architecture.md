@@ -48,11 +48,12 @@ src/lib/
 ├─ resume/
 │  ├─ schema.ts              ResumeContent, Preferences (zod)
 │  ├─ repo.ts                기본 이력서 버전·희망 조건
-│  ├─ diff.ts                두 이력서 비교 (변경 내역)
-│  └─ fabrication.ts         지어낸 내용 검사
+│  ├─ diff.ts                두 이력서 비교(변경 내역), 줄 비교, 경로 이름 (순수, 클라이언트에서도 씀)
+│  └─ fabrication.ts         사실 칸 되돌리기, 지어낸 내용 검사 (순수)
 ├─ companies/repo.ts         회사·별칭·매칭·합치기
 ├─ postings/repo.ts          공고 등록·조회·분석 결과 저장
 ├─ applications/repo.ts      지원 기록·상태 이력·중복 조회·일괄 등록·제출 이력서, 거친 단계 이력 읽기(listReachedHistory)
+├─ applications/submitted.ts 제출 서류 선택 값·기본값·칸 변환·라벨 (순수, 클라이언트에서도 씀, 3단계)
 ├─ applications/sort.ts      지원 기록 기본 정렬(지원일 → 정렬용 일시 → id)
 ├─ applications/stages.ts    거친 단계 계산, 상태 필터 판정 (순수)
 ├─ applications/backfill.ts  정렬용 일시 일회성 채우기
@@ -68,7 +69,7 @@ src/lib/
 │  ├─ load.ts                지원 기록 읽기 → StatItem, getStats
 │  ├─ params.ts              /stats 주소 파라미터
 │  └─ chart-scale.ts         그래프 축 최대값·눈금 (순수)
-├─ tailored/repo.ts          맞춤 이력서·리비전
+├─ tailored/repo.ts          맞춤 이력서·리비전, 생성·다듬기 작업 요청
 ├─ interview/
 │  ├─ repo.ts                면접 준비·리비전·요청
 │  └─ sources.ts             출처 링크 정리
@@ -105,7 +106,7 @@ src/lib/
 |---|---|
 | 1 | config, settings, backup, db/*, domain/*, resume/schema·repo, companies, postings, applications, search, extract/*, ai/runner·claude-cli·health·queue·prompt, ai/tasks/index·schemas·analyze-posting·import-resume·import-applications |
 | 2 추가 | documents/*, applications/sort·stages·backfill (`docs/plans/phase-2-past-records.md`) / stats/* (`docs/plans/phase-2-stats.md`) |
-| 3 | resume/diff·fabrication, tailored/repo, pdf/*, ai/session, ai/tasks/tailor-* |
+| 3 | resume/diff·fabrication, tailored/repo, applications/submitted, pdf/*, ai/revision, ai/tasks/tailor-* (`docs/plans/phase-3-tailored-resume.md`) |
 | 4 | interview/*, ai/tasks/interview-schemas·prepare-interview |
 | 5 | sync/repo, ai/tasks/site-sync-* |
 
@@ -124,6 +125,9 @@ src/app/
 │  ├─ SiteBadge.tsx
 │  ├─ DuplicateBanner.tsx    중복 지원 경고
 │  ├─ RateText.tsx           서류 통과율 문구 + 표본 표시 (대시보드 묶음·통계)
+│  ├─ SubmittedDocs.tsx      제출 서류 세 줄 + [보기] (3단계: 맞춤본 줄)
+│  ├─ DocSelects.tsx         제출 서류 select 3개 (지원 완료 창·기록 수정 창, 3단계)
+│  ├─ ApplicationEditModal.tsx 지원 기록 수정 창
 │  └─ AnalysisView.tsx       분석 결과 표시
 ├─ _actions/                 서버 액션 — 영역별 파일, lib 함수를 부르는 얇은 래퍼
 │  ├─ applications.ts        지원 완료, 상태 변경, 메모
@@ -140,6 +144,7 @@ src/app/
 │  ├─ documents/[name]/route.ts  제출 서류 PDF 보기 (이름 규칙 + 종류 폴더 안만)
 │  └─ pdf/
 │     ├─ tailored/[revisionId]/route.ts   맞춤 이력서 PDF   (3단계)
+│     ├─ tailored/[revisionId]/preview/route.ts  맞춤 이력서 미리보기 HTML (3단계)
 │     └─ base/[versionId]/route.ts        기본 이력서 PDF   (3단계)
 ├─ postings/
 │  ├─ new/page.tsx           공고 등록
@@ -148,7 +153,8 @@ src/app/
 │     ├─ page.tsx            공고 상세 (상단 + 탭)
 │     ├─ ApplyForm.tsx       지원 완료 폼 (3단계에 제출 이력서 선택 추가)
 │     ├─ StatusForm.tsx      상태 변경 폼
-│     ├─ TailoredTab.tsx     맞춤 이력서 탭     (3단계)
+│     ├─ TailoredTab.tsx     맞춤 이력서 탭     (3단계, 서버)
+│     ├─ TailoredControls.tsx 리비전 선택·PDF 메뉴·복사·다듬기 입력 (3단계, 클라이언트)
 │     └─ InterviewTab.tsx    면접 준비 탭       (4단계)
 ├─ interview/[prepId]/print/page.tsx      면접 준비 인쇄용 (4단계)
 ├─ resume/
@@ -237,7 +243,7 @@ tests/
 │  └─ posting-*.html        공고 페이지 샘플
 └─ *.test.ts                config, db, backup, normalize, resume-repo, claude-cli, queue, extract,
                             repos, search, tasks (1단계) / stats (2단계 추가) / resume-diff, fabrication, tailored-repo,
-                            tailor-task, pdf, submitted-resume (3단계) / interview-repo,
+                            tailor-task, pdf, submitted (3단계) / interview-repo,
                             interview-task (4단계) / sync-repo, sync-task, settings-final (5단계)
 
 scripts/
@@ -249,7 +255,7 @@ scripts/
 data/                       git 제외. 위치는 CAREER_FLOW_DATA_DIR로 바꿀 수 있음
 ├─ career-flow.db           SQLite
 ├─ uploads/                 올린 이력서·캡처 원본 (resume/, import/)
-├─ documents/               제출 서류 PDF 복사본 (resume/이력서_YYYYMMDD.pdf, career/경력기술서_…, portfolio/포트폴리오_…)
+├─ documents/               제출 서류 PDF 복사본 (resume/이력서_YYYYMMDD.pdf, career/경력기술서_…, portfolio/포트폴리오_…). 앱이 만든 맞춤본 PDF는 여기에 저장하지 않는다(D-25 추천안)
 ├─ ai-work/<jobId>/         작업별 Claude Code 작업 폴더 (입력 파일)
 ├─ browser-profile/         Playwright 영구 프로필 (사이트 로그인 유지)
 └─ backups/                 DB 백업 (자동 30개, 수동 10개)
