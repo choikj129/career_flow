@@ -65,7 +65,7 @@ test.describe.serial('지난 기록 직접 입력', () => {
     await expect(r.getByLabel('경력기술서')).toHaveValue('경력기술서_20261017.pdf');
     await r.getByLabel('지원일').fill('2026-10-01');
     await expect(r.getByLabel('이력서')).toHaveValue('이력서_20260905.pdf');
-    await expect(r.getByLabel('경력기술서')).toHaveValue(''); // 가장 이른 파일보다 앞섬 → 모름
+    await expect(r.getByLabel('경력기술서')).toHaveValue('none'); // 가장 이른 파일보다 앞섬 → 없음(Task 8)
     await r.getByLabel('이력서').selectOption('');
     await r.getByLabel('지원일').fill('2026-10-20');
     await expect(r.getByLabel('이력서')).toHaveValue(''); // 직접 고른 것은 유지
