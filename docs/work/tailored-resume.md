@@ -184,6 +184,8 @@
 
 | 회차 | 개발 커밋 범위 | 검증 결과 | 남은 필수 항목 | 비고 |
 |---|---|---|---|---|
+| 묶음 A (Task 1·2) | `b441336`, `aaa8c43`(+ `775f295`) | | | 키트·맞춤본 테이블(`0005_tailored`), 키트 읽기·보관(`kit/types·md-doc·parse-guide·repo`). 지어낸 예시 키트 `tests/fixtures/kit/`. `npm test` 통과, lint·tsc·build 통과. 화면 없음(E2E 없음) |
+| 묶음 B (Task 3·3b) | `c5d7dfd`, `5f10618`, `67d902f` | | | 추천·조립·검사·줄 비교, 분석에 프로필 추천(호출 수 그대로). `npm test` 448 통과, lint·tsc·build 통과. 분석 탭의 `?tab=tailored` 링크는 맞춤 탭(Task 6)이 생기기 전까지 분석 탭으로 간다 |
 
 ## 4. 결정 요청
 
