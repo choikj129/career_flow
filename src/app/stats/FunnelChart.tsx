@@ -30,7 +30,11 @@ export function FunnelChart({ steps }: { steps: FunnelStep[] }) {
         >
           <span>
             {LABELS[s.stage]}
-            {s.optional && <span className="muted small"> (거치지 않을 수 있음)</span>}
+            {s.optional && (
+              <span className="muted small" style={{ display: "inline-block", whiteSpace: "nowrap", marginLeft: 4 }}>
+                (거치지 않을 수 있음)
+              </span>
+            )}
           </span>
           <svg viewBox="0 0 100 14" preserveAspectRatio="none" width="100%" height="14" role="img" aria-label={`${LABELS[s.stage]} ${s.count}건`}>
             <title>{`${LABELS[s.stage]} · ${s.count}`}</title>

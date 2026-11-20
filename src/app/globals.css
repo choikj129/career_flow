@@ -25,6 +25,8 @@
 
 * { box-sizing: border-box; }
 html { background: var(--bg); }
+/* 한글은 단어(띄어쓰기) 단위로 줄바꿈한다. 긴 영문·주소는 칸을 넘지 않게 필요할 때만 자른다(break-word는 표 칸 최소 너비를 줄이지 않는다). */
+body { word-break: keep-all; overflow-wrap: break-word; }
 body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font); font-feature-settings: "tnum"; -webkit-font-smoothing: antialiased; }
 
 a { color: var(--accent); text-decoration: none; }
@@ -350,7 +352,19 @@ textarea.in { height: auto; min-height: 70px; padding: 10px 12px; resize: vertic
 .steps .on { color: var(--ink); font-weight: 700; }
 .steps i { width: 24px; height: 1px; background: var(--line-strong); }
 .drop { border: 1.5px dashed var(--line-strong); border-radius: var(--r); padding: 22px; text-align: center; color: var(--sub); background: var(--bg); }
-.review td { padding: 8px 10px; }
+/* 직접 입력·가져오기 검토 표: 칸마다 최소 폭을 두고, 넘치면 표를 감싼 영역에서만 가로로 민다(페이지는 안 밀린다). */
+.review-wrap { overflow-x: auto; margin-top: 12px; }
+.review { min-width: 100%; border-collapse: collapse; }
+.review th, .review td { padding: 8px 6px; text-align: left; white-space: nowrap; }
+.review td:nth-child(1) { min-width: 28px; }
+.review td:nth-child(2), .review td:nth-child(3) { min-width: 130px; }
+.review td:nth-child(4) { min-width: 104px; }
+.review td:nth-child(5) { min-width: 120px; }
+.review td:nth-child(6) { min-width: 92px; }
+.review td:nth-child(7) { min-width: 184px; }
+.review td:nth-child(8) { min-width: 150px; }
+.review td:nth-child(10) { min-width: 40px; }
+.review textarea.in { min-height: 34px; }
 .review .in { height: 34px; }
 .review select.in { padding-right: 24px; }
 .review tr.dupe td { background: #FAFBFC; color: var(--faint); }
@@ -370,7 +384,6 @@ textarea.in { height: auto; min-height: 70px; padding: 10px 12px; resize: vertic
 @media (max-width: 960px) {
   .two, .iv-grid, .gap-cols, .sync-grid, .editor, .grid2, .cols4, .prefs .row2 { grid-template-columns: 1fr; }
   .sec-index { display: none; }
-  .review { display: block; overflow-x: auto; }
   .a4 { position: static; max-width: 420px; }
   .iv-index { display: none; }
   .nav-inner { overflow-x: auto; }
@@ -465,3 +478,7 @@ textarea.in-sm { height: auto; min-height: 64px; padding: 8px 10px; }
 @media (max-width: 1000px) { .stat-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); } .stat-grid2 { grid-template-columns: 1fr; } }
 .summary .links { margin-left: auto; display: flex; gap: 18px; }
 .summary .links a { margin-left: 0; }
+
+/* 통계 표: 숫자·날짜 칸은 줄바꿈하지 않는다. 표가 칸보다 넓으면 패널 안에서 가로로 민다. */
+.stats-table th, .stats-table td:not(:first-child) { white-space: nowrap; }
+.stat-panel { overflow-x: auto; }
