@@ -47,9 +47,15 @@ export function StatsFilters({ params }: { params: StatsParams }) {
       </select>
       {params.period === "custom" && (
         <div className="period-custom">
-          <DateInput  className="in-sm" aria-label="시작일" value={params.from ?? ""} onChange={(e) => go({ from: e.target.value || undefined })} />
+          <DateInput  className="in-sm" aria-label="시작일" value={params.from ?? ""} onChange={(e) => {
+              if (!e.target.value && !params.from) return; // 입력 도중의 빈 값은 주소를 바꾸지 않는다
+              go({ from: e.target.value || undefined });
+            }} />
           <span className="muted">~</span>
-          <DateInput  className="in-sm" aria-label="종료일" value={params.to ?? ""} onChange={(e) => go({ to: e.target.value || undefined })} />
+          <DateInput  className="in-sm" aria-label="종료일" value={params.to ?? ""} onChange={(e) => {
+              if (!e.target.value && !params.to) return;
+              go({ to: e.target.value || undefined });
+            }} />
         </div>
       )}
     </div>

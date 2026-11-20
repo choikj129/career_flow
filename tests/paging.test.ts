@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import { GROUP_PREVIEW, PAGE_SIZE, pageNumbers, pageSlice, parseMore, parsePage, selectVisibleRows } from '@/lib/search/paging';
+import { GROUP_PREVIEW, PAGE_SIZE, pageNumbers, pageSlice, parseMore, parsePage } from '@/lib/search/paging';
+import { selectVisibleRows } from '@/lib/search/visible-rows';
 import { dashboardHref, parseDashboardParams } from '@/lib/search/dashboard-params';
 import type { DashboardRow } from '@/lib/search/dashboard';
 

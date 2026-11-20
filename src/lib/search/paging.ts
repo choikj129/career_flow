@@ -1,7 +1,5 @@
-import type { DashboardView } from './dashboard-params';
-import { groupDashboardRows, type DashboardRow } from './dashboard';
-
-// 대시보드 지원 기록 목록의 페이지 나누기. 순수 계산이다.
+// 대시보드 지원 기록 목록의 페이지 나누기. 순수 계산이다. 클라이언트 컴포넌트도 import하므로 DB·파일에 닿는 모듈을 import하지 않는다.
+// (행을 고르는 selectVisibleRows는 서버 전용 visible-rows.ts)
 
 /** 전체 보기의 한 페이지 건수 */
 export const PAGE_SIZE = 50;
@@ -54,21 +52,4 @@ export function pageNumbers(page: number, pageCount: number): (number | '…')[]
   if (end < pageCount - 1) out.push('…');
   if (end < pageCount) out.push(pageCount);
   return out;
-}
-
-/**
- * 지금 화면에 보이는 행. 전체 보기는 그 페이지, 묶음·보드는 묶음마다 처음 GROUP_PREVIEW건
- * (more에 `${view}:${묶음 키}`가 있으면 그 묶음은 전부). 기록 상세는 이 행들만 읽는다.
- */
-export function selectVisibleRows(
-  rows: DashboardRow[],
-  view: DashboardView,
-  page: number,
-  more: string[],
-  today: string,
-): DashboardRow[] {
-  if (view === 'all') return pageSlice(rows, page).items;
-  return groupDashboardRows(rows, view, today).flatMap((g) =>
-    more.includes(`${view}:${g.key}`) ? g.rows : g.rows.slice(0, GROUP_PREVIEW),
-  );
 }

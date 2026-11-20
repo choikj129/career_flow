@@ -6,7 +6,7 @@ import { listSiteNotes } from "@/lib/postings/repo";
 import { getLatestResume } from "@/lib/resume/repo";
 import { todayLocal } from "@/lib/domain/dates";
 import { loadDashboard } from "@/lib/search/dashboard";
-import { selectVisibleRows } from "@/lib/search/paging";
+import { selectVisibleRows } from "@/lib/search/visible-rows";
 import { statsHref } from "@/lib/stats/params";
 import {
   dashboardHref,
