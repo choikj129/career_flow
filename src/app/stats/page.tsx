@@ -161,7 +161,13 @@ async function StatsLoader({ searchParams }: { searchParams: PageProps<"/stats">
                 rows={data.docs.map((d) => ({
                   key: d.key,
                   label: d.label,
-                  sub: d.unknown ? "버전 파일보다 앞선 지원" : undefined,
+                  sub: d.absent
+                    ? "내지 않은 지원"
+                    : d.unknown
+                      ? params.doc === "resume"
+                        ? "버전 파일보다 앞선 지원"
+                        : "제출 서류 기록 없음"
+                      : undefined,
                   total: d.tally.total,
                   passed: d.tally.passed,
                   tally: d.tally,

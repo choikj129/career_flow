@@ -11,7 +11,10 @@ export const DOC_KIND_LABELS: Record<DocKind, string> = {
   portfolio: '포트폴리오',
 };
 
-/** 값은 파일 이름(예 `이력서_20261102.pdf`) 또는 null(모름) */
+/** 내지 않음(경력기술서·포트폴리오만). 파일 이름 규칙(…_YYYYMMDD.pdf)과 겹치지 않는다. */
+export const DOC_NONE = 'none' as const;
+
+/** 값은 파일 이름(예 `이력서_20261102.pdf`), `DOC_NONE`(없음), null(모름) */
 export type SubmittedDocs = Partial<Record<DocKind, string | null>>;
 /** date는 YYYY-MM-DD */
 export type DocFile = { kind: DocKind; date: string; fileName: string };
@@ -39,15 +42,46 @@ export function docLabel(fileName: string): string {
   return f ? `${DOC_KIND_LABELS[f.kind]} ${f.date}` : fileName;
 }
 
-/** 그 종류 중 지원일과 같거나 앞선 가장 늦은 파일 이름. 없거나 지원일이 잘못되면 null. */
+/** 이력서는 늘 내므로 "없음"이 없다. */
+export const NONE_ALLOWED: Record<DocKind, boolean> = { resume: false, career: true, portfolio: true };
+export const canBeNone = (kind: DocKind): boolean => NONE_ALLOWED[kind];
+export const isDocNone = (v: string | null | undefined): boolean => v === DOC_NONE;
+
+/** 값이 파일 이름이면 그대로, 없음·모름이면 null. 값을 파일로 쓰는 곳은 모두 이것을 거친다. */
+export function docFileOf(v: string | null | undefined): string | null {
+  return v == null || v === DOC_NONE ? null : v;
+}
+
+/** 모름(null)·없음·규칙에 맞는 파일 이름. 서버 검증용. */
+export function isValidDocValue(kind: DocKind, v: string | null | undefined): boolean {
+  if (v == null) return true;
+  if (v === DOC_NONE) return canBeNone(kind);
+  return isDocsForKind(kind, v);
+}
+
+/** 화면용 글자: 모름 / 없음 / 날짜(YYYY-MM-DD) / 규칙 밖 이름은 그대로 */
+export function docValueText(v: string | null | undefined): string {
+  if (v == null) return '모름';
+  if (v === DOC_NONE) return '없음';
+  return parseDocFileName(v)?.date ?? v;
+}
+
+/**
+ * 그 종류 중 지원일과 같거나 앞선 가장 늦은 파일 이름. 지원일이 잘못되면 null.
+ * 가장 이른 파일보다 앞서면: 경력기술서·포트폴리오는 그 종류 파일이 1개 이상 있을 때 DOC_NONE(없음), 아니면 null(모름).
+ */
 export function pickDocFile(kind: DocKind, appliedAt: string, files: DocFile[]): string | null {
   if (!validDate(appliedAt)) return null;
   let best: DocFile | null = null;
+  let any = false;
   for (const f of files) {
-    if (f.kind !== kind || f.date > appliedAt) continue;
+    if (f.kind !== kind) continue;
+    any = true;
+    if (f.date > appliedAt) continue;
     if (!best || f.date > best.date) best = f;
   }
-  return best?.fileName ?? null;
+  if (best) return best.fileName;
+  return canBeNone(kind) && any ? DOC_NONE : null;
 }
 
 export function pickDocs(appliedAt: string, files: DocFile[]): Record<DocKind, string | null> {

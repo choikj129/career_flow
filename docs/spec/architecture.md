@@ -57,9 +57,9 @@ src/lib/
 ├─ applications/stages.ts    거친 단계 계산, 상태 필터 판정 (순수)
 ├─ applications/backfill.ts  정렬용 일시 일회성 채우기
 ├─ documents/
-│  ├─ files.ts               서류 종류, 파일 이름 규칙, 지원일로 파일 고르기, 메모 "제출 서류" 줄 (순수)
+│  ├─ files.ts               서류 종류, 파일 이름 규칙, 지원일로 파일 고르기("모름"·"없음" 값 포함), 메모 "제출 서류" 줄 (순수)
 │  ├─ folder.ts              data/documents 폴더 읽기, 안전한 경로 풀기
-│  └─ migrate.ts             메모 "제출 서류" 줄 → 지원 기록 제출 서류 칸
+│  └─ migrate.ts             메모 "제출 서류" 줄 → 지원 기록 제출 서류 칸, 경력기술서·포트폴리오 "없음" 일회성 채우기
 ├─ search/dashboard.ts       대시보드 검색·필터·요약 지표, 묶음(서류 통과율은 stats/rates의 Tally)
 ├─ stats/
 │  ├─ outcome.ts             결과 분류(서류 통과·불합격·무응답·대기·지원취소), NO_RESPONSE_DAYS (순수)
@@ -243,7 +243,8 @@ tests/
 scripts/
 ├─ start-career-flow.cmd    빌드 확인 → 실행 → 브라우저 열기 (바탕화면 바로가기용)
 ├─ seed-dev.ts              개발용 데이터 (data-dev/ 에만 씀)
-└─ backfill-applied-datetime.ts  정렬용 일시 일회성 채우기 (data/ 안 파일을 읽음, --dry-run)
+├─ backfill-applied-datetime.ts  정렬용 일시 일회성 채우기 (data/ 안 파일을 읽음, --dry-run)
+└─ mark-docs-none.ts        경력기술서·포트폴리오 "없음" 일회성 채우기 (백업 후, --dry-run)
 
 data/                       git 제외. 위치는 CAREER_FLOW_DATA_DIR로 바꿀 수 있음
 ├─ career-flow.db           SQLite

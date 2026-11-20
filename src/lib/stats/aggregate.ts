@@ -1,6 +1,6 @@
 import { weekdayMon0 } from '@/lib/domain/dates';
 import { SITE_IDS, type SiteId } from '@/lib/domain/types';
-import { docLabel, type DocKind } from '@/lib/documents/files';
+import { DOC_NONE, canBeNone, docFileOf, docLabel, type DocKind } from '@/lib/documents/files';
 import type { StatItem } from './load';
 import { tally, type Tally } from './rates';
 
@@ -53,14 +53,16 @@ export type DocBucket = {
   key: string;
   label: string;
   unknown: boolean;
+  /** 내지 않은 지원(경력기술서·포트폴리오의 "없음") */
+  absent: boolean;
   firstApplied: string | null;
   lastApplied: string | null;
   tally: Tally;
 };
 
-const bucket = (key: string, label: string, unknown: boolean, items: StatItem[]): DocBucket => {
+const bucket = (key: string, label: string, unknown: boolean, items: StatItem[], absent = false): DocBucket => {
   const { first, last } = minMax(items);
-  return { key, label, unknown, firstApplied: first, lastApplied: last, tally: tallyOf(items) };
+  return { key, label, unknown, absent, firstApplied: first, lastApplied: last, tally: tallyOf(items) };
 };
 
 /** resume: 기본 v{n}(번호 ↓) → 파일(날짜 ↓) → 모름. career·portfolio: 파일 → 모름. 0건 묶음은 없음 */
@@ -73,11 +75,14 @@ export function byDocVersion(items: StatItem[], kind: DocKind): DocBucket[] {
     for (const v of versions) out.push(bucket(`v${v}`, `기본 v${v}`, false, items.filter((i) => i.baseVersionNo === v)));
   }
   const rest = items.filter((i) => !isBase(i));
-  const files = [...new Set(rest.map((i) => i.docs[kind]).filter((f): f is string => f != null))].sort((a, b) =>
+  const files = [...new Set(rest.map((i) => docFileOf(i.docs[kind])).filter((f): f is string => f != null))].sort((a, b) =>
     a < b ? 1 : a > b ? -1 : 0,
   );
-  for (const f of files) out.push(bucket(`doc:${f}`, docLabel(f), false, rest.filter((i) => i.docs[kind] === f)));
-  const unknown = rest.filter((i) => i.docs[kind] == null);
+  for (const f of files) out.push(bucket(`doc:${f}`, docLabel(f), false, rest.filter((i) => docFileOf(i.docs[kind]) === f)));
+  const isAbsent = (i: StatItem) => canBeNone(kind) && i.docs[kind] === DOC_NONE;
+  const absent = rest.filter(isAbsent);
+  if (absent.length > 0) out.push(bucket('absent', '없음', false, absent, true));
+  const unknown = rest.filter((i) => docFileOf(i.docs[kind]) == null && !isAbsent(i));
   if (unknown.length > 0) out.push(bucket('none', '모름', true, unknown));
   return out;
 }

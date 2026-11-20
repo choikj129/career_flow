@@ -1,7 +1,7 @@
 import { readdirSync, statSync, type Dirent } from 'node:fs';
 import { join, resolve, sep } from 'node:path';
 import { config } from '@/lib/config';
-import { DOC_KINDS, parseDocFileName, type DocFile, type DocKind, type SubmittedDocs } from './files';
+import { DOC_KINDS, docFileOf, parseDocFileName, type DocFile, type DocKind, type SubmittedDocs } from './files';
 
 // 서버 전용: 데이터 폴더 안의 서류 폴더만 읽는다. 파일 내용은 읽지 않는다.
 
@@ -53,7 +53,7 @@ export function docExistence(
   dir?: string,
 ): Record<DocKind, boolean> {
   const has = (k: DocKind) => {
-    const n = docs?.[k];
+    const n = docFileOf(docs?.[k]);
     return n ? docFileExists(n, dir) : false;
   };
   return { resume: has('resume'), career: has('career'), portfolio: has('portfolio') };
@@ -66,7 +66,7 @@ export function existingDocNames(dir?: string): Set<string> {
 
 export function docExistenceIn(docs: SubmittedDocs | null | undefined, names: Set<string>): Record<DocKind, boolean> {
   const has = (k: DocKind) => {
-    const n = docs?.[k];
+    const n = docFileOf(docs?.[k]);
     return n ? names.has(n) : false;
   };
   return { resume: has('resume'), career: has('career'), portfolio: has('portfolio') };

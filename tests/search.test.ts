@@ -315,3 +315,14 @@ test('TC-PAST-64 reachedCounts and pass rate include assignment records', () => 
   const [g] = groupDashboardRows(searchApplications({}, db), 'site', TODAY);
   expect(g.tally.passed).toBe(4); // A, B, E, F
 });
+
+test('TC-PAST-76 resumeLabel ignores none in other kinds; resume file label stays', () => {
+  const db = makeTestDb();
+  bulkCreateApplications([row('A', 'applied', 'wanted')], db);
+  db.update(applications).set({ submittedDocs: { resume: '이력서_20261102.pdf', career: 'none', portfolio: 'none' } }).run();
+  const r = searchApplications({}, db)[0];
+  expect(r.resumeLabel).toBe('이력서 2026-11-02');
+  expect(r.resumeDocFile).toBe('이력서_20261102.pdf');
+  const g = groupDashboardRows([r], 'resume', TODAY);
+  expect(g.map((x) => x.key)).toEqual(['doc:이력서_20261102.pdf']);
+});

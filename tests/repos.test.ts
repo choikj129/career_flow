@@ -406,3 +406,18 @@ test('TC-PAST-65 changeStatus assignment: no round, one event per save', () => {
   ev = listStatusEvents(id, db).filter((e) => e.status === 'assignment');
   expect(ev.map((e) => e.note)).toEqual(['코딩테스트', '과제 제출']);
 });
+
+test('TC-PAST-72 bulkCreateApplications stores none without a file check; resume none throws and saves nothing', async () => {
+  const { mkdtempSync } = await import('node:fs');
+  const { tmpdir } = await import('node:os');
+  const { join } = await import('node:path');
+  const dir = mkdtempSync(join(tmpdir(), 'cf-docs-'));
+  const db = makeTestDb();
+  const base = { companyName: '토스', positionTitle: 'A', site: 'wanted' as const, appliedAt: '2026-11-05', status: 'applied' as const };
+  bulkCreateApplications([{ ...base, submittedDocs: { resume: null, career: 'none', portfolio: 'none' } }], db, dir);
+  expect(db.select().from(applications).get()!.submittedDocs).toEqual({ resume: null, career: 'none', portfolio: 'none' });
+  expect(() =>
+    bulkCreateApplications([{ ...base, companyName: '당근', submittedDocs: { resume: 'none' } }], db, dir),
+  ).toThrow('서류 파일을 찾을 수 없습니다: none');
+  expect(db.select().from(applications).all()).toHaveLength(1);
+});

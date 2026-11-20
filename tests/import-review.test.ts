@@ -156,3 +156,15 @@ describe('assignment status in import (TC-PAST-66)', () => {
     for (const s of APPLICATION_STATUSES) expect(prompt, s).toContain(s);
   });
 });
+
+describe('none value in rows (TC-PAST-72)', () => {
+  const ok = { ...row(), checked: true };
+  test('schema accepts none for career and portfolio, rejects it for resume', () => {
+    expect(checkedRowsSchema.safeParse([{ ...ok, docs: { resume: null, career: 'none', portfolio: 'none' } }]).success).toBe(true);
+    expect(checkedRowsSchema.safeParse([{ ...ok, docs: { resume: 'none', career: null, portfolio: null } }]).success).toBe(false);
+  });
+  test('rowsToRegister passes none values through', () => {
+    const [r] = rowsToRegister([{ ...row({ docs: { resume: null, career: 'none', portfolio: 'none' } }), checked: true }]);
+    expect(r.submittedDocs).toEqual({ resume: null, career: 'none', portfolio: 'none' });
+  });
+});

@@ -299,3 +299,27 @@ describe('chart scale (TC-STATS-13)', () => {
     expect(ticks(20)).toEqual([0, 5, 10, 15, 20]);
   });
 });
+
+describe('byDocVersion with none (TC-PAST-75)', () => {
+  const docs = (career: string | null) => ({ resume: null, career, portfolio: null });
+  const items = [
+    mk({ docs: docs('경력기술서_20261017.pdf'), appliedAt: '2026-10-20' }),
+    mk({ docs: docs('경력기술서_20261102.pdf'), appliedAt: '2026-11-05' }),
+    mk({ docs: docs('none'), appliedAt: '2026-08-01' }),
+    mk({ docs: docs('none'), appliedAt: '2026-08-02' }),
+    mk({ docs: docs(null), appliedAt: '2026-12-01' }),
+  ];
+  test('career order: files desc, none, unknown; none is never a file bucket', () => {
+    const b = byDocVersion(items, 'career');
+    expect(b.map((x) => x.label)).toEqual(['경력기술서 2026-11-02', '경력기술서 2026-10-17', '없음', '모름']);
+    expect(b[2]).toMatchObject({ key: 'absent', absent: true, unknown: false });
+    expect(b[2].tally.total).toBe(2);
+    expect(b[3]).toMatchObject({ unknown: true, absent: false });
+    expect(b.slice(0, 2).every((x) => !x.absent)).toBe(true);
+  });
+  test('resume order is unchanged and has no absent bucket', () => {
+    const b = byDocVersion([mk({ baseVersionNo: 1 }), mk({ docs: { resume: '이력서_20261102.pdf', career: null, portfolio: null } }), mk()], 'resume');
+    expect(b.map((x) => x.label)).toEqual(['기본 v1', '이력서 2026-11-02', '모름']);
+    expect(b.some((x) => x.absent)).toBe(false);
+  });
+});

@@ -4,7 +4,7 @@ import { applications, statusEvents } from '@/lib/db/schema';
 import { monthsAgoLocal, syntheticKstIso, toKstIso, todayLocal } from '@/lib/domain/dates';
 import type { ApplicationStatus, SiteId } from '@/lib/domain/types';
 import { findOrCreateCompany } from '@/lib/companies/repo';
-import { DOC_KINDS, isDocsForKind, type SubmittedDocs } from '@/lib/documents/files';
+import { DOC_KINDS, DOC_NONE, canBeNone, isDocsForKind, type SubmittedDocs } from '@/lib/documents/files';
 import { docFileExists } from '@/lib/documents/folder';
 import { applicationOrder } from './sort';
 import { REACHED_STAGES } from './stages';
@@ -99,6 +99,10 @@ function assertDocsValid(docs: SubmittedDocs | undefined, docsDir?: string): voi
   for (const k of DOC_KINDS) {
     const name = docs[k];
     if (name == null) continue;
+    if (name === DOC_NONE) {
+      if (canBeNone(k)) continue;
+      throw new Error(`서류 파일을 찾을 수 없습니다: ${name}`);
+    }
     if (!isDocsForKind(k, name) || !docFileExists(name, docsDir)) {
       throw new Error(`서류 파일을 찾을 수 없습니다: ${name}`);
     }

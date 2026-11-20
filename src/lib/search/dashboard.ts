@@ -7,7 +7,7 @@ import { applicationOrder } from '@/lib/applications/sort';
 import { matchesStatusFilter, reachedStages, type ReachedStage } from '@/lib/applications/stages';
 import { classifyOutcome } from '@/lib/stats/outcome';
 import { tally, type Tally } from '@/lib/stats/rates';
-import { docLabel } from '@/lib/documents/files';
+import { docFileOf, docLabel } from '@/lib/documents/files';
 import { normalizeCompanyName } from '@/lib/domain/normalize';
 import {
   APPLICATION_STATUSES,
@@ -105,7 +105,7 @@ export function searchApplications(
   return filtered.map(({ a, companyName }) => {
     const sr = a.submittedResume;
     const versionNo = sr && sr.kind === 'base' ? (versionNoById.get(sr.versionId) ?? null) : null;
-    const resumeDocFile = a.submittedDocs?.resume ?? null;
+    const resumeDocFile = docFileOf(a.submittedDocs?.resume);
     return {
       applicationId: a.id,
       postingId: a.postingId,
