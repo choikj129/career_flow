@@ -356,14 +356,14 @@ textarea.in { height: auto; min-height: 70px; padding: 10px 12px; resize: vertic
 .review-wrap { overflow-x: auto; margin-top: 12px; }
 .review { min-width: 100%; border-collapse: collapse; }
 .review th, .review td { padding: 8px 6px; text-align: left; white-space: nowrap; }
-.review td:nth-child(1) { min-width: 28px; }
-.review td:nth-child(2), .review td:nth-child(3) { min-width: 130px; }
-.review td:nth-child(4) { min-width: 104px; }
-.review td:nth-child(5) { min-width: 120px; }
-.review td:nth-child(6) { min-width: 92px; }
-.review td:nth-child(7) { min-width: 184px; }
-.review td:nth-child(8) { min-width: 150px; }
-.review td:nth-child(10) { min-width: 40px; }
+/* 표 칸의 min-width는 자동 레이아웃에서 무시되므로, 안의 입력·선택 요소에 최소 폭을 준다. */
+.review { width: max-content; min-width: 100%; }
+.review td:nth-child(2) .in, .review td:nth-child(3) .in { min-width: 130px; }
+.review td:nth-child(4) .in { min-width: 112px; }
+.review td:nth-child(5) .in { min-width: 126px; }
+.review td:nth-child(6) .in { min-width: 150px; }
+.review td:nth-child(7) .in { min-width: 214px; }
+.review td:nth-child(8) .in { min-width: 150px; }
 .review textarea.in { min-height: 34px; }
 .review .in { height: 34px; }
 .review select.in { padding-right: 24px; }

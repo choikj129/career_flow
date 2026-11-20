@@ -184,4 +184,44 @@ test.describe.serial('지난 기록 직접 입력', () => {
     await expect(stats.getByTestId('hbar-absent')).toContainText('없음');
     await expect(stats.getByText('내지 않은 지원')).toBeVisible();
   });
+
+  test('TC-PAST-E2E-09 폭 1024에서도 직접 입력 표의 선택·입력 칸 글자가 잘리지 않는다', async ({ page }) => {
+    put('portfolio', '포트폴리오_20261017.pdf');
+    put('career', '경력기술서_20261102.pdf');
+    await page.setViewportSize({ width: 1024, height: 800 });
+    await openManual(page, '원티드');
+    const r = rows(page).first();
+    await r.getByLabel('지원일').fill('2026-11-20');
+    await r.getByLabel('상태').selectOption('assignment'); // 가장 긴 상태 이름
+    // 가장 긴 문구: 서류 select는 선택된 옵션 글자, 사이트·상태 select는 모든 옵션 글자
+    const clipped = await page.evaluate(() => {
+      const ctxFor = (el: Element) => {
+        const cs = getComputedStyle(el);
+        const c = document.createElement('canvas').getContext('2d')!;
+        c.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
+        return { c, cs };
+      };
+      const bad: string[] = [];
+      const check = (el: HTMLElement, text: string, extra: number, name: string) => {
+        const { c, cs } = ctxFor(el);
+        const inner = el.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight) - extra;
+        if (c.measureText(text).width > inner + 0.5) bad.push(`${name}: "${text}" ${Math.round(c.measureText(text).width)} > ${Math.round(inner)}`);
+      };
+      const row = document.querySelector('table.review tbody tr')!;
+      for (const sel of Array.from(row.querySelectorAll('select')) as HTMLSelectElement[]) {
+        const label = sel.getAttribute('aria-label') ?? '';
+        const texts = ['사이트', '상태'].includes(label) ? Array.from(sel.options).map((o) => o.text) : [sel.selectedOptions[0].text];
+        for (const t of texts) check(sel, t, 20, label);
+        if (['이력서', '경력기술서', '포트폴리오'].includes(label)) {
+          for (const o of Array.from(sel.options)) check(sel, o.text, 20, label);
+        }
+      }
+      const date = row.querySelector('input[aria-label="지원일"]') as HTMLInputElement;
+      check(date, '2026-10-20', 0, '지원일');
+      const wrapScroll = document.documentElement.scrollWidth > document.documentElement.clientWidth;
+      if (wrapScroll) bad.push('페이지가 가로로 스크롤됨');
+      return bad;
+    });
+    expect(clipped).toEqual([]);
+  });
 });
