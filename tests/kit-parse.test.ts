@@ -225,4 +225,13 @@ describe('isSameAsLatestKit (TC-KIT-35, 화면 문서 5.6: 같은 내용이면 �
     expect(isSameAsLatestKit(fixtureFiles().slice(1), db)).toBe(false);
     expect(isSameAsLatestKit([...fixtureFiles(), { name: '새.md', data: Buffer.from('x') }], db)).toBe(false);
   });
+
+  test('최신 키트에 오류가 있으면 같은 파일이어도 다시 읽는다(앱이 고쳐진 뒤 다시 올리는 경우)', () => {
+    const db = makeTestDb();
+    const dir = makeTmpDir('cf-kit-');
+    // 기본 서류 하나를 빼서 오류가 있는 키트를 만든다
+    const broken = fixtureFiles().filter((f) => f.name !== '경력기술서_데이터.md');
+    expect(saveKit(broken, db, dir).errors.length).toBeGreaterThan(0);
+    expect(isSameAsLatestKit(broken, db)).toBe(false);
+  });
 });
