@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, symlinkSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { eq } from 'drizzle-orm';
@@ -8,9 +8,10 @@ import { aiJobs } from '@/lib/db/schema';
 import { clearUploads, isInsideDir, summarizeUploads, uploadsInUse } from '@/lib/uploads/cleanup';
 import { formatBytes } from '@/lib/uploads/check';
 import { makeTestDb } from './helpers/db';
+import { makeTmpDir } from './helpers/tmp';
 
 function makeUploads() {
-  const base = mkdtempSync(join(tmpdir(), 'cf-up-'));
+  const base = makeTmpDir('cf-up-');
   mkdirSync(join(base, 'resume'), { recursive: true });
   mkdirSync(join(base, 'import'), { recursive: true });
   writeFileSync(join(base, 'resume', '1-a.pdf'), Buffer.alloc(1000));
@@ -70,7 +71,7 @@ describe('D-09 올린 파일 정리', () => {
 
   test('TC-UPCLEAN-07 바깥을 가리키는 링크는 링크만 지우고 대상은 건드리지 않는다', () => {
     const base = makeUploads();
-    const outside = mkdtempSync(join(tmpdir(), 'cf-out-'));
+    const outside = makeTmpDir('cf-out-');
     writeFileSync(join(outside, 'keep.txt'), 'keep');
     try {
       symlinkSync(outside, join(base, 'link'), 'junction');

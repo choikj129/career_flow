@@ -1,9 +1,8 @@
 // 공고 본문 추출 경계값: 최소 300자, 최대 50,000자. 127.0.0.1 로컬 http 서버로 만든 페이지를 쓴다(외부 접속 없음).
-import { mkdtempSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 import { startFixtureServer, type FixtureServer } from './helpers/http-fixture';
+import { makeTmpDir } from './helpers/tmp';
 import {
   extractPostingText,
   looksBlocked,
@@ -11,7 +10,7 @@ import {
   MIN_POSTING_TEXT_LENGTH,
 } from '@/lib/extract/extract-posting';
 
-const profile = () => mkdtempSync(join(tmpdir(), 'cf-profile-'));
+const profile = () => makeTmpDir('cf-profile-');
 const html = (text: string) => `<html><body><main>${text}</main></body></html>`;
 
 // 테스트마다 다른 본문이 필요하므로 경로를 늘려 가며 등록한다.

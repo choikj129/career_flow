@@ -6,6 +6,7 @@ export default defineConfig({
   test: {
     include: ['tests/**/*.test.ts'],
     fileParallelism: false,
+    setupFiles: ['tests/helpers/tmp-setup.ts'],
     testTimeout: 30_000,
   },
 });

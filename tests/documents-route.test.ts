@@ -1,13 +1,13 @@
 import { beforeAll, describe, expect, test } from 'vitest';
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { makeTmpDir } from './helpers/tmp';
 
 type Handler = (req: Request, ctx: { params: Promise<{ name: string }> }) => Promise<Response>;
 let GET: Handler;
 
 beforeAll(async () => {
-  const dir = mkdtempSync(join(tmpdir(), 'cf-route-'));
+  const dir = makeTmpDir('cf-route-');
   mkdirSync(join(dir, 'documents', 'resume'), { recursive: true });
   writeFileSync(join(dir, 'documents', 'resume', '이력서_20260905.pdf'), '%PDF-1.4 fake');
   writeFileSync(join(dir, 'career-flow.db'), 'secret');

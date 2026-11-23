@@ -1,5 +1,4 @@
-import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { eq } from 'drizzle-orm';
 import { describe, expect, test } from 'vitest';
@@ -14,10 +13,11 @@ import {
   type WorkerDeps,
 } from '@/lib/ai/queue';
 import { makeTestDb } from './helpers/db';
+import { makeTmpDir } from './helpers/tmp';
 
 type Handlers = WorkerDeps['handlers'];
 const stubRunner: AiRunner = { run: async () => { throw new Error('not used'); } };
-const root = () => mkdtempSync(join(tmpdir(), 'cf-clean-'));
+const root = () => makeTmpDir('cf-clean-');
 
 describe('D-09 AI 작업 폴더 정리', () => {
   test('TC-WORK-01 성공한 작업의 폴더는 끝나면 지워진다', async () => {

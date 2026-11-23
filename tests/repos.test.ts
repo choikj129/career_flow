@@ -40,6 +40,7 @@ import {
   updateNotes,
 } from '@/lib/applications/repo';
 import { searchApplications } from '@/lib/search/dashboard';
+import { makeTmpDir } from './helpers/tmp';
 
 afterEach(() => vi.useRealTimers());
 
@@ -353,11 +354,10 @@ test('TC-CO-F4 setPostingCompany 는 지원 기록의 회사도 함께 바꾼다
 });
 
 test('TC-PAST-12 bulkCreateApplications stores notes and document file names', async () => {
-  const { mkdtempSync, mkdirSync, writeFileSync } = await import('node:fs');
-  const { tmpdir } = await import('node:os');
+  const { mkdirSync, writeFileSync } = await import('node:fs');
   const { join } = await import('node:path');
   const { applications } = await import('@/lib/db/schema');
-  const dir = mkdtempSync(join(tmpdir(), 'cf-docs-'));
+  const dir = makeTmpDir('cf-docs-');
   mkdirSync(join(dir, 'resume'), { recursive: true });
   writeFileSync(join(dir, 'resume', '이력서_20261102.pdf'), 'x');
   const db = makeTestDb();
@@ -373,11 +373,8 @@ test('TC-PAST-12 bulkCreateApplications stores notes and document file names', a
 });
 
 test('TC-PAST-12 bulkCreateApplications rolls back when a document file is missing', async () => {
-  const { mkdtempSync } = await import('node:fs');
-  const { tmpdir } = await import('node:os');
-  const { join } = await import('node:path');
   const { applications } = await import('@/lib/db/schema');
-  const dir = mkdtempSync(join(tmpdir(), 'cf-docs-'));
+  const dir = makeTmpDir('cf-docs-');
   const db = makeTestDb();
   const base = { companyName: '토스', positionTitle: 'A', site: 'wanted' as const, appliedAt: '2026-11-05', status: 'applied' as const };
   expect(() =>
@@ -408,10 +405,7 @@ test('TC-PAST-65 changeStatus assignment: no round, one event per save', () => {
 });
 
 test('TC-PAST-72 bulkCreateApplications stores none without a file check; resume none throws and saves nothing', async () => {
-  const { mkdtempSync } = await import('node:fs');
-  const { tmpdir } = await import('node:os');
-  const { join } = await import('node:path');
-  const dir = mkdtempSync(join(tmpdir(), 'cf-docs-'));
+  const dir = makeTmpDir('cf-docs-');
   const db = makeTestDb();
   const base = { companyName: '토스', positionTitle: 'A', site: 'wanted' as const, appliedAt: '2026-11-05', status: 'applied' as const };
   bulkCreateApplications([{ ...base, submittedDocs: { resume: null, career: 'none', portfolio: 'none' } }], db, dir);
