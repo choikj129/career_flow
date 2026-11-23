@@ -6,6 +6,7 @@ import type { DocKind, SubmittedDocs as Docs } from "@/lib/documents/files";
 import type { ApplicationStatus, SiteId } from "@/lib/domain/types";
 import { ApplicationEditModal } from "./ApplicationEditModal";
 import { ConfirmModal } from "./Modal";
+import { sortEventsAscending } from "@/lib/applications/event-order";
 import { StatusHistory } from "./StatusHistory";
 import { StatusForm } from "./StatusForm";
 import { SubmittedDocs } from "./SubmittedDocs";
@@ -58,7 +59,7 @@ export function RecordPanel({
 
       <div>
         <b style={{ fontSize: 13.5 }}>상태 이력</b>
-        <StatusHistory events={[...record.events].reverse()} />
+        <StatusHistory events={sortEventsAscending(record.events, record.appliedAt).reverse()} />
       </div>
 
       <SubmittedDocs docs={record.submittedDocs} exists={record.docExists} />

@@ -23,6 +23,7 @@ import { DuplicateBanner, type PriorApplication } from "../../_components/Duplic
 import { JobStatus } from "../../_components/JobStatus";
 import { SiteBadge } from "../../_components/SiteBadge";
 import { StatusBadge } from "../../_components/StatusBadge";
+import { sortEventsAscending } from "@/lib/applications/event-order";
 import { StatusHistory } from "../../_components/StatusHistory";
 import { SubmittedDocs } from "../../_components/SubmittedDocs";
 import { ApplyForm } from "./ApplyForm";
@@ -460,7 +461,7 @@ function RecordItem({
   positionTitle: string;
   siteNotes: string[];
 }) {
-  const events = listStatusEvents(app.id).reverse();
+  const events = sortEventsAscending(listStatusEvents(app.id), app.appliedAt).reverse();
   const resumeNo =
     app.submittedResume.kind === "base" ? (getResumeVersion(app.submittedResume.versionId)?.versionNo ?? null) : null;
   return (

@@ -224,6 +224,8 @@ test.describe.serial('상태 이력 수정·삭제(기록만 행)', () => {
     await toast(page, '상태 이력을 고쳤습니다');
     await expect(page.locator('.history li').filter({ hasText: '서류 탈락' })).toContainText('2026-03-05');
     await expect(page.locator('.history li').filter({ hasText: '일괄 불합격 처리' })).toHaveCount(0);
+    // 날짜를 고친 뒤에도 날짜순(최신이 위): 2026-03-05 항목이 위, 자동 입력된 첫 이력(지원일 2025-12-15)이 아래
+    await expect(page.locator('.history li').first()).toContainText('2026-03-05');
 
     // 상태를 서류합격으로 고치면 현재 상태가 따라간다
     await page.locator('.history li').filter({ hasText: '서류 탈락' }).getByRole('button', { name: '수정' }).click();

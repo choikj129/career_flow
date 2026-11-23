@@ -4,6 +4,7 @@ import { applications } from '@/lib/db/schema';
 import { saveResumeVersion } from '@/lib/resume/repo';
 import { emptyResume } from '@/lib/resume/schema';
 import { bulkCreateApplications, changeStatus, getApplication, listReachedHistory, listStatusEvents } from '@/lib/applications/repo';
+import { sortEventsAscending } from '@/lib/applications/event-order';
 import { deleteStatusEvent, updateStatusEvent } from '@/lib/applications/events';
 
 function setup() {
@@ -85,4 +86,16 @@ test('가져온 기록(처음 이력이 지금 시각)도 나중에 넣은 이�
   const [, rej] = listStatusEvents(id, db);
   updateStatusEvent(rej.id, { status: 'rejected', at: '2026-03-05', note: '수정' }, db);
   expect(getApplication(id, db)!.status).toBe('rejected');
+});
+
+test('정렬: 날짜를 고친 뒤에도 실효 날짜순(자동 첫 이력은 지원일), 같은 날은 id순', () => {
+  const db = setup();
+  const id = appId(db);
+  changeStatus(id, 'document_passed', { at: '2026-11-23' }, db);
+  changeStatus(id, 'rejected', { at: '2026-11-23' }, db);
+  const evs = listStatusEvents(id, db);
+  updateStatusEvent(evs[2].id, { status: 'rejected', at: '2026-11-05' }, db);
+  const sorted = sortEventsAscending(listStatusEvents(id, db), '2026-11-01');
+  expect(sorted.map((e) => e.status)).toEqual(['applied', 'rejected', 'document_passed']);
+  expect(sorted.map((e) => e.id)).toEqual([evs[0].id, evs[2].id, evs[1].id]);
 });
