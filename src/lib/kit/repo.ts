@@ -180,6 +180,8 @@ export function saveKit(
 export function isSameAsLatestKit(files: Incoming[], db: Db = getDb()): boolean {
   const latest = getLatestKit(db);
   if (!latest) return false;
+  // 오류가 있던 키트는 같은 파일이어도 다시 읽는다(앱의 읽기 규칙이 고쳐진 뒤 다시 올리는 경우)
+  if (latest.errors.length > 0) return false;
   const incoming = new Map(
     files
       .map((f) => ({ name: safeName(f.name), data: f.data }))
