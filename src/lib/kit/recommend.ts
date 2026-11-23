@@ -36,7 +36,12 @@ function countAll(text: string, words: string[]): WordCount[] {
 
 const sum = (c: WordCount[]) => c.reduce((n, x) => n + x.count, 0);
 
-export function recommend(kit: KitGuide, posting: { title: string | null; text: string }): Recommendation {
+/** opts.track: 직무를 정해 두고 그 직무의 프로필·추가 조정만 센다(화면에서 직무를 바꿨을 때) */
+export function recommend(
+  kit: KitGuide,
+  posting: { title: string | null; text: string },
+  opts: { track?: string } = {},
+): Recommendation {
   const text = posting.text.toLowerCase();
   const title = (posting.title ?? '').toLowerCase();
 
@@ -44,8 +49,12 @@ export function recommend(kit: KitGuide, posting: { title: string | null; text: 
     sum(countAll(text, kit.profiles.filter((p) => p.track === name).flatMap((p) => p.keywords)));
   let track = kit.tracks[0];
   let trackReason = '';
+  const forced = opts.track ? kit.tracks.find((t) => t.name === opts.track) : undefined;
   const byTitle = kit.tracks.find((t) => title.includes(t.name.toLowerCase()));
-  if (byTitle) {
+  if (forced) {
+    track = forced;
+    trackReason = '고른 직무';
+  } else if (byTitle) {
     track = byTitle;
     trackReason = `포지션명에 '${byTitle.name}'`;
   } else {

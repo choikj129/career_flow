@@ -7,6 +7,7 @@ const TABS = [
   { id: "ver", label: "버전 기록" },
   { id: "pref", label: "희망 조건" },
   { id: "docs", label: "서류 파일" },
+  { id: "kit", label: "서류 키트" },
 ] as const;
 type TabId = (typeof TABS)[number]["id"];
 
@@ -16,16 +17,18 @@ export function ResumeTabs({
   versions,
   prefs,
   docs,
+  kit,
   initialTab,
 }: {
   edit: React.ReactNode;
   versions: React.ReactNode;
   prefs: React.ReactNode;
   docs: React.ReactNode;
+  kit: React.ReactNode;
   initialTab?: string;
 }) {
   const [tab, setTab] = useState<TabId>(TABS.some((t) => t.id === initialTab) ? (initialTab as TabId) : "edit");
-  const panels: Record<TabId, React.ReactNode> = { edit, ver: versions, pref: prefs, docs };
+  const panels: Record<TabId, React.ReactNode> = { edit, ver: versions, pref: prefs, docs, kit };
   return (
     <>
       <div className="subtabs" role="tablist">

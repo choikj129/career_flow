@@ -7,10 +7,10 @@ function clean(s: string): string {
   return s.replace(/[\\/:*?"<>|\u0000-\u001f\s]+/g, '').replace(/^\.+|\.+$/g, '');
 }
 
-/** 기본 서류 md 첫 제목 "이름 · 직함"의 이름. 제목이 없으면 빈 문자열 */
+/** 기본 서류 md 첫 제목 "이름 · 직함"의 이름. 제목이 없거나 "·"가 없으면 빈 문자열(제목 전체를 이름으로 보지 않는다) */
 export function personNameFromMd(md: string): string {
   const m = /^#\s+(.+)$/m.exec(md);
-  if (!m) return '';
+  if (!m || !m[1].includes('·')) return '';
   return m[1].split('·')[0].trim();
 }
 

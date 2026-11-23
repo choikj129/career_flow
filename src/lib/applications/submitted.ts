@@ -161,3 +161,31 @@ export function resumeLabel(
     }
   }
 }
+
+/** 경력기술서·포트폴리오 칸의 값 ↔ select 값(모름 = '') */
+export const docToSelect = (v: string | null): string => v ?? '';
+export const selectToDoc = (v: string): string | null => (v === '' ? null : v);
+
+/**
+ * 제출 서류 표시의 이력서 줄(화면 문서 5.5 "제출 서류 표시"): 맞춤본은 "맞춤 이력서 r2 [보기]", 기본 서류는 "기본 서류 백엔드 [보기]".
+ * 맞춤본·기본 서류 PDF는 서류 파일 목록에 없으므로 [보기]는 그때그때 만드는 라우트로 간다(D-25). 예전 기록(base)은 [보기] 없이 이름만.
+ * 파일·모름은 null(기존 표시를 쓴다).
+ */
+export function resumeDisplay(
+  sr: SubmittedResume,
+  names: { revNo?: number | null; versionNo?: number | null },
+): { label: string; href: string | null } | null {
+  switch (sr.kind) {
+    case 'tailored':
+      return {
+        label: names.revNo != null ? `맞춤 이력서 r${names.revNo}` : '맞춤 이력서',
+        href: `/api/tailored/${sr.tailoredRevisionId}/resume?inline=1`,
+      };
+    case 'kit':
+      return { label: `기본 서류 ${sr.track}`, href: `/api/kit/${sr.kitId}/${encodeURIComponent(sr.track)}/resume?inline=1` };
+    case 'base':
+      return { label: `${names.versionNo != null ? `기본 이력서 v${names.versionNo}` : '기본 이력서'} (예전 기록)`, href: null };
+    default:
+      return null;
+  }
+}

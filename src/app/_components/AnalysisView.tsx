@@ -153,6 +153,11 @@ export function AnalysisView({
             <span>
               <b>맞춤 이력서 조언.</b> {result.tailoringAdvice}
             </span>
+            {tailoredHref ? (
+              <a href={tailoredHref} data-testid="advice-tailored-link" style={{ whiteSpace: "nowrap" }}>
+                맞춤 이력서 탭으로 →
+              </a>
+            ) : null}
           </div>
         )}
       </div>

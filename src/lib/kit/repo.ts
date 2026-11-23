@@ -163,6 +163,23 @@ export function saveKit(
   return { kitId: id, errors };
 }
 
+/**
+ * 올릴 파일이 가장 최근 키트와 같은지(파일 이름과 내용이 모두 같다). 같으면 새 버전을 만들지 않는다(화면 문서 5.6).
+ * 가장 최근 키트에 없는 파일이 하나라도 있거나 빠진 파일이 있으면 다르다.
+ */
+export function isSameAsLatestKit(files: Incoming[], db: Db = getDb()): boolean {
+  const latest = getLatestKit(db);
+  if (!latest) return false;
+  const incoming = new Map(
+    files
+      .map((f) => ({ name: safeName(f.name), data: f.data }))
+      .filter((f) => f.name)
+      .map((f) => [f.name, createHash('sha256').update(f.data).digest('hex')] as const),
+  );
+  if (incoming.size !== latest.files.length) return false;
+  return latest.files.every((f) => incoming.get(f.name) === f.sha256);
+}
+
 export function getKit(id: number, db: Db = getDb()): KitRow | null {
   return db.select().from(kits).where(eq(kits.id, id)).get() ?? null;
 }
@@ -170,6 +187,16 @@ export function getKit(id: number, db: Db = getDb()): KitRow | null {
 /** 가장 최근 키트(오류가 있어도). 화면에 오류를 보이려고 쓴다. */
 export function getLatestKit(db: Db = getDb()): KitRow | null {
   return db.select().from(kits).orderBy(desc(kits.id)).limit(1).get() ?? null;
+}
+
+/** 키트 기록(최신순): 화면의 "키트 기록"이 쓴다. 파일 목록·읽은 내용은 읽지 않는다 */
+export function listKitSummaries(db: Db = getDb()): { id: number; label: string; createdAt: string; errorCount: number }[] {
+  return db
+    .select({ id: kits.id, label: kits.label, createdAt: kits.createdAt, errors: kits.errors })
+    .from(kits)
+    .orderBy(desc(kits.id))
+    .all()
+    .map((k) => ({ id: k.id, label: k.label, createdAt: k.createdAt, errorCount: k.errors.length }));
 }
 
 /** 오류 없이 읽힌 가장 최근 키트. 맞춤 이력서는 이 키트로만 만든다. */

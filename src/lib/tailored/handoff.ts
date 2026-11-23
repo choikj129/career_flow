@@ -9,7 +9,7 @@ export type HandoffReason = 'low_fit' | 'warnings' | 'pending_adjustments' | 'ai
 export const LOW_FIT_PERCENT = 60;
 
 /** 알림 종류(할 일이 없는 것). "확인 필요"로 세지 않는다 */
-const NOTICE_KINDS: ReadonlySet<KitWarning['kind']> = new Set(['new_fact_from_master', 'intro_restored']);
+export const NOTICE_KINDS: ReadonlySet<KitWarning['kind']> = new Set(['new_fact_from_master', 'intro_restored']);
 
 /** 요청을 권할 이유. 비어 있으면 권하지 않는다(버튼은 늘 있다) */
 export function handoffReasons(i: {

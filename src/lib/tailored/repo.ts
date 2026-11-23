@@ -7,6 +7,7 @@ import { checkTailored } from '@/lib/kit/checks';
 import { getKit, getLatestKit, getUsableKit, readKitDoc, readKitText, type KitRow } from '@/lib/kit/repo';
 import type { KitParsed, KitWarning } from '@/lib/kit/types';
 import { getPosting } from '@/lib/postings/repo';
+import { REVISION_REQUEST_MAX } from './limits';
 
 export type TailoredRevision = typeof tailoredRevisions.$inferSelect;
 export type RevisionSummary = Pick<
@@ -105,7 +106,7 @@ export function addRevision(input: NewRevision, db: Db = getDb()): { id: number;
 }
 
 
-export const REVISION_REQUEST_MAX = 2000;
+export { REVISION_REQUEST_MAX };
 
 /** 이 공고의 가장 최근 리비전(전체 행) */
 export function getLatestRevision(postingId: number, db: Db = getDb()): TailoredRevision | null {
@@ -265,6 +266,8 @@ export type RevisionBase = {
   /** 비교 기준: 그 리비전의 레시피로 다시 만든 1단계 결과(작업 공간 결과는 그 리비전 자체) */
   stage1: { resumeMd: string; careerMd: string };
   pending: string[];
+  /** 조립본에 적용한 내용(화면 "바뀐 곳"). 작업 공간 결과가 뿌리면 비어 있다 */
+  applied: string[];
 };
 
 /**
@@ -294,10 +297,10 @@ export function rebuildStage1(rev: TailoredRevision, db: Db = getDb()): Revision
     .limit(1)
     .get();
   if (origin?.source === 'external') {
-    return { kit: { ...kit, parsed }, base, stage1: { resumeMd: origin.resumeMd, careerMd: origin.careerMd }, pending: origin.pendingAdjustments };
+    return { kit: { ...kit, parsed }, base, stage1: { resumeMd: origin.resumeMd, careerMd: origin.careerMd }, pending: origin.pendingAdjustments, applied: [] };
   }
   const out = assemble(parsed, base, { track: rev.track, profileId: rev.profileId, adjustmentIds: rev.adjustments.map((a) => a.id) });
-  return { kit: { ...kit, parsed }, base, stage1: { resumeMd: out.resumeMd, careerMd: out.careerMd }, pending: out.pending };
+  return { kit: { ...kit, parsed }, base, stage1: { resumeMd: out.resumeMd, careerMd: out.careerMd }, pending: out.pending, applied: out.applied };
 }
 
 /** 모든 리비전의 번호·프로필(본문은 읽지 않는다). 지원 기록의 라벨·통계가 한 번 읽어 쓴다 */

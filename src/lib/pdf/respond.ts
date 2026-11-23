@@ -35,7 +35,7 @@ export async function respondDocument(i: {
       },
     });
   }
-  const html = buildPdfHtml(i.md, i.css);
+  const html = buildPdfHtml(i.md, i.css, { preview: i.format === 'html' });
   if (i.format === 'html') {
     return new Response(html, {
       headers: { ...BASE_HEADERS, 'Content-Type': 'text/html; charset=utf-8', 'Content-Security-Policy': PREVIEW_CSP },

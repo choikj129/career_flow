@@ -1,6 +1,7 @@
 import { getKit, readKitDoc } from '@/lib/kit/repo';
 import { kitPdfFileName, personNameFromMd } from '@/lib/pdf/names';
 import { respondDocument } from '@/lib/pdf/respond';
+import { parseRouteId } from '@/lib/route-id';
 
 function decode(raw: string): string {
   try {
@@ -14,13 +15,18 @@ function decode(raw: string): string {
 export async function GET(req: Request, { params }: RouteContext<'/api/kit/[kitId]/[track]/[doc]'>) {
   const { kitId, track: rawTrack, doc } = await params;
   if (doc !== 'resume' && doc !== 'career') return new Response('잘못된 서류 종류입니다', { status: 400 });
-  const id = /^\d+$/.test(kitId) ? Number(kitId) : NaN;
-  const kit = Number.isSafeInteger(id) ? getKit(id) : null;
+  const id = parseRouteId(kitId);
+  const kit = id != null ? getKit(id) : null;
   const track = decode(rawTrack);
   if (!kit || !kit.files.some((f) => f.role === doc && f.track === track)) {
     return new Response('기본 서류를 찾을 수 없습니다', { status: 404 });
   }
-  const md = readKitDoc(kit.id, track, doc);
+  let md: string;
+  try {
+    md = readKitDoc(kit.id, track, doc);
+  } catch {
+    return new Response('기본 서류 파일을 읽을 수 없습니다. 키트를 다시 올려 보세요', { status: 404 });
+  }
   let resumeMd = md;
   if (doc === 'career') {
     try {

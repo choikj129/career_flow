@@ -20,6 +20,7 @@ import {
   decodeResumeChoice,
   defaultSubmitted,
   encodeResumeChoice,
+  resumeDisplay,
   resumeLabel,
   toColumns,
 } from '@/lib/applications/submitted';
@@ -480,5 +481,19 @@ describe('workspace (external) revisions in stats (item: external counts as tail
     expect(byProfile([item])).toHaveLength(1);
     const rows = searchApplications({}, db);
     expect(rows[0]).toMatchObject({ tailored: true, resumeLabel: '맞춤 r1 · B2' });
+  });
+});
+
+describe('resumeDisplay (TC-SUBMIT-09)', () => {
+  test('tailored and kit rows link to the on-demand PDF routes, base has no link, file and unknown are not overridden', () => {
+    expect(resumeDisplay({ kind: 'tailored', tailoredRevisionId: 12 }, { revNo: 2 })).toEqual({ label: '맞춤 이력서 r2', href: '/api/tailored/12/resume?inline=1' });
+    expect(resumeDisplay({ kind: 'tailored', tailoredRevisionId: 12 }, {})).toEqual({ label: '맞춤 이력서', href: '/api/tailored/12/resume?inline=1' });
+    expect(resumeDisplay({ kind: 'kit', kitId: 3, track: '백엔드/데이터', profileId: 'B1', profileName: '범용' }, {})).toEqual({
+      label: '기본 서류 백엔드/데이터',
+      href: `/api/kit/3/${encodeURIComponent('백엔드/데이터')}/resume?inline=1`,
+    });
+    expect(resumeDisplay({ kind: 'base', versionId: 3 }, { versionNo: 3 })).toEqual({ label: '기본 이력서 v3 (예전 기록)', href: null });
+    expect(resumeDisplay({ kind: 'file' }, {})).toBeNull();
+    expect(resumeDisplay({ kind: 'imported' }, {})).toBeNull();
   });
 });

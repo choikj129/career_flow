@@ -22,7 +22,7 @@ export type StatusEvent = typeof statusEvents.$inferSelect;
 const now = () => new Date().toISOString();
 
 /** [지원 완료] 기본 선택: 키트가 있으면 추천 직무(분석의 프로필 추천, 직무가 하나뿐이면 그 직무)의 기본 서류. 고를 수 없으면 null */
-function defaultKitChoice(postingId: number, db: Db): { id: number; track: string } | null {
+export function defaultKitChoice(postingId: number, db: Db): { id: number; track: string } | null {
   const kit = getUsableKit(db);
   if (!kit) return null;
   const tracks = kit.parsed.tracks.map((t) => t.name);

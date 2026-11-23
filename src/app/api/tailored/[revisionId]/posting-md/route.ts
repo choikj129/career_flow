@@ -4,14 +4,15 @@ import { getKit } from '@/lib/kit/repo';
 import { recommend } from '@/lib/kit/recommend';
 import { contentDisposition } from '@/lib/pdf/names';
 import { getPosting } from '@/lib/postings/repo';
+import { parseRouteId } from '@/lib/route-id';
 import { buildPostingMd } from '@/lib/tailored/posting-md';
 import { getRevision, revisionPostingId } from '@/lib/tailored/repo';
 
 /** 공고 요약 md 받기(사용자 지원 폴더의 공고.md와 같은 이름). 저장하지 않는다. */
 export async function GET(_req: Request, { params }: RouteContext<'/api/tailored/[revisionId]/posting-md'>) {
   const { revisionId } = await params;
-  const id = /^\d+$/.test(revisionId) ? Number(revisionId) : NaN;
-  const rev = Number.isSafeInteger(id) ? getRevision(id) : null;
+  const id = parseRouteId(revisionId);
+  const rev = id != null ? getRevision(id) : null;
   const postingId = rev ? revisionPostingId(rev.id) : null;
   const posting = postingId != null ? getPosting(postingId) : undefined;
   if (!rev || !posting) return new Response('맞춤본을 찾을 수 없습니다', { status: 404 });

@@ -1,7 +1,9 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { markAppliedAction, recentApplicationsAction } from "@/app/_actions/applications";
+import { markAppliedAction, recentApplicationsAction, submittedFormDataAction } from "@/app/_actions/applications";
+import { DocSelects, useSubmittedValues } from "@/app/_components/DocSelects";
+import type { SubmittedFormData } from "@/lib/applications/submitted-options";
 import { SiteBadge } from "@/app/_components/SiteBadge";
 import { statusText } from "@/app/_components/StatusBadge";
 import type { RecentApplication } from "@/lib/applications/repo";
@@ -41,6 +43,8 @@ export function ApplyForm({
   const [site, setSite] = useState<SiteId>(defaultSite);
   const [siteNote, setSiteNote] = useState(defaultSiteNote ?? "");
   const [notes, setNotes] = useState("");
+  const [form, setForm] = useState<SubmittedFormData | null>(null);
+  const submittedValues = useSubmittedValues(form, appliedAt, "apply");
   const { pending, error, setError, run } = useAction();
   const [checking, setChecking] = useState(false);
   // 저장을 시작했거나 끝낸 폼은 다시 저장하지 않는다(이중 제출 방지). 폼을 새로 열 때만 풀린다.
@@ -51,7 +55,8 @@ export function ApplyForm({
     setChecking(true);
     setError(null);
     try {
-      const r = await recentApplicationsAction(postingId);
+      const [r, f] = await Promise.all([recentApplicationsAction(postingId), submittedFormDataAction({ postingId })]);
+      setForm(f.ok ? f.data : null); // 읽지 못해도 폼은 연다(서버가 기본값으로 저장한다)
       if (r.ok && r.records.length > 0) setRecent(r.records);
       else openForm(); // 기록이 없거나 확인에 실패해도 폼은 연다(저장은 서버가 다시 검사한다)
     } finally {
@@ -65,6 +70,7 @@ export function ApplyForm({
     setSite(defaultSite);
     setSiteNote(defaultSiteNote ?? "");
     setNotes("");
+    submittedValues.reset();
     setError(null);
     submittedRef.current = false;
     setSubmitted(false);
@@ -123,6 +129,7 @@ export function ApplyForm({
                     site,
                     siteNote: site === "other" ? siteNote : undefined,
                     notes,
+                    submitted: submittedValues.value ?? undefined,
                   }),
                 () => setOpen(false),
                 () => {
@@ -164,6 +171,9 @@ export function ApplyForm({
                 </datalist>
               </div>
             )}
+            {form && submittedValues.value ? (
+              <DocSelects data={form} value={submittedValues.value} onChange={submittedValues.set} idPrefix="ap-doc" />
+            ) : null}
             <div className="row">
               <label htmlFor="ap-memo">메모</label>
               <input id="ap-memo" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="선택" />

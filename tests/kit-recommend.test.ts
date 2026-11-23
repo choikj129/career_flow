@@ -46,3 +46,14 @@ describe('recommend (TC-KIT-16)', () => {
     expect(r.profiles[0].matched).toEqual([{ word: 'Redis', count: 2 }]);
   });
 });
+
+describe('recommend with a chosen track (TC-KIT-16)', () => {
+  test('counts only the chosen track even when the title or words point to another', () => {
+    const r = recommend(kit, { title: '백엔드 개발자', text: '백엔드 API 성능 캐시 분석 모델링 데이터' }, { track: '데이터' });
+    expect(r.track).toBe('데이터');
+    expect(r.trackReason).toBe('고른 직무');
+    expect(r.profiles.map((p) => p.id).sort()).toEqual(['D1', 'D2']);
+    expect(r.profiles.find((p) => p.recommended)!.id).toBe('D2'); // 분석·모델링이 D2의 공고 단어
+    expect(recommend(kit, { title: null, text: '캐시' }, { track: '없는직무' }).track).toBe('백엔드');
+  });
+});

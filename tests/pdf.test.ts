@@ -1,5 +1,5 @@
 import { makeTmpDir } from './helpers/tmp';
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { beforeAll, describe, expect, test } from 'vitest';
 import { acquireBrowserLock } from '@/lib/extract/browser';
@@ -7,6 +7,7 @@ import { fontFaceCss } from '@/lib/pdf/fonts';
 import { buildPdfHtml, mdToSectionHtml } from '@/lib/pdf/md-html';
 import { contentDisposition, kitPdfFileName, personNameFromMd } from '@/lib/pdf/names';
 import { renderPdf } from '@/lib/pdf/render';
+import { parseRouteId } from '@/lib/route-id';
 import { buildPostingMd } from '@/lib/tailored/posting-md';
 
 const FIX = join(process.cwd(), 'tests', 'fixtures', 'kit');
@@ -59,6 +60,25 @@ describe('mdToSectionHtml (TC-PDF-01, TC-PDF-02)', () => {
   });
 });
 
+describe('mdToSectionHtml extras (TC-PDF-10, TC-PDF-11)', () => {
+  test('TC-PDF-10 comments inside fenced and inline code are kept, comments elsewhere are removed', () => {
+    const md = ['# 가 · 나', '', '## 장', '', '```', '<!-- 코드 안 주석 -->', '```', '', '인라인 `<!-- 인라인 주석 -->` 끝 <!-- 지울 주석 -->', ''].join('\n');
+    const html = mdToSectionHtml(md);
+    expect(html).toContain('&lt;!-- 코드 안 주석 --&gt;');
+    expect(html).toContain('&lt;!-- 인라인 주석 --&gt;');
+    expect(html).not.toContain('지울 주석');
+  });
+
+  test('TC-PDF-11 tables and nested lists are converted', () => {
+    const md = ['# 가 · 나', '', '## 장', '', '| 열A | 열B |', '|---|---|', '| 값1 | 값2 |', '', '- 위', '  - 아래 항목', '- 다음', ''].join('\n');
+    const html = mdToSectionHtml(md);
+    expect(html).toContain('<table>');
+    expect(html).toMatch(/<th[^>]*>열A<\/th>/);
+    expect(html).toMatch(/<td[^>]*>값2<\/td>/);
+    expect(html).toMatch(/<li>위\s*<ul>\s*<li>아래 항목<\/li>\s*<\/ul>\s*<\/li>/);
+  });
+});
+
 describe('names (TC-PDF-03, TC-PDF-04)', () => {
   test('TC-PDF-03 kitPdfFileName: name_doc_track, path chars and spaces removed, no name', () => {
     expect(kitPdfFileName({ name: '홍길동', doc: 'resume', track: '백엔드' })).toBe('홍길동_이력서_백엔드.pdf');
@@ -68,6 +88,19 @@ describe('names (TC-PDF-03, TC-PDF-04)', () => {
     expect(kitPdfFileName({ name: '..\\..\\x', doc: 'resume', track: 'a:b' })).not.toMatch(/[\\/:]/);
     expect(personNameFromMd('# 홍길동 · 백엔드 개발자\n')).toBe('홍길동');
     expect(personNameFromMd('본문만')).toBe('');
+    // TC-PDF-12: "·"가 없는 제목은 이름이 아니다(제목 전체를 이름으로 쓰지 않는다)
+    expect(personNameFromMd('# 제목만 있는 서류\n')).toBe('');
+    expect(kitPdfFileName({ name: personNameFromMd('# 제목만 있는 서류'), doc: 'resume', track: '백엔드' })).toBe('이력서_백엔드.pdf');
+  });
+
+  test('TC-PDF-15 parseRouteId accepts only plain positive integers', () => {
+    expect(parseRouteId('12')).toBe(12);
+    expect(parseRouteId('0')).toBeNull();
+    expect(parseRouteId('-1')).toBeNull();
+    expect(parseRouteId('1.5')).toBeNull();
+    expect(parseRouteId('abc')).toBeNull();
+    expect(parseRouteId('')).toBeNull();
+    expect(parseRouteId('99999999999999999999')).toBeNull();
   });
 
   test('TC-PDF-04 contentDisposition: attachment/inline, ascii fallback, utf-8 name, no header injection', () => {
@@ -93,6 +126,18 @@ describe('buildPdfHtml (TC-PDF-06)', () => {
     const evil = buildPdfHtml('# 가', 'a{}</style><script>alert(1)</script>');
     expect(evil).not.toContain('</style><script>');
     expect(fontFaceCss()).toContain('font-weight:700');
+  });
+
+  test('TC-PDF-13 page-break rules apply with the default css and with kit css', () => {
+    for (const html of [buildPdfHtml('# 가', null), buildPdfHtml('# 가', 'body{color:red}')]) {
+      expect(html).toMatch(/h1,\s*h2,\s*h3[^{]*\{[^}]*break-after:\s*avoid/);
+      expect(html).toMatch(/tr,\s*li[^{]*\{[^}]*break-inside:\s*avoid/);
+    }
+  });
+
+  test('TC-PDF-13 preview adds side padding on screen only', () => {
+    expect(buildPdfHtml('# 가', null, { preview: true })).toMatch(/@media screen\s*\{[^}]*padding/);
+    expect(buildPdfHtml('# 가', null)).not.toContain('@media screen');
   });
 });
 
@@ -258,4 +303,12 @@ describe('routes (TC-PDF-07, TC-PDF-08)', () => {
     expect((await call('999', '백엔드', 'resume')).status).toBe(404);
     expect((await call(String(kitId), '백엔드', 'x')).status).toBe(400);
   }, 60_000);
+
+  test('TC-PDF-14 a base document file that cannot be read gives 404, not a crash', async () => {
+    const { config } = await import('@/lib/config');
+    rmSync(join(config.kitDir, String(kitId)), { recursive: true, force: true });
+    const res = await kitRoute(new Request('http://x/'), { params: Promise.resolve({ kitId: String(kitId), track: encodeURIComponent('백엔드'), doc: 'resume' }) });
+    expect(res.status).toBe(404);
+    expect(await res.text()).toContain('읽을 수 없');
+  });
 });

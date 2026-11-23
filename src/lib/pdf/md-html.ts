@@ -30,8 +30,36 @@ const marked = new Marked({
   },
 });
 
+/** 주석을 지운다. 코드 블록(``` · ~~~)과 인라인 코드 안의 `<!-- -->`는 글자이므로 그대로 둔다 */
 function stripComments(md: string): string {
-  return md.replace(/<!--[\s\S]*?-->/g, '');
+  const out: string[] = [];
+  let buf: string[] = [];
+  let fence: string | null = null;
+  const flush = () => {
+    if (buf.length === 0) return;
+    out.push(
+      buf
+        .join('\n')
+        // 인라인 코드(백틱 묶음)는 통째로 두고, 나머지의 주석만 지운다
+        .replace(/(`+)[\s\S]*?\1|<!--[\s\S]*?-->/g, (m) => (m.startsWith('`') ? m : '')),
+    );
+    buf = [];
+  };
+  for (const line of md.split('\n')) {
+    const m = /^ {0,3}(`{3,}|~{3,})/.exec(line);
+    if (fence == null) {
+      if (m) {
+        flush();
+        fence = m[1];
+        out.push(line);
+      } else buf.push(line);
+    } else {
+      out.push(line);
+      if (m && m[1][0] === fence[0] && m[1].length >= fence.length && line.trim() === m[1]) fence = null;
+    }
+  }
+  flush();
+  return out.join('\n');
 }
 
 type Tok = Tokens.Generic;
@@ -113,12 +141,18 @@ table { border-collapse: collapse; width: 100%; }
 th, td { border: 1px solid #ccc; padding: 3px 6px; text-align: left; }
 `;
 
-const WRAP_CSS = `html, body { word-break: keep-all; overflow-wrap: anywhere; }`;
+/** 줄바꿈·쪽 넘김 규칙. 키트 CSS를 쓸 때도 붙는다(제목이 쪽 끝에 홀로 남거나 표 행·목록 항목이 쪼개지지 않게) */
+const WRAP_CSS = `html, body { word-break: keep-all; overflow-wrap: anywhere; }
+h1, h2, h3, h4 { break-after: avoid; }
+tr, li { break-inside: avoid; }`;
+
+/** 화면 미리보기(새 탭)에서만 좌우 여백을 준다. 인쇄(PDF)에는 영향이 없다 */
+const PREVIEW_CSS = `@media screen { body { padding: 20px 28px; } }`;
 
 /** 전체 HTML. `<style>` = 글꼴 + (키트 CSS 또는 기본 CSS) + 줄바꿈 규칙 */
-export function buildPdfHtml(md: string, css: string | null): string {
+export function buildPdfHtml(md: string, css: string | null, opts: { preview?: boolean } = {}): string {
   // style 요소를 닫아 버리는 글자만 막는다(키트 CSS는 사용자가 올린 파일)
-  const style = [fontFaceCss(), (css?.trim() ? css : DEFAULT_PDF_CSS).replace(/<\/style/gi, '<\\/style'), WRAP_CSS].join('\n');
+  const style = [fontFaceCss(), (css?.trim() ? css : DEFAULT_PDF_CSS).replace(/<\/style/gi, '<\\/style'), WRAP_CSS, ...(opts.preview ? [PREVIEW_CSS] : [])].join('\n');
   return `<!doctype html>
 <html lang="ko"><head><meta charset="utf-8"><title>서류</title><style>${style}</style></head>
 <body><div class="sheet">

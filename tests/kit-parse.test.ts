@@ -5,7 +5,7 @@ import { join } from 'node:path';
 import { makeTestDb } from './helpers/db';
 import { parseGuide } from '@/lib/kit/parse-guide';
 import { checkBaseDoc, listItems, parseMdDoc, renderMdDoc, findSection } from '@/lib/kit/md-doc';
-import { getKit, getLatestKit, getUsableKit, readKitDoc, readKitText, saveKit } from '@/lib/kit/repo';
+import { getKit, getLatestKit, getUsableKit, isSameAsLatestKit, readKitDoc, readKitText, saveKit } from '@/lib/kit/repo';
 
 const DIR = join(process.cwd(), 'tests', 'fixtures', 'kit');
 const read = (n: string) => readFileSync(join(DIR, n), 'utf8');
@@ -207,5 +207,21 @@ describe('saveKit (TC-KIT-05)', () => {
     expect(() => saveKit([{ name: '큰.md', data: Buffer.alloc(1024 * 1024 + 1, 97) }], db, dir)).toThrow('1MB');
     const many = Array.from({ length: 11 }, (_, i) => ({ name: `파일${i}.md`, data: Buffer.from('x') }));
     expect(() => saveKit(many, db, dir)).toThrow('10개');
+  });
+});
+
+describe('isSameAsLatestKit (TC-KIT-35, 화면 문서 5.6: 같은 내용이면 새 버전을 만들지 않는다)', () => {
+  test('same files and names are the same; a changed, added or missing file is not', () => {
+    const db = makeTestDb();
+    const dir = makeTmpDir('cf-kit-');
+    expect(isSameAsLatestKit(fixtureFiles(), db)).toBe(false); // 키트가 아직 없다
+    saveKit(fixtureFiles(), db, dir);
+    expect(isSameAsLatestKit(fixtureFiles(), db)).toBe(true);
+    expect(isSameAsLatestKit(fixtureFiles().reverse(), db)).toBe(true);
+
+    const changed = fixtureFiles().map((f) => (f.name === '마스터스토리.md' ? { ...f, data: Buffer.concat([f.data, Buffer.from('\n추가')]) } : f));
+    expect(isSameAsLatestKit(changed, db)).toBe(false);
+    expect(isSameAsLatestKit(fixtureFiles().slice(1), db)).toBe(false);
+    expect(isSameAsLatestKit([...fixtureFiles(), { name: '새.md', data: Buffer.from('x') }], db)).toBe(false);
   });
 });

@@ -1,98 +1,46 @@
-// 맞춤본 내려받기(PDF·md·미리보기·공고 요약·기본 서류)와 분석 탭 프로필 추천 줄. 시드 공고 5 스텔라랩스는 추천이 없는 분석.
-// 맞춤 이력서 화면(Task 7) 전이라 키트·맞춤본은 DB에 직접 넣고 끝나면 지운다. 가짜 데이터만 쓴다.
+// 맞춤본 내려받기(PDF·md·미리보기·공고 요약·기본 서류)와 분석 탭 프로필 추천 줄.
+// 키트 올리기, 공고 등록·분석, 맞춤본 만들기는 모두 화면 경로로 한다(가짜 claude, 가상 데이터).
 import { expect, test, type Page } from '@playwright/test';
-import Database from 'better-sqlite3';
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
-import { dataDir } from './paths';
+import { LONG_PROFILE, kitFixtureFiles, registerByPaste, setFake, toast, uploadKit, waitAnalyzed } from './helpers';
 
 test.describe.configure({ mode: 'serial' });
+test.afterAll(() => setFake('seeded', {}));
 
-const REC_POSTING_NO_REC = 5;
-const LONG_PROFILE = '아주 긴 프로필 이름으로 정합성과 안정성을 함께 강조하는 가상 직무';
-const RESUME_MD = [
-  '# 홍길동 · 백엔드 개발자',
-  '',
-  '- 이메일: gildong@example.com',
-  '',
-  '## 자기소개',
-  '',
-  '범용 백엔드 개발자입니다. <script>window.__pwned = 1</script>',
-  '',
-  '## 핵심 역량',
-  '',
-  '- **API 설계**: 서버 개발',
-].join('\n');
-const CAREER_MD = '# 홍길동 · 경력기술서\n\n## 1. 가상커머스\n\n- 주문 처리 개선';
+const REC_POSTING_NO_REC = 5; // 시드 공고: 키트 없이 분석됨 → 추천 줄이 없다
+const POSTING = ['회사명: 내려받기테스트', '포지션: 서버 개발자', '적합도: 75', '주요업무', '- Kafka Java 서버 공고 본문(가상). 백엔드 API, 캐시, 성능, 트래픽'].join('\n');
 
-let db: Database.Database;
-const created = { kit: 0, resumeRow: 0, revision: 0, posting: 0 };
+let kitId = 0;
+let postingId = 0;
+let revisionId = 0;
 
 const noOverflow = (page: Page) => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth);
 
-test.beforeAll(() => {
-  db = new Database(join(dataDir('seeded'), 'career-flow.db'));
-  const now = new Date().toISOString();
-  const base = db.prepare('select p.company_id as c, a.resume_version_id as r, a.job_id as j, a.result as res from postings p join analyses a on a.posting_id = p.id where p.id = ? order by a.id desc limit 1').get(REC_POSTING_NO_REC) as { c: number; r: number; j: number; res: string };
-
-  // 키트(기본 서류 파일 포함). parsed는 null이라 키트 CSS·공고 단어는 없다(앱 기본 스타일로 만든다)
-  const files = [
-    { role: 'resume', track: '백엔드', name: '이력서_백엔드.md', sha256: 'x', bytes: 1 },
-    { role: 'career', track: '백엔드', name: '경력기술서_백엔드.md', sha256: 'x', bytes: 1 },
-  ];
-  created.kit = Number(db.prepare("insert into kits (label, files, parsed, errors, created_at) values ('e2e 키트', ?, null, '[]', ?)").run(JSON.stringify(files), now).lastInsertRowid);
-  const kitFolder = join(dataDir('seeded'), 'kit', String(created.kit));
-  mkdirSync(kitFolder, { recursive: true });
-  writeFileSync(join(kitFolder, '이력서_백엔드.md'), RESUME_MD);
-  writeFileSync(join(kitFolder, '경력기술서_백엔드.md'), CAREER_MD);
-
-  // 추천이 있는 분석을 가진 가상 공고
-  const rec = {
-    kitId: created.kit,
-    track: '백엔드',
-    trackReason: '공고가 서버 중심',
-    profiles: [
-      { id: 'B3', fitPercent: 82, keywords: ['Kafka'], reason: LONG_PROFILE },
-      { id: 'B1', fitPercent: 55, keywords: [], reason: '기본' },
-    ],
-    adjustments: [],
-  };
-  const result = { ...JSON.parse(base.res), profileRecommendation: rec };
-  created.posting = Number(
-    db
-      .prepare("insert into postings (company_id, url, canonical_url, site, position_title, raw_text, raw_text_source, fetched_at, created_at) values (?, null, null, 'other', '추천 확인용 서버 개발자', 'Kafka Java 서버 공고 본문(가상)', 'pasted', ?, ?)")
-      .run(base.c, now, now).lastInsertRowid,
-  );
-  db.prepare('insert into analyses (posting_id, resume_version_id, result, fit_score, job_id, created_at) values (?, ?, ?, 70, ?, ?)').run(created.posting, base.r, JSON.stringify(result), base.j, now);
-
-  created.resumeRow = Number(db.prepare('insert into tailored_resumes (posting_id, created_at) values (?, ?)').run(created.posting, now).lastInsertRowid);
-  created.revision = Number(
-    db
-      .prepare(
-        "insert into tailored_revisions (tailored_resume_id, rev_no, kit_id, track, profile_id, profile_name, adjustments, source, resume_md, career_md, pending_adjustments, change_reasons, warnings, notes, created_at) values (?, 1, ?, '백엔드', 'B3', ?, ?, 'recipe', ?, ?, '[]', '[]', '[]', '', ?)",
-      )
-      .run(created.resumeRow, created.kit, LONG_PROFILE, JSON.stringify([{ id: 'a1', label: '결제 경험 강조' }]), RESUME_MD, CAREER_MD, now).lastInsertRowid,
-  );
-});
-
-test.afterAll(() => {
-  db.prepare('delete from tailored_revisions where id = ?').run(created.revision);
-  db.prepare('delete from tailored_resumes where id = ?').run(created.resumeRow);
-  db.prepare('delete from analyses where posting_id = ?').run(created.posting);
-  db.prepare('delete from postings where id = ?').run(created.posting);
-  db.prepare('delete from kits where id = ?').run(created.kit);
-  rmSync(join(dataDir('seeded'), 'kit', String(created.kit)), { recursive: true, force: true });
-  db.close();
+test.beforeAll(async ({ browser, baseURL }) => {
+  const page = await browser.newPage({ baseURL, locale: 'ko-KR' });
+  setFake('seeded', {});
+  // 이력서 항목에 script 글자가 들어 있고 B2 프로필 이름이 긴 키트: 미리보기가 서류 안의 글자를 실행하지 않는지, 긴 이름이 잘리지 않는지 본다
+  const up = await uploadKit(page, kitFixtureFiles({ scriptInResume: true, longName: true }));
+  expect(up.ok).toBe(true);
+  kitId = up.unchanged ? 0 : (up.kitId ?? 0);
+  expect(kitId).toBeGreaterThan(0);
+  postingId = await registerByPaste(page, POSTING);
+  await waitAnalyzed(page);
+  await page.goto(`/postings/${postingId}?tab=tailored`);
+  await page.getByRole('button', { name: '맞춤본 만들기' }).click();
+  await toast(page, '맞춤본을 만들었습니다');
+  const href = await page.getByTestId('downloads').getByRole('link', { name: '이력서 PDF' }).getAttribute('href');
+  revisionId = Number(/\/api\/tailored\/(\d+)\//.exec(href!)![1]);
+  await page.close();
 });
 
 test.describe('분석 탭 프로필 추천 줄', () => {
   test('TC-TAILOR-E2E-REC-01 추천이 있으면 줄이 보이고 맞춤 이력서 탭 링크가 있다', async ({ page }) => {
-    await page.goto(`/postings/${created.posting}`);
+    await page.goto(`/postings/${postingId}`);
     const line = page.getByTestId('profile-rec-line');
     await expect(line).toBeVisible();
-    await expect(line).toContainText('추천 프로필 B3 정합성 82%');
-    await expect(line).toContainText('다음 B1 55%');
-    await expect(line.getByRole('link', { name: '→ 맞춤 이력서 탭' })).toHaveAttribute('href', `/postings/${created.posting}?tab=tailored`);
+    await expect(line).toContainText('추천 프로필 B2');
+    await expect(line).toContainText('다음 B1');
+    await expect(line.getByRole('link', { name: '→ 맞춤 이력서 탭' })).toHaveAttribute('href', `/postings/${postingId}?tab=tailored`);
   });
 
   test('TC-TAILOR-E2E-REC-02 추천이 없는 분석에는 줄이 없다', async ({ page }) => {
@@ -104,7 +52,7 @@ test.describe('분석 탭 프로필 추천 줄', () => {
   test('TC-TAILOR-E2E-REC-03 폭 1024·1240·1440에서 가로로 넘치지 않고 줄바꿈 규칙이 적용된다', async ({ page }) => {
     for (const width of [1024, 1240, 1440]) {
       await page.setViewportSize({ width, height: 900 });
-      await page.goto(`/postings/${created.posting}`);
+      await page.goto(`/postings/${postingId}`);
       const line = page.getByTestId('profile-rec-line');
       await expect(line).toBeVisible();
       expect(await noOverflow(page), `폭 ${width}`).toBe(true);
@@ -117,35 +65,35 @@ test.describe('분석 탭 프로필 추천 줄', () => {
 
 test.describe('맞춤본 내려받기', () => {
   test('TC-TAILOR-E2E-DL-01 md·PDF 내려받기: 파일 이름·형식', async ({ request }) => {
-    const md = await request.get(`/api/tailored/${created.revision}/resume?format=md`);
+    const md = await request.get(`/api/tailored/${revisionId}/resume?format=md`);
     expect(md.status()).toBe(200);
     expect(md.headers()['content-type']).toBe('text/markdown; charset=utf-8');
     expect(decodeURIComponent(md.headers()['content-disposition'])).toContain('홍길동_이력서_백엔드.md');
     expect(await md.text()).toContain('# 홍길동 · 백엔드 개발자');
 
-    const pdf = await request.get(`/api/tailored/${created.revision}/career`);
+    const pdf = await request.get(`/api/tailored/${revisionId}/career`);
     expect(pdf.status()).toBe(200);
     expect(pdf.headers()['content-type']).toBe('application/pdf');
     expect(decodeURIComponent(pdf.headers()['content-disposition'])).toContain('홍길동_경력기술서_백엔드.pdf');
     expect((await pdf.body()).subarray(0, 5).toString()).toBe('%PDF-');
 
-    const base = await request.get(`/api/kit/${created.kit}/${encodeURIComponent('백엔드')}/resume?inline=1`);
+    const base = await request.get(`/api/kit/${kitId}/${encodeURIComponent('백엔드')}/resume?inline=1`);
     expect(base.status()).toBe(200);
     expect(base.headers()['content-disposition']).toMatch(/^inline;/);
     expect((await base.body()).subarray(0, 5).toString()).toBe('%PDF-');
   });
 
   test('TC-TAILOR-E2E-DL-02 공고 요약 md와 없는 맞춤본·잘못된 요청', async ({ request }) => {
-    const pm = await request.get(`/api/tailored/${created.revision}/posting-md`);
+    const pm = await request.get(`/api/tailored/${revisionId}/posting-md`);
     expect(pm.status()).toBe(200);
     expect(decodeURIComponent(pm.headers()['content-disposition'])).toContain('공고.md');
     const body = await pm.text();
-    expect(body).toContain('추천 확인용 서버 개발자');
-    expect(body).toContain('결제 경험 강조');
+    expect(body).toContain('서버 개발자');
+    expect(body).toContain('B2');
     expect(body).toContain('Kafka Java 서버 공고 본문(가상)');
     expect((await request.get('/api/tailored/999999/resume')).status()).toBe(404);
-    expect((await request.get(`/api/tailored/${created.revision}/etc`)).status()).toBe(400);
-    expect((await request.get(`/api/tailored/${created.revision}/resume?format=zip`)).status()).toBe(400);
+    expect((await request.get(`/api/tailored/${revisionId}/etc`)).status()).toBe(400);
+    expect((await request.get(`/api/tailored/${revisionId}/resume?format=zip`)).status()).toBe(400);
   });
 
   test('TC-TAILOR-E2E-DL-03 미리보기: 서류 안의 script는 실행되지 않고 폭 1024·1240·1440에서 넘치지 않는다', async ({ page }) => {
@@ -156,15 +104,27 @@ test.describe('맞춤본 내려받기', () => {
     });
     for (const width of [1024, 1240, 1440]) {
       await page.setViewportSize({ width, height: 900 });
-      await page.goto(`/api/tailored/${created.revision}/resume?format=html&inline=1`);
+      await page.goto(`/api/tailored/${revisionId}/resume?format=html&inline=1`);
       await expect(page.locator('section.sec').first()).toBeVisible();
       expect(await page.evaluate(() => (window as unknown as { __pwned?: number }).__pwned)).toBeUndefined();
       await expect(page.locator('body')).toContainText('<script>window.__pwned = 1</script>');
       expect(await noOverflow(page), `폭 ${width}`).toBe(true);
       expect(await page.locator('body').evaluate((el) => getComputedStyle(el).wordBreak)).toBe('keep-all');
+      // 화면 미리보기에는 좌우 여백이 있다(글자가 창 가장자리에 붙지 않는다)
+      expect(await page.locator('body').evaluate((el) => parseFloat(getComputedStyle(el).paddingLeft))).toBeGreaterThanOrEqual(16);
     }
     expect(csp.length).toBeGreaterThan(0);
     expect(csp[0]).toContain("default-src 'none'");
+    await page.setViewportSize({ width: 1280, height: 720 });
+  });
+
+  test('긴 프로필 이름이 맞춤 이력서 탭에서 잘리거나 넘치지 않는다', async ({ page }) => {
+    await page.goto(`/postings/${postingId}?tab=tailored`);
+    await expect(page.getByTestId('profile-line')).toContainText(LONG_PROFILE.slice(0, 6));
+    for (const width of [1024, 1240, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      expect(await noOverflow(page), `폭 ${width}`).toBe(true);
+    }
     await page.setViewportSize({ width: 1280, height: 720 });
   });
 });

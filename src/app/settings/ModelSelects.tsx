@@ -7,6 +7,8 @@ const ROWS = [
   { type: "analyze_posting", label: "공고 분석" },
   { type: "import_resume", label: "이력서 가져오기" },
   { type: "import_applications", label: "지원 내역 가져오기" },
+  { type: "tailor_resume", label: "맞춤 이력서 공고 용어 맞추기" },
+  { type: "revise_tailored", label: "맞춤 이력서 다듬기" },
 ] as const;
 const CHOICES = ["opus", "sonnet", "haiku"];
 

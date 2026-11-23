@@ -13,6 +13,7 @@ import { ResumeContent, emptyResume } from "@/lib/resume/schema";
 import { JobFailureCard } from "../_components/JobFailureCard";
 import { JobStatus } from "../_components/JobStatus";
 import { DocFiles } from "./DocFiles";
+import { KitTab } from "./KitTab";
 import { PreferencesForm } from "./PreferencesForm";
 import { ResumeEditor } from "./ResumeEditor";
 import { ResumeTabs } from "./ResumeTabs";
@@ -113,6 +114,7 @@ async function ResumeLoader({ searchParams }: { searchParams: PageProps<"/resume
         versions={<VersionHistory versions={versions} />}
         prefs={<PreferencesForm initial={getPreferences()} />}
         docs={<DocFiles />}
+        kit={<KitTab />}
         initialTab={first(sp.tab)}
       />
     </>

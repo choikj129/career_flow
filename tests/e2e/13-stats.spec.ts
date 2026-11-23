@@ -1,9 +1,10 @@
 // 통계 화면 /stats: 카드·그래프·전환·필터·빈 상태·표본 표시·대시보드 연결. TC-STATS-E2E-01~07
 import { expect, test, type Page } from '@playwright/test';
 import Database from 'better-sqlite3';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { dataDir } from './paths';
+import { LONG_PROFILE, kitFixtureFiles, toast, uploadKit } from './helpers';
 
 const docsDir = join(dataDir('seeded'), 'documents');
 
@@ -135,32 +136,38 @@ test.describe.serial('통계 화면', () => {
     await expect(page.getByTestId('stats-profiles-empty')).toHaveText('프로필이 기록된 지원이 없습니다.');
     await expect(page.getByTestId('stats-docs')).not.toContainText('맞춤 이력서');
 
-    // 2) 화면 기능이 생기기 전(Task 7)이라 지원 기록의 제출 서류를 DB에 직접 넣어 확인한다(끝나면 되돌린다)
+    // 2) 화면 경로로 만든다: 이름이 긴 프로필이 있는 예시 키트를 올리고, 시드 지원 기록 3건의 제출 서류를 고른다
+    //    (기본 서류 1건, 맞춤 이력서 2건). DB는 읽기(공고 번호)와 끝난 뒤 되돌리기에만 쓴다.
     const db = new Database(join(dataDir('seeded'), 'career-flow.db'));
     const apps = db
       .prepare("select a.id, a.submitted_resume as sr, p.id as posting_id from applications a join postings p on p.id = a.posting_id order by a.applied_at limit 3")
       .all() as { id: number; sr: string; posting_id: number }[];
     expect(apps).toHaveLength(3);
-    const longName = '아주 긴 프로필 이름으로 정합성과 안정성을 함께 강조하는 가상 직무 이력서';
-    const insertedKit = db.prepare("insert into kits (label, files, parsed, errors, created_at) values ('e2e', '[]', null, '[]', ?)").run(new Date().toISOString()).lastInsertRowid;
-    const insertedResumes: number[] = [];
-    const insertedRevisions: number[] = [];
-    const rev = (postingId: number, profileId: string, profileName: string) => {
-      const t = db.prepare('insert into tailored_resumes (posting_id, created_at) values (?, ?)').run(postingId, new Date().toISOString()).lastInsertRowid;
-      insertedResumes.push(Number(t));
-      const r = db
-        .prepare(
-          "insert into tailored_revisions (tailored_resume_id, rev_no, kit_id, track, profile_id, profile_name, adjustments, source, resume_md, career_md, pending_adjustments, change_reasons, warnings, notes, created_at) values (?, 1, ?, '백엔드', ?, ?, '[]', 'recipe', '# 가상', '# 가상', '[]', '[]', '[]', '', ?)",
-        )
-        .run(t, insertedKit, profileId, profileName, new Date().toISOString()).lastInsertRowid;
-      insertedRevisions.push(Number(r));
-      return Number(r);
+    const up = await uploadKit(page, kitFixtureFiles({ longName: true }));
+    expect(up.ok).toBe(true);
+    const insertedKit = up.kitId ?? 0;
+    expect(insertedKit).toBeGreaterThan(0);
+    const longName = LONG_PROFILE;
+    const makeRevision = async (postingId: number) => {
+      await page.goto(`/postings/${postingId}?tab=tailored`);
+      await page.locator('label.pick', { hasText: longName }).getByRole('radio').check();
+      await page.getByRole('button', { name: '맞춤본 만들기' }).click();
+      await toast(page, '맞춤본을 만들었습니다');
+    };
+    const choose = async (postingId: number, label: string) => {
+      await page.goto(`/postings/${postingId}?tab=record`);
+      await page.getByRole('button', { name: '기록 수정' }).first().click();
+      const dlg = page.getByRole('dialog', { name: '지원 기록 수정' });
+      await dlg.getByLabel('이력서', { exact: true }).selectOption({ label });
+      await dlg.getByRole('button', { name: '저장' }).click();
+      await toast(page, '지원 기록을 고쳤습니다');
     };
     try {
-      const set = db.prepare('update applications set submitted_resume = ? where id = ?');
-      set.run(JSON.stringify({ kind: 'kit', kitId: Number(insertedKit), track: '백엔드', profileId: 'B1', profileName: '범용' }), apps[0].id);
-      set.run(JSON.stringify({ kind: 'tailored', tailoredRevisionId: rev(apps[1].posting_id, 'B3', longName) }), apps[1].id);
-      set.run(JSON.stringify({ kind: 'tailored', tailoredRevisionId: rev(apps[2].posting_id, 'B3', longName) }), apps[2].id);
+      await choose(apps[0].posting_id, '기본 서류 백엔드 · B1');
+      for (const a of [apps[1], apps[2]]) {
+        await makeRevision(a.posting_id);
+        await choose(a.posting_id, `맞춤 이력서 r1 · B2 ${longName}`);
+      }
 
       for (const width of [1440, 1024]) {
         await page.setViewportSize({ width, height: 900 });
@@ -174,7 +181,7 @@ test.describe.serial('통계 화면', () => {
         const profiles = page.getByTestId('stats-profiles-table');
         await expect(profiles.locator('tbody tr')).toHaveCount(2);
         await expect(profiles.locator('tbody tr').nth(0)).toContainText('B1 범용');
-        await expect(profiles.locator('tbody tr').nth(1)).toContainText('B3 ' + longName);
+        await expect(profiles.locator('tbody tr').nth(1)).toContainText('B2 ' + longName);
         await expect(profiles.locator('tbody tr').nth(1).locator('td').nth(1)).toHaveText('2');
         await expect(profiles.locator('tbody tr').nth(1).locator('td').nth(7)).toHaveText('2'); // 그중 맞춤
         await expect(profiles.locator('tbody tr').nth(0).locator('td').nth(7)).toHaveText('0');
@@ -195,9 +202,10 @@ test.describe.serial('통계 화면', () => {
       await page.screenshot({ path: 'test-results/stats-tailored-1024.png', fullPage: true });
     } finally {
       for (const a of apps) db.prepare('update applications set submitted_resume = ? where id = ?').run(a.sr, a.id);
-      for (const id of insertedRevisions) db.prepare('delete from tailored_revisions where id = ?').run(id);
-      for (const id of insertedResumes) db.prepare('delete from tailored_resumes where id = ?').run(id);
+      db.prepare('delete from tailored_revisions').run();
+      db.prepare('delete from tailored_resumes').run();
       db.prepare('delete from kits where id = ?').run(insertedKit);
+      rmSync(join(dataDir('seeded'), 'kit', String(insertedKit)), { recursive: true, force: true });
       db.close();
       await page.setViewportSize({ width: 1280, height: 720 });
     }
