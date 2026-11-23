@@ -7,9 +7,15 @@ const GUIDE_FILE = '가이드';
 
 type Table = { header: string[]; rows: { cells: string[]; rowNo: number }[] };
 
+/** 칸 글자에서 **굵게**·`코드` 표시를 벗긴다(사람이 읽기 좋게 꾸민 가이드도 그대로 읽는다). */
+const plain = (s: string): string => s.replace(/\*\*/g, '').replace(/`/g, '').trim();
+
 function splitRow(line: string): string[] {
-  return line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map((c) => c.trim());
+  return line.trim().replace(/^\|/, '').replace(/\|$/, '').split('|').map(plain);
 }
+
+/** 블록과 그 아래 모든 하위 제목의 줄(문서 순서). */
+const allLines = (b: MdBlock): string[] => [...b.lines, ...b.children.flatMap(allLines)];
 
 /** 줄들에서 첫 표를 읽는다(머리, 구분 줄, 데이터 줄). 표가 없으면 null. */
 function readTable(lines: string[]): Table | null {
@@ -29,7 +35,11 @@ const splitWords = (s: string): string[] => s.split(/[,、/]/).map((x) => x.trim
 
 /** 순서 칸: ⓐⓑⓒ(핵심 역량) 또는 숫자(성과·장)를 0부터 센 위치로. 읽을 수 없으면 null. */
 function parseOrder(cell: string): number[] | null {
-  const tokens = cell.split(/[\s,→>·]+/).filter(Boolean);
+  const raw = cell.split(/[\s,→>·]+/).filter(Boolean);
+  // 붙여 쓴 순서: ⓐⓑⓒ는 글자마다, 칸 전체가 숫자 한 덩어리(1234567)면 숫자마다 나눈다(9개까지)
+  const tokens = raw.flatMap((t) =>
+    /^[ⓐ-ⓩ]{2,}$/u.test(t) ? [...t] : raw.length === 1 && /^[1-9]{2,}$/.test(t) ? [...t] : [t],
+  );
   const out: number[] = [];
   for (const t of tokens) {
     const cp = t.codePointAt(0)!;
@@ -38,6 +48,17 @@ function parseOrder(cell: string): number[] | null {
     else return null;
   }
   return out.length > 0 ? out : null;
+}
+
+/**
+ * 프로필 표의 개인 프로젝트 이름을 번호표 이름으로 맞춘다. 같으면 그대로, 줄여 쓴 이름("AI 도구")은
+ * 낱말이 모두 들어 있는 번호표 이름("AI 취업 활동 도구")이 하나뿐일 때만 그것으로. 아니면 null.
+ */
+function resolveProject(name: string, known: string[]): string | null {
+  if (known.includes(name)) return name;
+  const words = name.split(/\s+/).filter(Boolean);
+  const hits = known.filter((k) => words.every((w) => k.includes(w)));
+  return hits.length === 1 ? hits[0] : null;
 }
 
 function isPermutation(order: number[], n: number): boolean {
@@ -89,7 +110,8 @@ export function parseGuide(md: string): { guide: KitGuide | null; errors: KitErr
       if (kind === '핵심 역량') cur.competencies = rest.split(/[ⓐ-ⓩ]/).map((x) => x.trim()).filter(Boolean);
       else if (kind === '개인 프로젝트') cur.projects = rest.split('·').map((x) => x.trim()).filter(Boolean);
       else {
-        const names = rest.split('·').map((x) => /^\d+\s+(.*)$/.exec(x.trim())?.[1]?.trim() ?? '');
+        // 항목은 "· 숫자 " 앞에서만 나눈다(이름 안의 ·는 그대로: "분할·재개")
+        const names = rest.split(/\s*·\s*(?=\d+\s)/).map((x) => /^\d+\s+(.*)$/.exec(x.trim())?.[1]?.trim() ?? '');
         if (names.some((n) => !n)) err(`"번호표" 구획(${kind})`, `"1 이름 · 2 이름" 모양이 아닙니다: ${rest}`);
         else if (kind === '주요 성과') cur.achievements = names;
         else cur.chapters = names;
@@ -148,8 +170,12 @@ export function parseGuide(md: string): { guide: KitGuide | null; errors: KitErr
         if (!isPermutation(orders.comp, track.parts.competencies.length)) err(where, `핵심 역량 순서가 번호표(${track.parts.competencies.length}개)와 맞지 않습니다`);
         if (!isPermutation(orders.ach, track.parts.achievements.length)) err(where, `주요 성과 순서가 번호표(${track.parts.achievements.length}개)와 맞지 않습니다`);
         if (!isPermutation(orders.ch, track.parts.chapters.length)) err(where, `경력기술서 순서가 번호표(${track.parts.chapters.length}개)와 맞지 않습니다`);
-        const projects = splitWords(row.cells[idx.pr]);
-        for (const p of projects) if (!track.parts.projects.includes(p)) err(where, `개인 프로젝트 "${p}"가 번호표에 없습니다`);
+        const projects: string[] = [];
+        for (const p of splitWords(row.cells[idx.pr])) {
+          const name = resolveProject(p, track.parts.projects);
+          if (name) projects.push(name);
+          else err(where, `개인 프로젝트 "${p}"가 번호표에 없습니다(없거나 둘 이상과 맞습니다)`);
+        }
         profiles.push({
           id: m[1], name, track: track.name, isDefault: flagged || m[1] === track.defaultProfileId,
           keywords: splitWords(row.cells[idx.k]), introId: row.cells[idx.i].trim(),
@@ -165,30 +191,51 @@ export function parseGuide(md: string): { guide: KitGuide | null; errors: KitErr
 
   // 5. 추가 조정(선택 구획)
   const adjustments: Adjustment[] = [];
-  const adjSec = findSection(doc, (t) => t.includes('추가 조정'));
-  if (adjSec) {
-    const readList = (b: MdBlock, trackName: string) => {
-      let n = 0;
-      for (const line of b.lines) {
+  const adjCount = new Map<string, number>();
+  const readLines = (lines: string[], trackName: string) => {
+      for (const line of lines) {
         if (!/^[-*]\s/.test(line.trim())) continue;
-        const m = /^[-*]\s*공고에\s*\*\*(.+?)\*\*\s*(?:가|이|를|을)?\s*있으면\s*[:：]\s*(.+)$/.exec(line.trim());
+        // "가 있으면", "가 필수로 있으면"처럼 조사와 "있으면" 사이 낱말 하나까지 허용
+        const m = /^[-*]\s*공고에\s*\*\*(.+?)\*\*\s*(?:가|이|를|을)?\s*(?:[^\s:：]+\s+)?있으면\s*[:：]\s*(.+)$/.exec(line.trim());
         if (!m) {
           err(`"추가 조정" 구획(${trackName || '공통'})`, `"공고에 **단어, 단어**가 있으면: 할 일" 모양이 아닌 줄: ${line.trim()}`);
           continue;
         }
-        n += 1;
+        const key = trackName || '공통';
+        const n = (adjCount.get(key) ?? 0) + 1;
+        adjCount.set(key, n);
         const triggers = splitWords(m[1]);
         const instruction = m[2].trim();
         adjustments.push({
-          id: `${trackName || '공통'}-${n}`, track: trackName, triggers, instruction,
+          id: `${key}-${n}`, track: trackName, triggers, instruction,
           label: `${triggers.join('·')} → ${instruction.length > 32 ? `${instruction.slice(0, 32)}…` : instruction}`,
         });
       }
-    };
-    readList(adjSec, '');
+  };
+  // (가) 제목이 "추가 조정"인 구획: 바로 아래 줄은 공통, 하위 제목은 그 직무
+  const adjSec = findSection(doc, (t) => t.includes('추가 조정'));
+  if (adjSec) {
+    readLines(adjSec.lines, '');
     for (const c of adjSec.children) {
       const track = tracks.find((t) => c.title.includes(t.name));
-      if (track) readList(c, track.name);
+      if (track) readLines(c.lines, track.name);
+    }
+  }
+  // (나) 직무 블록 안의 굵은 줄 "**추가 조정 …**" 바로 아래 목록
+  for (const track of tracks) {
+    for (const b of findSections(doc, (t) => t.includes(track.name))) {
+      const start = b.lines.findIndex((l) => /^\*\*[^*]*추가 조정[^*]*\*\*\s*$/.test(l.trim()));
+      if (start < 0) continue;
+      const list: string[] = [];
+      for (const l of b.lines.slice(start + 1)) {
+        if (!l.trim()) {
+          if (list.length) break;
+          continue;
+        }
+        if (!/^[-*]\s/.test(l.trim())) break;
+        list.push(l);
+      }
+      readLines(list, track.name);
     }
   }
 
@@ -198,7 +245,8 @@ export function parseGuide(md: string): { guide: KitGuide | null; errors: KitErr
   if (!introSec) err('"자기소개 후보" 구획', '구획을 찾을 수 없습니다(제목에 "자기소개 후보"가 있어야 합니다)');
   else {
     let curId: string | null = null;
-    for (const line of introSec.lines) {
+    // 직무별 하위 제목(### 백엔드 …) 아래에 둔 후보도 읽는다
+    for (const line of allLines(introSec)) {
       const head = /^\*\*(\S+)(?:\s+.*)?\*\*\s*$/.exec(line.trim());
       if (head) {
         curId = head[1];
@@ -208,6 +256,7 @@ export function parseGuide(md: string): { guide: KitGuide | null; errors: KitErr
       const q = /^>\s?(.*)$/.exec(line);
       if (q && curId && !q[1].trim().startsWith('※')) intros[curId] = intros[curId] ? `${intros[curId]}\n${q[1].trim()}` : q[1].trim();
     }
+    for (const id of Object.keys(intros)) intros[id] = intros[id].trim();
     if (Object.keys(intros).length === 0) err('"자기소개 후보" 구획', '"**B1 이름**" 줄과 그 아래 "> 본문"을 찾을 수 없습니다');
     for (const [id, body] of Object.entries(intros)) if (!body) err('"자기소개 후보" 구획', `후보 "${id}"의 본문("> …")이 비어 있습니다`);
   }
