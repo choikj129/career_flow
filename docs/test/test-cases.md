@@ -598,7 +598,7 @@ AI 작업이 끝나면 `data/ai-work/<번호>/`를 바로 지운다. 올린 이�
 
 아래는 아직 코드가 없어 케이스를 만들지 않았다. 구현되면 이 문서에 영역을 추가한다.
 
-- **3단계(재설계 1, 프로필 방식)**: 기본 이력서 "서류 키트" 탭(올리기·읽은 결과·오류), 공고 상세 "맞춤 이력서" 탭(프로필 추천·조립·공고 용어 맞추기·다듬기·자동 검사·체크리스트·PDF/md 받기), 지원 완료 창·수정 창의 제출 서류 칸(맞춤본·기본 서류·파일), 지원 기록의 제출 이력서 라벨(프로필), 통계 "맞춤 이력서 효과"·"프로필별", 버전 "직전 버전과 비교", 작업 종류 공고 용어 맞추기·다듬기. 케이스 ID와 기대 결과는 [3단계 계획 "테스트 케이스"](../plans/phase-3-tailored-resume.md)에 있다(TC-KIT-*, TC-TAILOR-*, TC-SUBMIT-*, TC-PDF-*, TC-STATS-15~17). 테스트 키트는 지어낸 예시만 쓴다. 구현 뒤 이 문서로 옮긴다
+- **3단계(재설계 1·2, 프로필 방식)**: 구현됨. 케이스는 13장으로 옮겼다. 남은 것은 수동 TC-TAILOR-M1·M2(병합 뒤 사용자의 첫 실사용)뿐이다
 - **4단계**: "면접 준비" 탭(차수, 리비전, 회사 개요·예상 질문·역질문·체크리스트·출처), 면접 준비 인쇄용 화면 `/interview/[prepId]/print`, 면접 상태로 바꿀 때의 준비 자료 링크
 - **5단계**: (TC-SETTINGS-13 포함) 사이트 반영 체크리스트 `/sync`와 내비게이션 배지, 이력서 저장 후 "사이트 반영" 안내 링크, 설정의 작업별 시간 제한(60~1800초 보정), 백업 목록·[지금 백업], [데이터 폴더 열기], 작업별 모델 8종 전체
 - **결정됨**: [D-08](../decisions.md) 읽기에 실패하면 붙여넣기를 기본 흐름으로 안내한다. 화면이 보이는 브라우저로 다시 시도하는 방식은 만들지 않는다(TC-DETAIL-38·39, TC-NEW-22).
@@ -610,3 +610,59 @@ AI 작업이 끝나면 `data/ai-work/<번호>/`를 바로 지운다. 올린 이�
 | TC-PAGE-01~05 | `pageSlice`·`parsePage`·`parseMore`·`pageNumbers`·`selectVisibleRows`, 주소 `page`·`more` | 50건씩, 51건이면 2페이지, 범위 밖 page는 마지막 페이지, 묶음·열은 20건 + 더 보기 | `tests/paging.test.ts`, `tests/dashboard-params.test.ts` |
 | TC-PAGE-E2E-01~05 | 2페이지 이동, 범위 밖 page, 필터 변경 시 1페이지, 사이트별 기본 접힘·20건·더 보기, 날짜 입력(텍스트 + 달력 버튼, "(" 없음, 숫자만 쳐도 하이픈, 잘못된 날짜 표시) | `tests/e2e/14-paging.spec.ts` (작성만, 검증 단계에서 실행) |
 | TC-DATE-01 | `formatDateText`: 숫자만 쳐도 YYYY-MM-DD, 다른 글자 버림, 8자리 초과 자름 | `tests/date-input.test.ts` |
+
+## 13. 맞춤 이력서·서류 키트·제출 서류 (3단계, 브랜치 `feat/tailored-resume`)
+
+계획: [phase-3-tailored-resume.md](../plans/phase-3-tailored-resume.md), 작업 기록: [work/tailored-resume.md](../work/tailored-resume.md). 자동 테스트는 임시 DB·임시 폴더만 쓰고, 키트는 `tests/fixtures/kit/`의 **지어낸 예시**만 쓴다. 실제 `claude`는 부르지 않는다(Vitest는 가짜 실행기, E2E는 `tests/fixtures/fake-claude-e2e.mjs`). 아래 "테스트 위치"의 ID는 테스트 이름에도 들어 있다.
+
+### 단위·통합 (Vitest)
+
+| ID | 대상 | 기대 결과 | 테스트 위치 |
+|---|---|---|---|
+| TC-KIT-01~04 | 가이드 읽기, 오류 위치, 기본 서류 부품 짝, md 읽고 다시 쓰기 | 직무·프로필·추가 조정·자기소개·허용 범위·체크리스트를 읽고, 형식이 틀리면 구획·줄을 오류로 낸다 | `tests/kit-parse.test.ts` |
+| TC-KIT-05~08 | 키트 올리기·보관 | 파일 이름 검사(금지 글자·예약어·중복), 직무 0개 가이드는 오류, 파일 쓰기 실패 시 키트 행 없음, 크기·개수 한도 | `tests/kit-parse.test.ts` |
+| TC-KIT-09 | `POST /api/kit` | 빈 업로드 400, 다른 출처 403, 새 키트 저장, 같은 내용이면 새 버전을 만들지 않음, 읽기 오류 수, 파일 수 한도 한국어 메시지 | `tests/kit-upload-route.test.ts` |
+| TC-KIT-10~15 | 조립(1단계) | 자기소개·핵심 역량·주요 성과(하위 줄이 따라감, 번호 다시 매김)·경력기술서 장·개인 프로젝트·추가 조정 적용, 결정적, 오류 | `tests/kit-assemble.test.ts` |
+| TC-KIT-16 | 단어 수 추천(대체) | 프로필·직무·추가 조정, 동점·0이면 기본 프로필, 직무를 정하면 그 직무만 센다 | `tests/kit-recommend.test.ts` |
+| TC-KIT-20~25 | 자동 검사·줄 비교 | 새 수치(마스터스토리 유무 구분), 자기소개 되돌림, 구조·기술 스택 변경, 금지 표현, 다른 회사 이름, 줄 단위 비교 | `tests/kit-checks.test.ts` |
+| TC-KIT-26 | `lineDiff` 상한 | 앞뒤 공통 줄은 표 없이 같은 줄, 가운데가 상한을 넘으면 통째로 지움+넣음(시간·메모리 제한) | `tests/line-diff.test.ts` |
+| TC-KIT-30~33 | 분석의 프로필 추천(D-28 b) | 프로필 표 프롬프트, AI 추천 정리, 키트가 있을 때만 스키마에 칸, 옛 분석 결과도 읽힘 | `tests/kit-profile-rec.test.ts`, `tests/tasks.test.ts` |
+| TC-KIT-34 | 부품 짝 표 | 번호표 이름 ↔ 기본 서류 항목(이름만, 문장·수치 없음), 없으면 null | `tests/kit-pairs.test.ts` |
+| TC-KIT-35 | 같은 내용 확인 | 이름·내용이 모두 같으면 같음, 바뀐·빠진·더한 파일이면 다름 | `tests/kit-parse.test.ts` |
+| TC-TAILOR-01·02 | 리비전 저장, 공고 삭제 | 번호는 공고마다 1부터, 최신순, 공고 삭제 시 함께 정리·진행 중 작업 거부 | `tests/tailored-repo.test.ts` |
+| TC-TAILOR-03 | 조립 저장 | 키트가 없거나 오류면 한국어 예외, 호출 0 | `tests/tailor-task.test.ts` |
+| TC-TAILOR-09~16 | 용어 맞추기·다듬기 작업 | 결과 저장·자동 검사, 새 실행(D-11), 실패·요청 검사, 키트가 바뀐 뒤에도 그 키트로, 프롬프트 규칙, 작업 종류 등록 | `tests/tailor-task.test.ts`, `tests/prompts.test.ts` |
+| TC-TAILOR-VIEW | 맞춤 이력서 탭 값 | 키트 없음·오류, 단어 수 기준/AI 추천/이전 키트 추천, 추천도 순, 경고 분류(확인 필요/알림), 자동 검사 줄, 키트 바뀜, 요청 권유 이유(`needsWorkspace`는 최신 리비전의 작업 결과에서만), 진행·실패 작업 | `tests/tailored-view.test.ts` |
+| TC-TAILOR-ACTIVE | `/api/jobs/active` | 맞춤 작업이면 `?tab=tailored` 링크 | `tests/jobs-active-route.test.ts` |
+| TC-SUBMIT-01~07 | 제출 서류 기록 | 선택 값 변환, 기본값 순서(맞춤 → 기본 서류 → 파일 → 모름), 저장·검증, 라벨, 대시보드 묶음, 예전 기록 | `tests/submitted.test.ts`, `tests/search.test.ts` |
+| TC-SUBMIT-08 | 제출 서류 선택지 | 맞춤 리비전(그 공고만, 최신순) → 기본 서류 → 이력서 파일(늦은 순) → 모름, 지금 값·없어진 파일·예전 기본 이력서를 선택지로 더함 | `tests/submitted-options.test.ts` |
+| TC-SUBMIT-09 | 제출 서류 표시 줄 | 맞춤본·기본 서류는 이름 + [보기] 주소(그때그때 만드는 PDF), 예전 기록은 이름만, 파일·모름은 기존 표시 | `tests/submitted.test.ts` |
+| TC-PDF-01~09 | PDF·md 변환·라우트 | 이스케이프, 섹션 구조, 파일 이름, 헤더, 줄바꿈, 라우트 404·400, 미리보기 CSP, 공고 요약 | `tests/pdf.test.ts` |
+| TC-PDF-10~15 | PDF 보강(묶음 F) | 코드 블록·인라인 코드 안 주석 보존, 표·하위 목록 변환, `·` 없는 제목은 이름 비움, 제목 `break-after`·표 행/목록 `break-inside`(키트 CSS일 때도), 미리보기 좌우 여백(화면에서만), 기본 서류 파일 읽기 실패 404, `parseRouteId` | `tests/pdf.test.ts` |
+| TC-HANDOFF-01~03 | 작업 공간 요청 | 권유 기준 경계, 요청문 구획 순서, 결과 올리기(외부 리비전·자기소개 경고·통계에서 맞춤) | `tests/handoff.test.ts` |
+| TC-HANDOFF-04·05 | 요청문 만들기·받기 | 공고·레시피·추천도·적용 요약·남은 추가 조정·메모·폴더 이름, 조립 전문 없음, 메모 2000자, 라우트 404·403·400 | `tests/handoff-data.test.ts` |
+| TC-STATS-15~17 | 통계 | 서류 버전별 묶음 순서, `tailoredCompare`, `byProfile` | `tests/stats.test.ts` |
+| TC-RESUME-DIFF-01 | 기본 이력서 버전 비교 | 문장·목록·순서 변경, id로 짝짓는 항목 추가·삭제, 같으면 빈 목록 | `tests/resume-diff.test.ts` |
+
+### E2E (Playwright, 가짜 claude)
+
+| ID | 대상 | 기대 결과 | 테스트 위치 |
+|---|---|---|---|
+| TC-TAILOR-E2E-01 | 서류 키트 탭 | 오류 키트는 오류 목록과 "만들 수 없습니다" 안내, 예시 키트는 직무·프로필 표·부품 짝(찾지 못함 없음)·키트 기록, 같은 내용 재업로드는 "바뀐 파일이 없습니다", 한도 오류는 한국어 | `tests/e2e/14-tailored.spec.ts` |
+| TC-TAILOR-E2E-02 | 프로필 고르기·조립 | AI 추천도 순서·"추천"·근거 단어, 추천 추가 조정 미리 체크 → [맞춤본 만들기] → 바로 r1(진행 표시·호출 없음), 남은 추가 조정, 추천 없는 공고는 "단어 수 기준(AI 추천 아님)" + [AI 추천 받기] | 〃 |
+| TC-TAILOR-E2E-03 | 용어 맞추기 | 진행 표시 → r2, 확인 필요 경고(새 수치)·알림(자기소개 되돌림), 바뀐 곳 비교·이유, opus 1회 | 〃 |
+| TC-TAILOR-E2E-04 | 다듬기·리비전 선택 | 빈 입력 비활성, 요청 → r3·요청 줄, `?rev=`로 이전 리비전, 실패 뒤 [다시 시도] | 〃 |
+| TC-TAILOR-E2E-05 | 내려받기·미리보기 | PDF·md·공고.md 파일 이름, 미리보기 전환·새 탭 링크 | 〃 |
+| TC-TAILOR-E2E-06 | 키트 바뀜 | 안내 → [새 키트로 다시 조립] → 같은 프로필의 새 리비전 | 〃 |
+| TC-TAILOR-E2E-07 | 키트 없음·본문 없음 | 안내 문구와 비활성 | 〃 |
+| TC-TAILOR-E2E-08 | 지원 완료 | 이력서 기본값이 최신 맞춤 리비전, 기본 서류 선택지, 저장만으로 기록, 지원 기록 라벨·[보기] PDF, 대시보드 이력서별 "맞춤 이력서" | 〃 |
+| TC-TAILOR-E2E-09 | 배치 | 폭 1024·1240·1440에서 긴 프로필 이름·긴 요청이 가로로 넘치거나 칸 밖으로 나가지 않음, 미리보기 폭 | 〃 |
+| TC-TAILOR-E2E-10 | 수정 창 | 지금 값이 처음 선택값, 기본 서류로 바꾸면 라벨·[보기] 변경, 다른 칸만 고치면 제출 서류 그대로 | 〃 |
+| TC-TAILOR-E2E-11 | 통계 | 맞춤 효과·프로필별 표·서류 버전별 묶음(화면 경로로 만든 기록), 기록이 없으면 안내 | `tests/e2e/13-stats.spec.ts` |
+| TC-TAILOR-E2E-12 | 체크리스트 | 체크가 새로고침 뒤에도 남음 | `tests/e2e/14-tailored.spec.ts` |
+| TC-TAILOR-E2E-13 | 분석 탭 추천 줄 | 추천 줄·링크, "맞춤 이력서 탭으로 →" 링크, 키트 없이 분석하면 줄 없음 | 〃, `tests/e2e/15-tailored-downloads.spec.ts` |
+| TC-TAILOR-E2E-14 | 작업 공간 요청 | 권유 줄(남은 추가 조정·60% 미만·AI가 권함·확인 필요 경고), [요청문 복사]("복사됨"·클립보드 내용)·[요청문 받기], [결과 올리기] → "작업 공간" 리비전, 남은 조정 권유 사라짐 | `tests/e2e/14-tailored.spec.ts` |
+| TC-TAILOR-E2E-DL-01~03, REC-01~03 | 내려받기 라우트, 미리보기 CSP·script 미실행·여백, 추천 줄 배치 | 폭 1024·1240·1440 | `tests/e2e/15-tailored-downloads.spec.ts` |
+| TC-RESUME-DIFF-E2E | 버전 비교 | [직전 버전과 비교], 첫 버전 안내 | `tests/e2e/14-tailored.spec.ts` |
+| (설정) | 작업별 모델 | 맞춤 이력서 작업 2종, 바꾸면 다음 호출에 적용 | 〃 |
+| TC-TAILOR-M1·M2 | 실제 키트·공고·용어 맞추기(opus 2회), 앱 PDF와 사용자 PDF 비교 | 수동(병합 뒤 사용자) | 수동 |

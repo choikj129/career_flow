@@ -440,6 +440,7 @@ export function resumeLabel(sr: SubmittedResume, docs: SubmittedDocs | null, nam
 - [ ] Step 3 **지원 완료 창·수정 창·지원 기록**(3.7·3.9·3.10): `DocSelects`에 "기본 서류" 선택지. 지원 기록 라벨에 프로필.
 - [ ] Step 4 **설정·기본 이력서**: 모델 2종("맞춤 이력서 공고 용어 맞추기", "맞춤 이력서 다듬기"). 버전 기록 "직전 버전과 비교"(`resume/diff.ts`의 `diffResume`, 5.3). 앱 기본 이력서 PDF 버튼은 만들지 않는다(D-26 a).
 - [ ] Step 5 E2E TC-TAILOR-E2E-01~12(아래 표). Step 6 커밋 `feat: kit tab, profile-based tailored resume tab, submitted resume with profile`.
+- 구현 메모(묶음 F): 위 Step을 구현했다. 화면 값은 `tailored/view.ts`(서버)에서 모으고 클라이언트 조각은 `ProfilePicker`·`TailoredControls`(리비전 선택·미리보기·체크리스트·다듬기·작업 공간 요청·바뀐 곳 비교)다. 제출 서류 선택지는 창이 열릴 때 `submittedFormDataAction`으로 읽는다. 작업 공간 요청(Task 9)의 화면·라우트(`POST /api/tailored/[revisionId]/handoff`)·액션도 여기서 연결했다. E2E는 `14-tailored.spec.ts`(22개)와 화면 경로로 바꾼 `13-stats`·`15-tailored-downloads`다. 케이스는 `docs/test/test-cases.md` 13장.
 
 ---
 

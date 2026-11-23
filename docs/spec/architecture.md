@@ -57,12 +57,15 @@ src/lib/
 │  ├─ recommend.ts           공고 단어 세기 추천(AI 추천이 없을 때의 대체) (순수)
 │  ├─ profile-table.ts       분석 프롬프트용 프로필 표, AI 프로필 추천 정리 (D-28 b) (순수)
 │  ├─ checks.ts              자동 검사 (순수)
-│  ├─ line-diff.ts           줄 단위 비교 (순수, 클라이언트에서도 씀)
-│  └─ repo.ts                키트 올리기·버전 보관
+│  ├─ line-diff.ts           줄 단위 비교, 앞뒤 공통 줄 제거·줄 수 상한 (순수, 클라이언트에서도 씀)
+│  ├─ pairs.ts               키트 화면의 "부품 짝" 표: 번호표 이름 ↔ 기본 서류 항목 (순수)
+│  └─ repo.ts                키트 올리기·버전 보관, 같은 내용 확인, 키트 기록
 ├─ companies/repo.ts         회사·별칭·매칭·합치기
 ├─ postings/repo.ts          공고 등록·조회·분석 결과 저장
 ├─ applications/repo.ts      지원 기록·상태 이력·중복 조회·일괄 등록·제출 이력서, 거친 단계 이력 읽기(listReachedHistory)
-├─ applications/submitted.ts 제출 서류 선택 값·기본값·칸 변환·라벨 (순수, 클라이언트에서도 씀, 3단계)
+├─ applications/submitted.ts 제출 서류 선택 값·기본값·칸 변환·라벨·제출 서류 표시 줄 (순수, 클라이언트에서도 씀, 3단계)
+├─ applications/submitted-options.ts [지원 완료]·[기록 수정] 창의 제출 서류 선택지 읽기 (서버, 3단계)
+├─ route-id.ts               라우트 주소의 id 읽기 (순수)
 ├─ applications/sort.ts      지원 기록 기본 정렬(지원일 → 정렬용 일시 → id)
 ├─ applications/stages.ts    거친 단계 계산, 상태 필터 판정 (순수)
 ├─ applications/backfill.ts  정렬용 일시 일회성 채우기
@@ -79,7 +82,10 @@ src/lib/
 │  ├─ params.ts              /stats 주소 파라미터
 │  └─ chart-scale.ts         그래프 축 최대값·눈금 (순수)
 ├─ tailored/repo.ts          맞춤 이력서·리비전, 조립, 용어 맞추기·다듬기 작업 요청, 작업 공간 결과 올리기
+├─ tailored/view.ts          맞춤 이력서 탭이 그릴 값(프로필 고르기·리비전·검사·작업 상태·권유 이유) 모으기 (서버)
 ├─ tailored/handoff.ts       이력서 작업 공간 요청문, 권유 기준 (순수, D-30)
+├─ tailored/handoff-data.ts  리비전·공고·키트에서 요청문 만들기 (서버)
+├─ tailored/limits.ts        클라이언트에서도 쓰는 한도(다듬기 요청 길이) (순수)
 ├─ interview/
 │  ├─ repo.ts                면접 준비·리비전·요청
 │  └─ sources.ts             출처 링크 정리
@@ -137,7 +143,7 @@ src/app/
 │  ├─ DuplicateBanner.tsx    중복 지원 경고
 │  ├─ RateText.tsx           서류 통과율 문구 + 표본 표시 (대시보드 묶음·통계)
 │  ├─ SubmittedDocs.tsx      제출 서류 세 줄 + [보기] (3단계: 맞춤본 줄)
-│  ├─ DocSelects.tsx         제출 서류 select 3개 (지원 완료 창·기록 수정 창, 3단계)
+│  ├─ DocSelects.tsx         제출 서류 select 3개와 선택 상태(지원일에 따른 기본값) (지원 완료 창·기록 수정 창, 3단계)
 │  ├─ ApplicationEditModal.tsx 지원 기록 수정 창
 │  └─ AnalysisView.tsx       분석 결과 표시
 ├─ _actions/                 서버 액션 — 영역별 파일, lib 함수를 부르는 얇은 래퍼
@@ -153,10 +159,11 @@ src/app/
 ├─ api/
 │  ├─ jobs/[id]/route.ts     작업 상태 조회 (JobStatus가 폴링)
 │  ├─ documents/[name]/route.ts  제출 서류 PDF 보기 (이름 규칙 + 종류 폴더 안만)
-│  ├─ kit/route.ts           서류 키트 올리기 (3단계)
+│  ├─ kit/route.ts           서류 키트 올리기, 같은 출처만 (3단계)
 │  ├─ kit/[kitId]/[track]/[doc]/route.ts       기본 서류 PDF 보기 (3단계)
 │  ├─ tailored/[revisionId]/[doc]/route.ts     맞춤본 이력서·경력기술서 PDF·md·미리보기 HTML (3단계)
-│  └─ tailored/[revisionId]/posting-md/route.ts 공고 요약 md (3단계)
+│  ├─ tailored/[revisionId]/posting-md/route.ts 공고 요약 md (3단계)
+│  └─ tailored/[revisionId]/handoff/route.ts   작업 공간 요청문 md 받기(POST, 메모는 본문) (3단계)
 ├─ postings/
 │  ├─ new/page.tsx           공고 등록
 │  ├─ analyzed/page.tsx      분석한 공고
@@ -166,7 +173,7 @@ src/app/
 │     ├─ StatusForm.tsx      상태 변경 폼
 │     ├─ TailoredTab.tsx     맞춤 이력서 탭     (3단계, 서버)
 │     ├─ ProfilePicker.tsx   직무·프로필·추가 조정 고르기 (3단계, 클라이언트)
-│     ├─ TailoredControls.tsx 리비전 선택·내려받기·체크리스트·다듬기 입력 (3단계, 클라이언트)
+│     ├─ TailoredControls.tsx 리비전 선택·미리보기·체크리스트·다듬기·작업 공간 요청·바뀐 곳 비교 (3단계, 클라이언트)
 │     └─ InterviewTab.tsx    면접 준비 탭       (4단계)
 ├─ interview/[prepId]/print/page.tsx      면접 준비 인쇄용 (4단계)
 ├─ resume/
@@ -174,7 +181,9 @@ src/app/
 │  ├─ ResumeEditor.tsx
 │  ├─ PreferencesForm.tsx
 │  ├─ DocFiles.tsx           서류 파일 탭
-│  └─ KitTab.tsx             서류 키트 탭 (3단계)
+│  ├─ KitTab.tsx             서류 키트 탭: 읽은 결과·오류·부품 짝·키트 기록 (3단계, 서버)
+│  ├─ KitUpload.tsx          키트 파일 고르기·올리기 (3단계, 클라이언트)
+│  └─ VersionHistory.tsx     버전 기록, 직전 버전과 비교 (3단계)
 ├─ import/
 │  ├─ page.tsx               지원 내역 가져오기
 │  └─ ImportReviewTable.tsx
