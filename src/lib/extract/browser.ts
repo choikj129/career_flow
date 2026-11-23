@@ -1,3 +1,6 @@
+import { spawn } from 'node:child_process';
+import fs from 'node:fs';
+import path from 'node:path';
 import { chromium, type BrowserContext } from 'playwright';
 import { config } from '@/lib/config';
 import type { SiteId } from '@/lib/domain/types';
@@ -99,6 +102,35 @@ export async function launchHeaded(
   throw lastError;
 }
 
+// 자동화로 띄운 창은 Google 로그인이 막는다("브라우저 또는 앱이 안전하지 않을 수 있습니다").
+// 그래서 로그인 창은 PC에 설치된 Chrome/Edge를 자동화 없이 그대로 띄운다.
+// 앱 프로필 폴더(--user-data-dir)에 저장된 로그인은 화면 없는 브라우저에서 그대로 읽힌다.
+export function findInstalledBrowser(
+  exists: (p: string) => boolean = fs.existsSync,
+  env: Record<string, string | undefined> = process.env,
+): string | null {
+  const roots = [env.PROGRAMFILES, env['PROGRAMFILES(X86)'], env.LOCALAPPDATA].filter((r): r is string => !!r);
+  const candidates = [
+    ...roots.map((r) => path.win32.join(r, 'Google', 'Chrome', 'Application', 'chrome.exe')),
+    ...roots.map((r) => path.win32.join(r, 'Microsoft', 'Edge', 'Application', 'msedge.exe')),
+  ];
+  return candidates.find((p) => exists(p)) ?? null;
+}
+
+export function plainBrowserArgs(profileDir: string, url: string): string[] {
+  return [`--user-data-dir=${profileDir}`, '--no-first-run', '--no-default-browser-check', url];
+}
+
+/** 설치된 브라우저를 셸 없이 띄우고, 그 프로세스가 끝나면(창을 닫으면) onExit를 부른다. */
+function spawnPlainBrowser(exe: string, args: string[], onExit: () => void): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(exe, args, { stdio: 'ignore' });
+    child.once('error', reject);
+    child.once('spawn', () => resolve());
+    child.once('exit', onExit);
+  });
+}
+
 /**
  * 화면 있는 브라우저로 사이트를 연다. 창이 열리면 바로 반환하고,
  * 사용자가 창을 닫을 때 브라우저 잠금을 푼다. 비밀번호는 앱이 다루지 않는다(사용자가 직접 입력).
@@ -106,10 +138,27 @@ export async function launchHeaded(
 export async function openSiteLogin(site: SiteId, opts: { profileDir?: string } = {}): Promise<void> {
   const url = LOGIN_URLS[site];
   if (!url) throw new Error(`로그인 페이지가 없는 사이트입니다: ${site}`);
+  const profileDir = opts.profileDir ?? config.browserProfileDir;
   const release = await acquireBrowserLock();
+  const exe = findInstalledBrowser();
+  if (exe) {
+    let released = false;
+    const releaseOnce = () => {
+      if (released) return;
+      released = true;
+      release();
+    };
+    try {
+      await spawnPlainBrowser(exe, plainBrowserArgs(profileDir, url), releaseOnce);
+      return;
+    } catch {
+      // 띄우지 못하면 아래 자동화 방식으로 넘어간다(잠금은 그대로 쥔 채).
+      released = true; // 실패한 프로세스의 exit가 잠금을 풀지 않게 한다
+    }
+  }
   let ctx: BrowserContext;
   try {
-    ctx = await launchHeaded(opts.profileDir ?? config.browserProfileDir);
+    ctx = await launchHeaded(profileDir);
   } catch (e) {
     release();
     throw e;

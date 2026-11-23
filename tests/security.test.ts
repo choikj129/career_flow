@@ -94,12 +94,15 @@ describe('API 키 미사용', () => {
 });
 
 describe('명령 실행 방식', () => {
-  test('TC-AI-25 child_process는 claude-cli.ts에서만 쓰고 셸을 거치지 않는다', () => {
-    const users = srcFiles().filter((f) => /child_process/.test(readFileSync(f, 'utf8'))).map(rel);
-    expect(users).toEqual(['src/lib/ai/claude-cli.ts']);
-    const text = readFileSync(join(ROOT, 'src/lib/ai/claude-cli.ts'), 'utf8');
-    expect(text).not.toMatch(/shell:\s*true/);
-    expect(text).not.toMatch(/(?<![.\w])(exec|execSync|execFile|execFileSync)\(/);
+  test('TC-AI-25 child_process는 claude-cli.ts와 로그인 창(browser.ts)에서만 쓰고 셸을 거치지 않는다', () => {
+    const allowed = ['src/lib/ai/claude-cli.ts', 'src/lib/extract/browser.ts'];
+    const users = srcFiles().filter((f) => /child_process/.test(readFileSync(f, 'utf8'))).map(rel).sort();
+    expect(users).toEqual(allowed);
+    for (const f of allowed) {
+      const text = readFileSync(join(ROOT, f), 'utf8');
+      expect(text).not.toMatch(/shell:\s*true/);
+      expect(text).not.toMatch(/(?<![.\w])(exec|execSync|execFile|execFileSync)\(/);
+    }
   });
 
   test('TC-AI-26 사용자 입력(공고 본문)이 명령줄 인자로 가지 않는다: 특수문자가 들어 있어도 표준입력으로만', async () => {
