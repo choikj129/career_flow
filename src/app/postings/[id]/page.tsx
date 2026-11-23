@@ -13,7 +13,7 @@ import {
   listStatusEvents,
 } from "@/lib/applications/repo";
 import { getCompany, getCompanyUsage } from "@/lib/companies/repo";
-import { eventDate, formatDateTime } from "@/lib/domain/dates";
+import { formatDateTime } from "@/lib/domain/dates";
 import { docExistence } from "@/lib/documents/folder";
 import { isHttpUrl } from "@/lib/domain/normalize";
 import { getLatestAnalysis, getPosting, listAnalyses, listSiteNotes } from "@/lib/postings/repo";
@@ -23,6 +23,8 @@ import { DuplicateBanner, type PriorApplication } from "../../_components/Duplic
 import { JobStatus } from "../../_components/JobStatus";
 import { SiteBadge } from "../../_components/SiteBadge";
 import { StatusBadge } from "../../_components/StatusBadge";
+import { sortEventsAscending } from "@/lib/applications/event-order";
+import { StatusHistory } from "../../_components/StatusHistory";
 import { SubmittedDocs } from "../../_components/SubmittedDocs";
 import { ApplyForm } from "./ApplyForm";
 import { CompanyLink } from "./CompanyLink";
@@ -459,7 +461,7 @@ function RecordItem({
   positionTitle: string;
   siteNotes: string[];
 }) {
-  const events = listStatusEvents(app.id).reverse();
+  const events = sortEventsAscending(listStatusEvents(app.id), app.appliedAt).reverse();
   const resumeNo =
     app.submittedResume.kind === "base" ? (getResumeVersion(app.submittedResume.versionId)?.versionNo ?? null) : null;
   return (
@@ -501,17 +503,7 @@ function RecordItem({
       )}
       <h2 style={{ fontSize: 18, margin: "24px 0 10px" }}>진행 기록</h2>
       <div className="card" style={{ padding: "4px 18px" }}>
-        <ul className="history">
-          {events.map((e) => (
-            <li key={e.id}>
-              <span>
-                <span className="nw">{eventDate(e.at)}</span>
-                {e.note ? <span className="tl-note">{e.note}</span> : null}
-              </span>
-              <StatusBadge status={e.status} round={e.interviewRound} />
-            </li>
-          ))}
-        </ul>
+        <StatusHistory events={events} />
       </div>
       <div className="card" style={{ padding: "16px 20px", marginTop: 16 }}>
         <NotesForm applicationId={app.id} initial={app.notes ?? ""} />
