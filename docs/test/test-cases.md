@@ -364,7 +364,7 @@ AI 작업이 끝나면 `data/ai-work/<번호>/`를 바로 지운다. 올린 이�
 | TC-AI-22 | 인증 파일 미접근 | - | 소스 검사 | `.credentials`, `credentials.json`, OAuth 토큰 환경변수 참조 없음 | 단위 | tests/security.test.ts — TC-AI-22 |
 | TC-AI-23 | API 키·SDK 미사용 | - | 의존성·소스 검사 | `@anthropic-ai` 의존성·import, `api.anthropic.com`, `process.env.ANTHROPIC*` 없음 | 단위 | tests/security.test.ts — TC-AI-23 |
 | TC-AI-24 | API 키 환경변수 차단 | 사용자 환경에 ANTHROPIC_API_KEY/ANTHROPIC_AUTH_TOKEN | 러너 실행 후 자식 프로세스 환경 확인 | 자식 프로세스에 넘기지 않음(구독 로그인으로만 처리) | 통합 | tests/security.test.ts — TC-AI-24 **수정됨**: `buildChildEnv`가 ANTHROPIC_API_KEY·ANTHROPIC_AUTH_TOKEN·ANTHROPIC_BASE_URL·CLAUDE_CODE_USE_BEDROCK·CLAUDE_CODE_USE_VERTEX를 제거 |
-| TC-AI-25 | 셸 미사용 | - | 소스 검사 | `child_process`는 claude-cli.ts에서만, `shell: true`·`exec(` 없음 | 단위 | tests/security.test.ts — TC-AI-25 |
+| TC-AI-25 | 셸 미사용 | - | 소스 검사 | `child_process`는 claude-cli.ts와 로그인 창(browser.ts, 설치된 Chrome/Edge를 자동화 없이 띄움)에서만, `shell: true`·`exec(` 없음 | 단위 | tests/security.test.ts — TC-AI-25 |
 | TC-AI-26 | 명령 주입 방지(프롬프트) | 프롬프트에 `"; rm -rf / & $(whoami)` 포함 | 러너 실행 | 인자 배열에 들어가지 않음(표준입력으로만) | 통합 | tests/security.test.ts — TC-AI-26 |
 | TC-AI-27 | 명령 주입 방지(인자) | 모델 값에 공백·세미콜론 | 러너 실행 | 인자 하나로 그대로 전달 | 통합 | tests/security.test.ts — TC-AI-27 |
 | TC-AI-30 | 프롬프트 파일 목록 | - | prompts 폴더 확인 | 3개(analyze-posting, import-resume, import-applications) | 단위 | tests/prompts.test.ts — TC-AI-30 |
