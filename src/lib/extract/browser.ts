@@ -74,6 +74,31 @@ const LOGIN_URLS: Partial<Record<SiteId, string>> = {
   jobkorea: 'https://www.jobkorea.co.kr/Login/Login_Tot.asp',
 };
 
+type HeadedLauncher = (
+  dir: string,
+  opts: { headless: boolean; channel?: string },
+) => Promise<BrowserContext>;
+
+// 화면 있는 Chromium(Playwright 내려받기본)은 일부 Windows 빌드에서 실행되지 않는다
+// (side-by-side 설정 오류). 그래서 PC에 설치된 Chrome → Edge → 내려받은 Chromium 순서로 연다.
+// 같은 프로필 폴더를 쓰며, 저장된 로그인은 화면 없는 브라우저(공고 읽기)에서 그대로 읽힌다.
+const HEADED_CHANNELS: Array<string | undefined> = ['chrome', 'msedge', undefined];
+
+export async function launchHeaded(
+  dir: string,
+  launch: HeadedLauncher = (d, o) => chromium.launchPersistentContext(d, o),
+): Promise<BrowserContext> {
+  let lastError: unknown;
+  for (const channel of HEADED_CHANNELS) {
+    try {
+      return await launch(dir, channel ? { headless: false, channel } : { headless: false });
+    } catch (e) {
+      lastError = e;
+    }
+  }
+  throw lastError;
+}
+
 /**
  * 화면 있는 브라우저로 사이트를 연다. 창이 열리면 바로 반환하고,
  * 사용자가 창을 닫을 때 브라우저 잠금을 푼다. 비밀번호는 앱이 다루지 않는다(사용자가 직접 입력).
@@ -84,9 +109,7 @@ export async function openSiteLogin(site: SiteId, opts: { profileDir?: string } 
   const release = await acquireBrowserLock();
   let ctx: BrowserContext;
   try {
-    ctx = await chromium.launchPersistentContext(opts.profileDir ?? config.browserProfileDir, {
-      headless: false,
-    });
+    ctx = await launchHeaded(opts.profileDir ?? config.browserProfileDir);
   } catch (e) {
     release();
     throw e;
