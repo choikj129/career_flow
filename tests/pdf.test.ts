@@ -264,6 +264,19 @@ describe('routes (TC-PDF-07, TC-PDF-08)', () => {
     expect(inl.headers.get('content-disposition')).toMatch(/^inline;/);
   }, 60_000);
 
+  test('공고에 회사가 있으면 파일 이름은 {이름}_{서류}_{회사}', async () => {
+    const { getDb } = await import('@/lib/db/client');
+    const { findOrCreateCompany } = await import('@/lib/companies/repo');
+    const { setPostingCompany, registerPosting } = await import('@/lib/postings/repo');
+    const { createRecipeRevision } = await import('@/lib/tailored/repo');
+    const db = getDb();
+    const postingId = registerPosting({ url: 'https://example.com/pdf-route-company' }, db).postingId;
+    setPostingCompany(postingId, findOrCreateCompany({ displayName: '가상 상사/팀' }, db), db);
+    const id = createRecipeRevision(postingId, { track: '백엔드', profileId: 'B1', adjustmentIds: [] }, db).id;
+    const md = await callT(id, 'career', '?format=md');
+    expect(decodeURIComponent(md.headers.get('content-disposition')!)).toContain('홍길동_경력기술서_가상상사팀.md');
+  });
+
   test('503 when the browser lock is not available in time', async () => {
     const { renderPdf: _ignored } = await import('@/lib/pdf/render');
     void _ignored;

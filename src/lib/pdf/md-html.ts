@@ -75,6 +75,62 @@ const blank = (ts: Tok[]) => ts.every((t) => t.type === 'space');
 const inline = (s: string) => marked.parseInline(s) as string;
 
 /**
+ * 표 분류(사용자 PDF 도구와 같은 규칙). 키트 CSS가 이 class로 표 모양과 쪽 넘김을 정한다.
+ * - kv: 머리 칸이 모두 비었다(머리 줄은 지운다) · proj: 4열이고 첫 머리가 "기간" · metrics: 1줄, 3열 이상, 기간·구분 없음
+ */
+function tableClass(t: Tokens.Table): 'kv' | 'proj' | 'metrics' | null {
+  const heads = t.header.map((h) => h.text.trim());
+  if (heads.length && heads.every((h) => h === '')) return 'kv';
+  if (heads.length === 4 && heads[0].includes('기간')) return 'proj';
+  if (t.rows.length === 1 && heads.length >= 3 && !heads.some((h) => h.includes('기간') || h.includes('구분'))) return 'metrics';
+  return null;
+}
+
+/** 토큰을 HTML로 바꾸고, 표마다 분류 class를 붙인다(표 순서 = 토큰 안 표 순서) */
+function renderWithTables(tokens: Tok[], links: TokensList['links']): string {
+  const classes: Array<ReturnType<typeof tableClass>> = [];
+  marked.walkTokens(tokens as Tokens.Generic[], (t) => {
+    if (t.type === 'table') classes.push(tableClass(t as Tokens.Table));
+  });
+  let n = 0;
+  return renderTokens(tokens, links).replace(/<table>([\s\S]*?)<\/table>/g, (whole, inner: string) => {
+    const c = classes[n++];
+    if (!c) return whole;
+    const body = c === 'kv' ? inner.replace(/<thead>[\s\S]*?<\/thead>\s*/, '') : inner;
+    return `<table class="${c}">${body}</table>`;
+  });
+}
+
+/** 섹션 본문: h3마다 div.case로 묶는다(h4가 있거나 3000자가 넘으면 case long). 첫 h3 앞은 그대로 */
+function renderBody(tokens: Tok[], links: TokensList['links']): string {
+  if (!tokens.some((t) => isHeading(t, 3))) return renderWithTables(tokens, links);
+  const out: string[] = [];
+  let lead: Tok[] = [];
+  let cur: Tok[] | null = null;
+  const flushCase = () => {
+    if (!cur) return;
+    const html = renderWithTables(cur, links);
+    const long = cur.some((t) => isHeading(t, 4)) || html.replace(/<[^>]+>/g, '').length > 3000;
+    out.push(`<div class="${long ? 'case long' : 'case'}">${html}</div>`);
+    cur = null;
+  };
+  for (const t of tokens) {
+    if (isHeading(t, 3)) {
+      if (lead.length) {
+        out.push(renderWithTables(lead, links));
+        lead = [];
+      }
+      flushCase();
+      cur = [t];
+    } else if (cur) cur.push(t);
+    else lead.push(t);
+  }
+  if (lead.length) out.push(renderWithTables(lead, links));
+  flushCase();
+  return out.join('\n');
+}
+
+/**
  * 구조: 첫 h1 → `<h1>`, 첫 hr(또는 h2) 전까지 → `div.box.profile`, h2마다 `section.sec > h2 + div.body`.
  * 제목이 "이름 · 직함"이면 이름은 `.name`.
  */
@@ -110,7 +166,7 @@ export function mdToSectionHtml(md: string): string {
   const pre: Tok[] = [];
   const flush = () => {
     if (!section) return;
-    out.push(`<section class="sec"><h2>${inline(section.title.text)}</h2><div class="body">${renderTokens(section.body, links)}</div></section>`);
+    out.push(`<section class="sec"><h2>${inline(section.title.text)}</h2><div class="body">${renderBody(section.body, links)}</div></section>`);
     section = null;
   };
   for (; i < tokens.length; i++) {

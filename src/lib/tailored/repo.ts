@@ -1,5 +1,6 @@
 import { and, desc, eq, inArray, lte, ne } from 'drizzle-orm';
 import { enqueueJob, latestJobFor, type JobSummary } from '@/lib/ai/queue';
+import { getCompany } from '@/lib/companies/repo';
 import { getDb, type Db } from '@/lib/db/client';
 import { companies, tailoredResumes, tailoredRevisions } from '@/lib/db/schema';
 import { assemble, type Recipe } from '@/lib/kit/assemble';
@@ -44,6 +45,13 @@ export function listRevisionsForPosting(postingId: number, db: Db = getDb()): Re
     .where(eq(tailoredRevisions.tailoredResumeId, t.id))
     .orderBy(desc(tailoredRevisions.revNo))
     .all();
+}
+
+/** 리비전이 속한 공고의 회사 표시 이름(내려받기 파일 이름용). 회사가 없으면 null */
+export function revisionCompanyName(revisionId: number, db: Db = getDb()): string | null {
+  const postingId = revisionPostingId(revisionId, db);
+  const companyId = postingId != null ? getPosting(postingId, db)?.companyId : null;
+  return companyId != null ? (getCompany(companyId, db)?.displayName ?? null) : null;
 }
 
 /** 리비전이 속한 공고 id. 없으면 null */
