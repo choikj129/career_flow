@@ -2,7 +2,7 @@ import { getKit } from '@/lib/kit/repo';
 import { kitPdfFileName, personNameFromMd } from '@/lib/pdf/names';
 import { parseFormat, respondDocument } from '@/lib/pdf/respond';
 import { parseRouteId } from '@/lib/route-id';
-import { getRevision } from '@/lib/tailored/repo';
+import { getRevision, revisionCompanyName } from '@/lib/tailored/repo';
 
 /** 맞춤본 내려받기·미리보기. 파일은 저장하지 않고 리비전의 md로 그때그때 만든다(D-25 a). */
 export async function GET(req: Request, { params }: RouteContext<'/api/tailored/[revisionId]/[doc]'>) {
@@ -17,10 +17,12 @@ export async function GET(req: Request, { params }: RouteContext<'/api/tailored/
 
   const md = doc === 'resume' ? rev.resumeMd : rev.careerMd;
   const name = personNameFromMd(rev.resumeMd);
+  // 파일 이름: {이름}_{이력서|경력기술서}_{회사}. 공고에 회사가 없으면 직무 이름
+  const label = revisionCompanyName(rev.id) ?? rev.track;
   return respondDocument({
     md,
     css: getKit(rev.kitId)?.parsed?.styleCss ?? null,
-    pdfName: kitPdfFileName({ name, doc, track: rev.track }),
+    pdfName: kitPdfFileName({ name, doc, track: label }),
     format,
     inline: url.searchParams.get('inline') === '1',
   });
