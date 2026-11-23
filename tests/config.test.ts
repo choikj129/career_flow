@@ -1,10 +1,10 @@
-import { mkdtempSync, existsSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect, test } from 'vitest';
+import { makeTmpDir } from './helpers/tmp';
 
 test('ensureDataDirs creates all dirs under CAREER_FLOW_DATA_DIR', async () => {
-  const dir = mkdtempSync(join(tmpdir(), 'cf-'));
+  const dir = makeTmpDir('cf-');
   process.env.CAREER_FLOW_DATA_DIR = dir;
   const { config, ensureDataDirs } = await import('@/lib/config');
   ensureDataDirs();

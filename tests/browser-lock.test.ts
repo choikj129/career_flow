@@ -1,6 +1,3 @@
-import { mkdtempSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join } from 'node:path';
 import { afterEach, expect, test, vi } from 'vitest';
 import { makeTestDb } from './helpers/db';
 import { acquireBrowserLock, isBrowserBusy, BrowserLockTimeoutError } from '@/lib/extract/browser';
@@ -11,6 +8,7 @@ import { registerPosting } from '@/lib/postings/repo';
 import { saveResumeVersion } from '@/lib/resume/repo';
 import { emptyResume } from '@/lib/resume/schema';
 import type { AiRunner } from '@/lib/ai/runner';
+import { makeTmpDir } from './helpers/tmp';
 
 afterEach(() => vi.useRealTimers());
 
@@ -46,7 +44,7 @@ test('TC-LOCK-03 로그인 창이 열린 채로 공고 작업을 처리하면 60
   const withText = registerPosting({ pastedText: '붙여넣은 공고' }, db);
   const release = await acquireBrowserLock();
   vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
-  const workRoot = mkdtempSync(join(tmpdir(), 'cf-work-'));
+  const workRoot = makeTmpDir('cf-work-');
   const p = processNextJob({ runner: neverRunner, handlers, db, workRoot });
   await vi.advanceTimersByTimeAsync(59_000);
   expect(getJob(withUrl.jobId!, db)!.status).toBe('running');

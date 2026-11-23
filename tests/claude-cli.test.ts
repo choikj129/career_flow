@@ -1,14 +1,13 @@
-import { mkdtempSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { resolve } from 'node:path';
 import { beforeAll, describe, expect, test } from 'vitest';
 import { ClaudeCliRunner, buildClaudeArgs } from '@/lib/ai/claude-cli';
 import type { AiRunRequest } from '@/lib/ai/runner';
+import { makeTmpDir } from './helpers/tmp';
 
 const FAKE = resolve(__dirname, 'fixtures/fake-claude.mjs');
 let tmp: string;
 beforeAll(() => {
-  tmp = mkdtempSync(join(tmpdir(), 'cf-ai-'));
+  tmp = makeTmpDir('cf-ai-');
 });
 
 const fake = (mode: string) =>

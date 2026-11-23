@@ -1,10 +1,10 @@
 // 보안·제약 점검: 인증 정보 미저장, claude 인자 배열 실행, API 키 미사용, 127.0.0.1 바인딩, 데이터 폴더 git 제외.
-import { mkdtempSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
 import { afterEach, describe, expect, test, vi } from 'vitest';
 import { ClaudeCliRunner } from '@/lib/ai/claude-cli';
 import type { AiRunRequest } from '@/lib/ai/runner';
+import { makeTmpDir } from './helpers/tmp';
 
 const ROOT = resolve(__dirname, '..');
 
@@ -24,13 +24,13 @@ const req = (o: Partial<AiRunRequest> = {}): AiRunRequest => ({
   jsonSchema: { type: 'object' },
   model: 'opus',
   tools: [],
-  cwd: mkdtempSync(join(tmpdir(), 'cf-sec-')),
+  cwd: makeTmpDir('cf-sec-'),
   timeoutMs: 10_000,
   ...o,
 });
 
 function script(body: string): string {
-  const dir = mkdtempSync(join(tmpdir(), 'cf-sec-script-'));
+  const dir = makeTmpDir('cf-sec-script-');
   const file = join(dir, 'fake.mjs');
   writeFileSync(file, `for await (const _ of process.stdin) {}\n${body}\n`);
   return file;

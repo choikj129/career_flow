@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest';
-import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import {
@@ -22,6 +22,7 @@ import { applications } from '@/lib/db/schema';
 import { bulkCreateApplications } from '@/lib/applications/repo';
 import { countDocUsage, countDocsNotesPending, markDocsNoneBeforeFirst, migrateDocsFromNotes } from '@/lib/documents/migrate';
 import { listDocFiles, resolveDocPath, docFileExists, docExistence, docExistenceIn } from '@/lib/documents/folder';
+import { makeTmpDir } from './helpers/tmp';
 
 const FILES: DocFile[] = [
   ['resume', '2026-09-05'],
@@ -96,7 +97,7 @@ describe('parseDocFileName (TC-PAST-02)', () => {
 });
 
 function makeDocsDir(): string {
-  const dir = mkdtempSync(join(tmpdir(), 'cf-docs-'));
+  const dir = makeTmpDir('cf-docs-');
   for (const k of ['resume', 'career', 'portfolio']) mkdirSync(join(dir, k), { recursive: true });
   return dir;
 }
