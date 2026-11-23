@@ -7,7 +7,8 @@ import { lineDiff } from '@/lib/kit/line-diff';
 import { assemble } from '@/lib/kit/assemble';
 
 const DIR = join(process.cwd(), 'tests', 'fixtures', 'kit');
-const read = (n: string) => readFileSync(join(DIR, n), 'utf8');
+// 체크아웃 줄바꿈(core.autocrlf)과 무관하게 LF로 읽는다. CRLF 입력은 kit-crlf 테스트가 따로 다룬다.
+const read = (n: string) => readFileSync(join(DIR, n), 'utf8').replace(/\r\n/g, '\n');
 const kit = parseGuide(read('서류_가이드.md')).guide!;
 const base = { resumeMd: read('이력서_백엔드_v1_20260101.md'), careerMd: read('경력기술서_백엔드.md') };
 const masterMd = read('마스터스토리.md');

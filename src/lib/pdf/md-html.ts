@@ -1,5 +1,6 @@
 import { Marked, type Tokens, type TokensList } from 'marked';
 import { fontFaceCss } from './fonts';
+import { normalizeNewlines } from '@/lib/kit/md-doc';
 
 // 서류 md → PDF용 HTML. 사용자 PDF 도구와 같은 구조: 제목 + 프로필 상자, 2단계 제목마다 섹션.
 // 사용자 서류의 원시 HTML은 실행되지 않고 글자로 보인다.
@@ -45,7 +46,7 @@ function stripComments(md: string): string {
     );
     buf = [];
   };
-  for (const line of md.split('\n')) {
+  for (const line of normalizeNewlines(md).split('\n')) {
     const m = /^ {0,3}(`{3,}|~{3,})/.exec(line);
     if (fence == null) {
       if (m) {
@@ -78,7 +79,7 @@ const inline = (s: string) => marked.parseInline(s) as string;
  * 제목이 "이름 · 직함"이면 이름은 `.name`.
  */
 export function mdToSectionHtml(md: string): string {
-  const tokens = marked.lexer(stripComments(md)) as Tok[] & { links: TokensList['links'] };
+  const tokens = marked.lexer(stripComments(normalizeNewlines(md))) as Tok[] & { links: TokensList['links'] };
   const links = tokens.links;
   const out: string[] = [];
   let i = 0;

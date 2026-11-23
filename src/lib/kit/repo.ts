@@ -5,7 +5,7 @@ import { desc, eq } from 'drizzle-orm';
 import { getDb, type Db } from '@/lib/db/client';
 import { config } from '@/lib/config';
 import { kits } from '@/lib/db/schema';
-import { checkBaseDoc, parseMdDoc } from './md-doc';
+import { checkBaseDoc, normalizeNewlines, parseMdDoc } from './md-doc';
 import { parseGuide } from './parse-guide';
 import type { KitError, KitFile, KitParsed, KitRole } from './types';
 
@@ -71,7 +71,7 @@ export function saveKit(
   if (named.reduce((n, f) => n + f.data.length, 0) > KIT_MAX_TOTAL_BYTES) throw new Error('합계 5MB까지 올릴 수 있습니다');
 
   const errors: KitError[] = [];
-  const text = (f: Incoming) => f.data.toString('utf8');
+  const text = (f: Incoming) => normalizeNewlines(f.data.toString('utf8'));
   const roles = new Map<string, { role: KitRole; track?: string }>();
 
   // 스타일: .css 또는 .py의 CSS 문자열 하나
@@ -207,7 +207,7 @@ export function getUsableKit(db: Db = getDb()): (KitRow & { parsed: KitParsed })
 }
 
 function readKitFile(kitId: number, name: string, dir: string): string {
-  return readFileSync(join(dir, String(kitId), name), 'utf8');
+  return normalizeNewlines(readFileSync(join(dir, String(kitId), name), 'utf8'));
 }
 
 /** 기본 서류 md 원문 */

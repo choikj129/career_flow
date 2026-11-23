@@ -8,7 +8,8 @@ import { checkBaseDoc, listItems, parseMdDoc, renderMdDoc, findSection } from '@
 import { getKit, getLatestKit, getUsableKit, isSameAsLatestKit, readKitDoc, readKitText, saveKit } from '@/lib/kit/repo';
 
 const DIR = join(process.cwd(), 'tests', 'fixtures', 'kit');
-const read = (n: string) => readFileSync(join(DIR, n), 'utf8');
+// 체크아웃 줄바꿈(core.autocrlf)과 무관하게 LF로 읽는다. CRLF 입력은 kit-crlf 테스트가 따로 다룬다.
+const read = (n: string) => readFileSync(join(DIR, n), 'utf8').replace(/\r\n/g, '\n');
 const GUIDE = read('서류_가이드.md');
 const fixtureFiles = () =>
   readdirSync(DIR).map((name) => ({ name, data: readFileSync(join(DIR, name)) }));

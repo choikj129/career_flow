@@ -4,6 +4,9 @@ import type { KitError, Track } from './types';
 
 export type MdBlock = { level: number; title: string; lines: string[]; children: MdBlock[] };
 
+/** 줄바꿈을 \n으로 통일한다(Windows에서 저장된 파일은 \r\n일 수 있다). */
+export const normalizeNewlines = (s: string): string => s.replace(/\r\n?/g, '\n');
+
 const HEADING = /^(#{1,6})\s+(.*?)\s*$/;
 
 /** level 0은 문서 머리(첫 제목 앞). 코드 블록(```) 안의 # 줄은 제목이 아니다. */
@@ -11,7 +14,7 @@ export function parseMdDoc(md: string): MdBlock {
   const root: MdBlock = { level: 0, title: '', lines: [], children: [] };
   const stack: MdBlock[] = [root];
   let fenced = false;
-  for (const line of md.split(/\r?\n/)) {
+  for (const line of normalizeNewlines(md).split('\n')) {
     if (/^\s*```/.test(line)) fenced = !fenced;
     const m = fenced ? null : HEADING.exec(line);
     if (m) {
