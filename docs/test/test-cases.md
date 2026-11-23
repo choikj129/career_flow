@@ -629,6 +629,7 @@ AI 작업이 끝나면 `data/ai-work/<번호>/`를 바로 지운다. 올린 이�
 | TC-KIT-30~33 | 분석의 프로필 추천(D-28 b) | 프로필 표 프롬프트, AI 추천 정리, 키트가 있을 때만 스키마에 칸, 옛 분석 결과도 읽힘 | `tests/kit-profile-rec.test.ts`, `tests/tasks.test.ts` |
 | TC-KIT-34 | 부품 짝 표 | 번호표 이름 ↔ 기본 서류 항목(이름만, 문장·수치 없음), 없으면 null | `tests/kit-pairs.test.ts` |
 | TC-KIT-35 | 같은 내용 확인 | 이름·내용이 모두 같으면 같음, 바뀐·빠진·더한 파일이면 다름 | `tests/kit-parse.test.ts` |
+| TC-KIT-36 | 키트 md 줄바꿈(CRLF) | 가이드 읽기·왕복·기본 서류 검사·조립·저장 후 읽기·PDF 변환이 CRLF 입력에서도 LF와 같은 결과 | `tests/kit-crlf.test.ts` |
 | TC-TAILOR-01·02 | 리비전 저장, 공고 삭제 | 번호는 공고마다 1부터, 최신순, 공고 삭제 시 함께 정리·진행 중 작업 거부 | `tests/tailored-repo.test.ts` |
 | TC-TAILOR-03 | 조립 저장 | 키트가 없거나 오류면 한국어 예외, 호출 0 | `tests/tailor-task.test.ts` |
 | TC-TAILOR-09~16 | 용어 맞추기·다듬기 작업 | 결과 저장·자동 검사, 새 실행(D-11), 실패·요청 검사, 키트가 바뀐 뒤에도 그 키트로, 프롬프트 규칙, 작업 종류 등록 | `tests/tailor-task.test.ts`, `tests/prompts.test.ts` |

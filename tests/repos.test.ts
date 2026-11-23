@@ -170,7 +170,8 @@ test('markApplied before analysis throws', () => {
 test('markApplied records the default submitted resume (file kind, unknown), status event and siteNote', () => {
   const db = makeTestDb();
   const { postingId } = analyzedPosting(db, 'https://example.com/y');
-  const id = markApplied({ postingId, siteNote: '회사 채용 페이지', notes: '메모' }, db);
+  // 실제 data/documents에 기대지 않도록 빈 임시 폴더를 넘긴다
+  const id = markApplied({ postingId, siteNote: '회사 채용 페이지', notes: '메모' }, db, makeTmpDir('cf-docs-'));
   const app = getApplicationForPosting(postingId, db)!;
   expect(app.id).toBe(id);
   expect(app.submittedResume).toEqual({ kind: 'file' });

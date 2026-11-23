@@ -1,6 +1,7 @@
 'use server';
 
 import { z } from 'zod';
+import { normalizeNewlines } from '@/lib/kit/md-doc';
 import { buildHandoffMdForRevision, HANDOFF_NOTE_MAX } from '@/lib/tailored/handoff-data';
 import {
   addExternalRevision,
@@ -82,7 +83,7 @@ export async function handoffTextAction(revisionId: number, note: string): Promi
 async function readMd(f: FormDataEntryValue | null, label: string): Promise<string> {
   if (!(f instanceof File) || f.size === 0) throw new Error(`${label}을 골라 주세요`);
   if (f.size > EXTERNAL_MD_MAX_BYTES) throw new Error(`${label}는 1MB까지 올릴 수 있습니다`);
-  return f.text();
+  return normalizeNewlines(await f.text());
 }
 
 /** [결과 올리기]: 작업 공간에서 만든 이력서.md·경력기술서.md를 새 리비전("작업 공간")으로 남긴다 */

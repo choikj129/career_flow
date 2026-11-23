@@ -5,7 +5,8 @@ import { parseGuide } from '@/lib/kit/parse-guide';
 import { itemName, pairParts } from '@/lib/kit/pairs';
 
 const DIR = join(process.cwd(), 'tests', 'fixtures', 'kit');
-const read = (n: string) => readFileSync(join(DIR, n), 'utf8');
+// 체크아웃 줄바꿈(core.autocrlf)과 무관하게 LF로 읽는다. CRLF 입력은 kit-crlf 테스트가 따로 다룬다.
+const read = (n: string) => readFileSync(join(DIR, n), 'utf8').replace(/\r\n/g, '\n');
 const track = parseGuide(read('서류_가이드.md')).guide!.tracks[0];
 
 describe('pairParts (TC-KIT-34)', () => {
