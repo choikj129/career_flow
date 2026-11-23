@@ -89,8 +89,13 @@ export function saveKit(
   }
 
   // 역할: 가이드, 작성 규칙, 마스터스토리
-  const pick = (role: KitRole, match: (f: Incoming) => boolean, label: string) => {
-    const hits = mdFiles.filter((f) => !roles.has(f.name) && match(f));
+  // 조건을 앞에서부터 하나씩 써 보고, 맞는 파일이 있는 첫 조건의 결과를 쓴다(이름으로 찾기 → 내용으로 찾기)
+  const pick = (role: KitRole, matchers: Array<(f: Incoming) => boolean>, label: string) => {
+    let hits: Incoming[] = [];
+    for (const match of matchers) {
+      hits = mdFiles.filter((f) => !roles.has(f.name) && match(f));
+      if (hits.length) break;
+    }
     if (hits.length === 0) errors.push({ file: '(없음)', where: label, message: `${label} 파일이 없습니다` });
     else {
       roles.set(hits[0].name, { role });
@@ -98,9 +103,14 @@ export function saveKit(
     }
     return hits[0];
   };
-  const guideFile = pick('guide', (f) => f.name.includes('가이드') || (text(f).includes('번호표') && text(f).includes('자기소개 후보')), '가이드');
-  pick('rules', (f) => f.name.includes('규칙') || /rules/i.test(f.name), '작성 규칙');
-  pick('master', (f) => f.name.includes('마스터') || /master/i.test(f.name), '마스터스토리');
+  // 작성 규칙이 가이드 구획 이름을 언급할 수 있어서, 이름에 "가이드"가 든 파일을 먼저 찾는다
+  const guideFile = pick(
+    'guide',
+    [(f) => f.name.includes('가이드'), (f) => text(f).includes('번호표') && text(f).includes('자기소개 후보')],
+    '가이드',
+  );
+  pick('rules', [(f) => f.name.includes('규칙') || /rules/i.test(f.name)], '작성 규칙');
+  pick('master', [(f) => f.name.includes('마스터') || /master/i.test(f.name)], '마스터스토리');
 
   // 가이드를 읽고 기본 서류를 짝짓는다
   let parsed: KitParsed | null = null;
