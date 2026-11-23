@@ -1,14 +1,14 @@
-import { mkdtempSync, readFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 import { extractPostingText, looksBlocked, MIN_POSTING_TEXT_LENGTH } from '@/lib/extract/extract-posting';
 import { isBrowserBusy, withBrowser } from '@/lib/extract/browser';
 import { startFixtureServer, type FixtureServer } from './helpers/http-fixture';
+import { makeTmpDir } from './helpers/tmp';
 
 const FULL = resolve(__dirname, 'fixtures/posting-full.html');
 const EMPTY = resolve(__dirname, 'fixtures/posting-empty.html');
-const tmpProfile = () => mkdtempSync(join(tmpdir(), 'cf-profile-'));
+const tmpProfile = () => makeTmpDir('cf-profile-');
 
 let fx: FixtureServer;
 beforeAll(async () => {

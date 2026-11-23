@@ -1,4 +1,5 @@
-import { mkdtempSync, readFileSync, readdirSync } from 'node:fs';
+import { makeTmpDir } from './helpers/tmp';
+import { readFileSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, test } from 'vitest';
@@ -102,7 +103,7 @@ const REC = {
 function setup() {
   const db = makeTestDb();
   saveResumeVersion(emptyResume(), undefined, db);
-  const kitDir = mkdtempSync(join(tmpdir(), 'cf-kit-'));
+  const kitDir = makeTmpDir('cf-kit-');
   const files = readdirSync(DIR).map((name) => ({ name, data: readFileSync(join(DIR, name)) }));
   const { kitId } = saveKit(files, db, kitDir);
   const reg = registerPosting({ pastedText: '백엔드 개발자 공고. 캐시와 성능.' }, db);

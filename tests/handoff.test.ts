@@ -1,4 +1,5 @@
-import { mkdtempSync, readFileSync, readdirSync } from 'node:fs';
+import { makeTmpDir } from './helpers/tmp';
+import { readFileSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
@@ -131,7 +132,7 @@ class FakeRunner implements AiRunner {
 }
 
 function setup() {
-  h.kitDir = mkdtempSync(join(tmpdir(), 'cf-kit-'));
+  h.kitDir = makeTmpDir('cf-kit-');
   const db = makeTestDb();
   const { kitId } = saveKit(readdirSync(DIR).map((name) => ({ name, data: readFileSync(join(DIR, name)) })), db, h.kitDir);
   const postingId = registerPosting({ pastedText: '백엔드 공고. 캐시와 성능.' }, db).postingId;

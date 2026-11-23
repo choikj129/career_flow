@@ -1,6 +1,6 @@
+import { makeTmpDir } from './helpers/tmp';
 import { describe, expect, test } from 'vitest';
-import { existsSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { makeTestDb } from './helpers/db';
 import { parseGuide } from '@/lib/kit/parse-guide';
@@ -134,7 +134,7 @@ describe('parseGuide without tracks (TC-KIT-06)', () => {
 describe('saveKit (TC-KIT-05)', () => {
   test('roles, files on disk, label, usable kit', () => {
     const db = makeTestDb();
-    const dir = mkdtempSync(join(tmpdir(), 'cf-kit-'));
+    const dir = makeTmpDir('cf-kit-');
     const { kitId, errors } = saveKit(fixtureFiles(), db, dir);
     expect(errors).toEqual([]);
     const kit = getKit(kitId, db)!;
@@ -157,7 +157,7 @@ describe('saveKit (TC-KIT-05)', () => {
 
   test('missing required files are errors; broken kit is saved but not usable; older kit stays', () => {
     const db = makeTestDb();
-    const dir = mkdtempSync(join(tmpdir(), 'cf-kit-'));
+    const dir = makeTmpDir('cf-kit-');
     const good = saveKit(fixtureFiles(), db, dir);
     const without = fixtureFiles().filter((f) => f.name !== '작성_규칙.md' && f.name !== '경력기술서_데이터.md');
     const bad = saveKit(without, db, dir);
@@ -170,7 +170,7 @@ describe('saveKit (TC-KIT-05)', () => {
 
   test('unknown file, path characters and python style file', () => {
     const db = makeTestDb();
-    const dir = mkdtempSync(join(tmpdir(), 'cf-kit-'));
+    const dir = makeTmpDir('cf-kit-');
     const files = fixtureFiles().filter((f) => f.name !== 'style.css');
     files.push({ name: '메모.md', data: Buffer.from('# 아무 파일') });
     files.push({ name: '../build_pdf.py', data: Buffer.from('X = 1\nCSS = """\nbody { color: red; }\n"""\nprint("실행되지 않는다")\n') });
@@ -185,7 +185,7 @@ describe('saveKit (TC-KIT-05)', () => {
 
   test('file names: Windows-forbidden characters and colons are rejected, duplicates are an error (TC-KIT-07)', () => {
     const db = makeTestDb();
-    const dir = mkdtempSync(join(tmpdir(), 'cf-kit-'));
+    const dir = makeTmpDir('cf-kit-');
     for (const bad of ['메모:1.md', '메모?.md', '메모*.md', '메모\"x\".md', '메모<a>.md', '메모|a.md', 'CON.md', '끝점.md.']) {
       expect(() => saveKit([...fixtureFiles(), { name: bad, data: Buffer.from('x') }], db, dir), bad).toThrow('파일 이름');
     }
@@ -195,7 +195,7 @@ describe('saveKit (TC-KIT-05)', () => {
 
   test('a failure while writing files leaves no kit row behind (TC-KIT-08)', () => {
     const db = makeTestDb();
-    const dir = join(mkdtempSync(join(tmpdir(), 'cf-kit-')), 'blocked');
+    const dir = join(makeTmpDir('cf-kit-'), 'blocked');
     writeFileSync(dir, 'a file where the kit folder should go'); // 폴더를 만들 수 없게 한다
     expect(() => saveKit(fixtureFiles(), db, dir)).toThrow();
     expect(getLatestKit(db)).toBeNull();
@@ -203,7 +203,7 @@ describe('saveKit (TC-KIT-05)', () => {
 
   test('size limits', () => {
     const db = makeTestDb();
-    const dir = mkdtempSync(join(tmpdir(), 'cf-kit-'));
+    const dir = makeTmpDir('cf-kit-');
     expect(() => saveKit([{ name: '큰.md', data: Buffer.alloc(1024 * 1024 + 1, 97) }], db, dir)).toThrow('1MB');
     const many = Array.from({ length: 11 }, (_, i) => ({ name: `파일${i}.md`, data: Buffer.from('x') }));
     expect(() => saveKit(many, db, dir)).toThrow('10개');

@@ -10,6 +10,7 @@ import {
   updateApplication,
   updateNotes,
 } from '@/lib/applications/repo';
+import { deleteStatusEvent, updateStatusEvent } from '@/lib/applications/events';
 import { validDate } from '@/lib/domain/dates';
 import { APPLICATION_STATUSES, SITE_IDS, type ApplicationStatus, type SiteId } from '@/lib/domain/types';
 import { run } from './run';
@@ -121,4 +122,36 @@ export async function updateNotesAction(applicationId: number, notes: string): P
   return run(() => {
     updateNotes(z.number().int().parse(applicationId), z.string().parse(notes));
   }, '메모를 저장했습니다');
+}
+
+export async function updateStatusEventAction(input: {
+  eventId: number;
+  status: string;
+  interviewRound?: number | null;
+  at: string;
+  note?: string;
+}): Promise<ActionResult> {
+  return run(() => {
+    const v = z
+      .object({
+        eventId: z.number().int(),
+        status,
+        interviewRound: z.number().int().min(1).nullish(),
+        at: date,
+        note: z.string().optional(),
+      })
+      .parse(input);
+    updateStatusEvent(v.eventId, {
+      status: v.status,
+      interviewRound: v.interviewRound ?? null,
+      at: v.at,
+      note: v.note?.trim() || null,
+    });
+  }, '상태 이력을 고쳤습니다');
+}
+
+export async function deleteStatusEventAction(eventId: number): Promise<ActionResult> {
+  return run(() => {
+    deleteStatusEvent(z.number().int().parse(eventId));
+  }, '상태 이력을 삭제했습니다');
 }

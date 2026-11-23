@@ -1,6 +1,6 @@
+import { makeTmpDir } from './helpers/tmp';
 // 제출 서류 기록(D-23 a): 선택 값 변환, 기본값, 저장·검증, 라벨, 대시보드 묶음. TC-SUBMIT-01~07
-import { mkdirSync, mkdtempSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { beforeEach, describe, expect, test, vi } from 'vitest';
 
@@ -78,7 +78,7 @@ function analyzed(db: Db, rec?: { track: string; kitId: number }) {
 }
 
 function docsDirWith(files: Record<string, string[]>): string {
-  const dir = mkdtempSync(join(tmpdir(), 'cf-docs-'));
+  const dir = makeTmpDir('cf-docs-');
   for (const [kind, names] of Object.entries(files)) {
     mkdirSync(join(dir, kind), { recursive: true });
     for (const n of names) writeFileSync(join(dir, kind, n), '%PDF-1.4 fake');
@@ -87,7 +87,7 @@ function docsDirWith(files: Record<string, string[]>): string {
 }
 
 const withKit = (db: Db) => {
-  h.kitDir = mkdtempSync(join(tmpdir(), 'cf-kit-'));
+  h.kitDir = makeTmpDir('cf-kit-');
   return saveKit(kitFiles(), db, h.kitDir).kitId;
 };
 

@@ -1,4 +1,5 @@
-import { mkdtempSync, readFileSync, readdirSync } from 'node:fs';
+import { makeTmpDir } from './helpers/tmp';
+import { readFileSync, readdirSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { eq } from 'drizzle-orm';
@@ -64,7 +65,7 @@ const out = (over: Record<string, unknown> = {}) => ({
 const fixtureFiles = () => readdirSync(DIR).map((name) => ({ name, data: readFileSync(join(DIR, name)) }));
 
 function setup() {
-  h.kitDir = mkdtempSync(join(tmpdir(), 'cf-kit-'));
+  h.kitDir = makeTmpDir('cf-kit-');
   const db = makeTestDb();
   const { kitId } = saveKit(fixtureFiles(), db, h.kitDir);
   const postingId = registerPosting({ pastedText: '백엔드 개발자 공고. 캐시와 성능, 서버 개발.' }, db).postingId;
@@ -105,7 +106,7 @@ describe('createRecipeRevision (TC-TAILOR-03)', () => {
     const db = makeTestDb();
     const postingId = registerPosting({ pastedText: '공고' }, db).postingId;
     expect(() => createRecipeRevision(postingId, RECIPE, db)).toThrow('서류 키트를 먼저 올리세요');
-    h.kitDir = mkdtempSync(join(tmpdir(), 'cf-kit-'));
+    h.kitDir = makeTmpDir('cf-kit-');
     saveKit([{ name: '메모.md', data: Buffer.from('# 가상') }], db, h.kitDir);
     expect(() => createRecipeRevision(postingId, RECIPE, db)).toThrow('서류 키트에 오류가 있습니다');
     const ok = setup();

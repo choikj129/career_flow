@@ -1,5 +1,5 @@
-import { mkdtempSync, readFileSync, readdirSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { makeTmpDir } from './helpers/tmp';
+import { readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { beforeAll, describe, expect, test } from 'vitest';
 import { acquireBrowserLock } from '@/lib/extract/browser';
@@ -160,7 +160,7 @@ describe('routes (TC-PDF-07, TC-PDF-08)', () => {
   let kitId = 0;
 
   beforeAll(async () => {
-    process.env.CAREER_FLOW_DATA_DIR = mkdtempSync(join(tmpdir(), 'cf-pdf-route-'));
+    process.env.CAREER_FLOW_DATA_DIR = makeTmpDir('cf-pdf-route-');
     const { getDb, runMigrations } = await import('@/lib/db/client');
     const db = getDb();
     runMigrations(db);

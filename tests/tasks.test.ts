@@ -1,5 +1,4 @@
-import { mkdirSync, mkdtempSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { mkdirSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { beforeEach, expect, test, vi } from 'vitest';
 
@@ -28,6 +27,7 @@ import { renderPrompt } from '@/lib/ai/prompt';
 import { handlers } from '@/lib/ai/tasks';
 import { extractPostingText } from '@/lib/extract/extract-posting';
 import type { AnalysisResult } from '@/lib/ai/tasks/schemas';
+import { makeTmpDir } from './helpers/tmp';
 
 const VALID_ANALYSIS: AnalysisResult = {
   posting: {
@@ -64,11 +64,11 @@ class FakeRunner implements AiRunner {
 }
 
 function workDir() {
-  return mkdtempSync(join(tmpdir(), 'cf-work-'));
+  return makeTmpDir('cf-work-');
 }
 
 beforeEach(() => {
-  h.uploadsDir = mkdtempSync(join(tmpdir(), 'cf-uploads-'));
+  h.uploadsDir = makeTmpDir('cf-uploads-');
   vi.mocked(extractPostingText).mockClear();
 });
 
@@ -194,7 +194,7 @@ test('import_resume copies files into work dir and allows only Read', async () =
 
 test('import_resume rejects paths outside uploads dir', async () => {
   const db = makeTestDb();
-  const outside = join(mkdtempSync(join(tmpdir(), 'cf-out-')), 'secret.txt');
+  const outside = join(makeTmpDir('cf-out-'), 'secret.txt');
   writeFileSync(outside, 'secret');
   mkdirSync(join(h.uploadsDir, 'sub'));
   const runner = new FakeRunner(emptyResume());

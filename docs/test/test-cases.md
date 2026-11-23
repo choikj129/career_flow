@@ -140,6 +140,9 @@ npm run test:e2e    # next build 후 Playwright(Chromium) E2E. 빌드된 앱을 
 | TC-DASH-20 | 지원 완료 → 대시보드 반영 | 분석 끝난 새 공고 | [지원 완료] 후 대시보드에서 회사 검색 | 1건 표시(포지션·지원일·"기본 v2"·적합도), "기록만" 없음, 분석한 공고 목록에서는 사라짐 | E2E | tests/e2e/03-apply-and-records.spec.ts — TC-DASH-20 |
 | TC-DASH-21 | 기록 수정(기록만) | 가져온 기록 | 펼침 → [기록 수정] → 회사명 변경 → 저장 | "지원 기록을 고쳤습니다", 새 이름으로 검색됨, 출처 이름 기본값 유지 | E2E | tests/e2e/03-apply-and-records.spec.ts — TC-DASH-21 |
 | TC-DASH-22 | 기록 삭제(기록만) | 가져온 기록 | 펼침 → [기록 삭제] → [취소] → 다시 [삭제] | 취소하면 남고, 삭제하면 "지원 기록을 삭제했습니다" 후 목록에서 사라짐 | E2E | tests/e2e/03-apply-and-records.spec.ts — TC-DASH-22 |
+| TC-DASH-24 | 상태 이력 수정 | 기록만 행(최종합격 1건) | 상태 변경으로 불합격 추가 → 이력 [수정]으로 날짜·메모 변경 → 다시 [수정]으로 상태를 서류합격으로 | "상태 이력을 고쳤습니다", 이력에 새 날짜·메모, 행의 현재 상태가 가장 늦은 이력의 상태로 바뀜. 단위: tests/status-event-edit.test.ts | E2E+단위 | tests/e2e/03-apply-and-records.spec.ts — TC-DASH-24 |
+| TC-DASH-25 | 상태 이력 삭제 | TC-DASH-24 다음 | 이력 [삭제] → [취소] → 다시 [삭제] | 취소하면 남고, 삭제하면 "상태 이력을 삭제했습니다", 현재 상태가 남은 이력 기준(최종합격)으로 돌아감, 하나 남으면 [삭제] 비활성 | E2E+단위 | tests/e2e/03-apply-and-records.spec.ts — TC-DASH-25 |
+| TC-DASH-26 | 이력 수정 폼 폭 | 폭 1024·1240·1440 | 이력 [수정] 열기 | 가로 넘침·잘림 없음 | E2E | tests/e2e/03-apply-and-records.spec.ts — TC-DASH-26 |
 | TC-DASH-23 | 빈 상태 | 지원 기록 0건, 기본 이력서 없음 | `/` 열기 | "아직 지원 기록이 없습니다." + [공고 등록] + "이미 지원한 내역이 있다면 → 가져오기" + 이력서 안내 줄, 요약 줄 없음 | E2E | tests/e2e/empty-a-first-run.spec.ts — TC-DASH-23 |
 | TC-DASH-30 | 주소 파라미터 해석 | - | `parseDashboardParams` 기본값·유효값·중복 값 | 기본값 적용, 반복 파라미터는 첫 값, 알 수 없는 view·status·site·period는 무시 | 단위 | tests/dashboard-params.test.ts — parseDashboardParams (5개) |
 | TC-DASH-31 | 직접 지정 기간 경계 | - | custom 기간에 형식이 틀린 날짜, custom이 아닌데 from/to | 올바른 날짜만 유지, custom이 아니면 from/to 버림 | 단위 | tests/dashboard-params.test.ts — custom period keeps only well-formed dates, from/to are dropped… |

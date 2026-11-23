@@ -1,5 +1,4 @@
-import { existsSync, mkdtempSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { eq } from 'drizzle-orm';
 import { describe, expect, test } from 'vitest';
@@ -17,10 +16,11 @@ import {
   startWorker,
 } from '@/lib/ai/queue';
 import { makeTestDb } from './helpers/db';
+import { makeTmpDir } from './helpers/tmp';
 
 type Handlers = WorkerDeps['handlers'];
 const stubRunner: AiRunner = { run: async () => { throw new Error('not used'); } };
-const workRoot = () => mkdtempSync(join(tmpdir(), 'cf-work-'));
+const workRoot = () => makeTmpDir('cf-work-');
 
 describe('job queue', () => {
   test('processes queued jobs one at a time in FIFO order and stores result', async () => {

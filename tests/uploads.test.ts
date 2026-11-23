@@ -1,8 +1,8 @@
-import { existsSync, mkdtempSync, readFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { existsSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { describe, expect, test } from 'vitest';
 import { MAX_UPLOAD_BYTES, checkUpload, saveUploads } from '@/lib/uploads/store';
+import { makeTmpDir } from './helpers/tmp';
 
 describe('checkUpload', () => {
   test('accepts resume documents', () => {
@@ -28,7 +28,7 @@ describe('checkUpload', () => {
 });
 
 describe('saveUploads', () => {
-  const base = () => mkdtempSync(join(tmpdir(), 'cf-up-'));
+  const base = () => makeTmpDir('cf-up-');
   const f = (name: string, text = 'x') => ({ name, data: Buffer.from(text) });
 
   test('saves under uploads/<sub> with timestamp prefix', () => {
@@ -62,10 +62,7 @@ describe('saveUploads', () => {
 
 test('TC-UP-LIMIT 한 번에 10개까지만 받는다', async () => {
   const { saveUploads } = await import('@/lib/uploads/store');
-  const { mkdtempSync } = await import('node:fs');
-  const { tmpdir } = await import('node:os');
-  const { join } = await import('node:path');
-  const baseDir = mkdtempSync(join(tmpdir(), 'cf-up-'));
+  const baseDir = makeTmpDir('cf-up-');
   const mk = (n: number) => Array.from({ length: n }, (_, i) => ({ name: `a${i}.png`, data: Buffer.from('x') }));
   expect(saveUploads(mk(10), 'image', 'import', { baseDir }).saved).toHaveLength(10);
   expect(() => saveUploads(mk(11), 'image', 'import', { baseDir })).toThrow('10개까지');
