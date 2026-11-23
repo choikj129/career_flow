@@ -5,7 +5,7 @@ import type { SubmittedResume } from '@/lib/domain/types';
 
 export type ResumeChoice =
   | { kind: 'tailored'; tailoredRevisionId: number }
-  | { kind: 'kit'; kitId: number; track: string } // 기본 서류 그대로. 프로필 = 그 직무의 기본 프로필
+  | { kind: 'kit'; kitId: number; track: string; profileId?: string } // 기본 서류. profileId가 없으면 그 직무의 기본 프로필(예전 값)
   | { kind: 'file'; fileName: string }
   | { kind: 'unknown' }
   | { kind: 'base'; versionId: number }; // 예전 기록 유지 전용. 새로 고를 수 없다
@@ -18,7 +18,7 @@ export function encodeResumeChoice(c: ResumeChoice): string {
     case 'tailored':
       return `tailored:${c.tailoredRevisionId}`;
     case 'kit':
-      return `kit:${c.kitId}:${c.track}`;
+      return c.profileId ? `kitp:${c.kitId}:${c.profileId}:${c.track}` : `kit:${c.kitId}:${c.track}`;
     case 'file':
       return `file:${c.fileName}`;
     case 'unknown':
@@ -52,6 +52,15 @@ export function decodeResumeChoice(s: string): ResumeChoice | null {
     const track = rest.slice(j + 1);
     return kitId == null || !track ? null : { kind: 'kit', kitId, track };
   }
+  if (head === 'kitp') {
+    const j = rest.indexOf(':');
+    const k = j < 0 ? -1 : rest.indexOf(':', j + 1);
+    if (k < 0) return null;
+    const kitId = posInt(rest.slice(0, j));
+    const profileId = rest.slice(j + 1, k);
+    const track = rest.slice(k + 1);
+    return kitId == null || !profileId || !track ? null : { kind: 'kit', kitId, track, profileId };
+  }
   return null;
 }
 
@@ -63,7 +72,7 @@ export function currentSubmitted(sr: SubmittedResume, docs: SubmittedDocs | null
     case 'tailored':
       return { resume: { kind: 'tailored', tailoredRevisionId: sr.tailoredRevisionId }, career, portfolio };
     case 'kit':
-      return { resume: { kind: 'kit', kitId: sr.kitId, track: sr.track }, career, portfolio };
+      return { resume: { kind: 'kit', kitId: sr.kitId, track: sr.track, profileId: sr.profileId }, career, portfolio };
     case 'base':
       return { resume: { kind: 'base', versionId: sr.versionId }, career, portfolio };
     default: {
@@ -74,21 +83,21 @@ export function currentSubmitted(sr: SubmittedResume, docs: SubmittedDocs | null
 }
 
 /**
- * [지원 완료] 기본값. 이력서: 최신 맞춤 리비전(작업 공간 결과 포함) → (키트가 있으면) 추천 직무의 기본 서류
+ * [지원 완료] 기본값. 이력서: 최신 맞춤 리비전(작업 공간 결과 포함) → (키트가 있으면) 추천 1순위 프로필의 기본 서류(추천이 없으면 직무 기본 프로필)
  * → 지원일 기준 이력서 파일 → 모름. 경력기술서·포트폴리오: 지원일 기준 파일 / 없음 / 모름.
  */
 export function defaultSubmitted(i: {
   appliedAt: string;
   files: DocFile[];
   latestRevisionId: number | null;
-  kit: { id: number; track: string } | null;
+  kit: { id: number; track: string; profileId?: string } | null;
 }): SubmittedInput {
   const resumeFile = pickDocFile('resume', i.appliedAt, i.files);
   const resume: ResumeChoice =
     i.latestRevisionId != null
       ? { kind: 'tailored', tailoredRevisionId: i.latestRevisionId }
       : i.kit
-        ? { kind: 'kit', kitId: i.kit.id, track: i.kit.track }
+        ? { kind: 'kit', kitId: i.kit.id, track: i.kit.track, ...(i.kit.profileId ? { profileId: i.kit.profileId } : {}) }
         : resumeFile
           ? { kind: 'file', fileName: resumeFile }
           : { kind: 'unknown' };
@@ -101,7 +110,7 @@ export function defaultSubmitted(i: {
 
 /**
  * 칸에 쓸 값. file·unknown은 가져온 기록(prevKind 'imported')이면 종류를 imported로 둔다.
- * kit이면 ctx.kitProfile(그 직무의 기본 프로필)이 있어야 한다.
+ * kit이면 ctx.kitProfile(고른 프로필)이 있어야 한다.
  */
 export function toColumns(
   input: SubmittedInput,
@@ -182,7 +191,7 @@ export function resumeDisplay(
         href: `/api/tailored/${sr.tailoredRevisionId}/resume?inline=1`,
       };
     case 'kit':
-      return { label: `기본 서류 ${sr.track}`, href: `/api/kit/${sr.kitId}/${encodeURIComponent(sr.track)}/resume?inline=1` };
+      return { label: `기본 서류 ${sr.track}`, href: `/api/kit/${sr.kitId}/profile/${encodeURIComponent(sr.profileId)}/resume?inline=1` };
     case 'base':
       return { label: `${names.versionNo != null ? `기본 이력서 v${names.versionNo}` : '기본 이력서'} (예전 기록)`, href: null };
     default:

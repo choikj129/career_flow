@@ -101,6 +101,28 @@ describe('loadTailorView (TC-TAILOR-VIEW)', () => {
     expect(v.handoff.topFitPercent).toBe(40);
   });
 
+  test('SA-02 applyDocs: initial profile is the AI top, else the track default; all profiles are grouped by track', () => {
+    const { db, postingId, kitId, resumeVersionId, jobId } = setup();
+    let v = loadTailorView(postingId, null, db);
+    if (v.state !== 'ready') throw new Error('ready expected');
+    expect(v.applyDocs.kitId).toBe(kitId);
+    expect(v.applyDocs.aiBased).toBe(false);
+    expect(v.applyDocs.initialProfileId).toBe('B1'); // 단어 수 1위는 B2지만 AI 추천이 없으면 직무 기본 프로필
+    expect(v.applyDocs.groups.map((g) => [g.track, g.profiles.map((p) => p.id).sort()])).toEqual([
+      ['백엔드', ['B1', 'B2']],
+      ['데이터', ['D1', 'D2']],
+    ]);
+    expect(v.applyDocs.groups.flatMap((g) => g.profiles).every((p) => !p.recommended && p.percent === null)).toBe(true);
+
+    saveAnalysis(postingId, resumeVersionId, ANALYSIS(REC(kitId)), jobId, db);
+    v = loadTailorView(postingId, null, db);
+    if (v.state !== 'ready') throw new Error('ready expected');
+    expect(v.applyDocs.aiBased).toBe(true);
+    expect(v.applyDocs.initialProfileId).toBe('B2');
+    const b2 = v.applyDocs.groups[0].profiles.find((p) => p.id === 'B2');
+    expect(b2).toMatchObject({ percent: 40, recommended: true });
+  });
+
   test('a recommendation from an older kit is labeled as such and profiles missing from the kit are dropped', () => {
     const { db, postingId, kitId, resumeVersionId, jobId } = setup();
     const rec = REC(kitId);

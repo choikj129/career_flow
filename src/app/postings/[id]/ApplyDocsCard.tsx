@@ -1,0 +1,64 @@
+"use client";
+
+import { useState } from "react";
+import { applyDocUrl } from "@/lib/tailored/apply-docs-url";
+import type { ApplyDocs } from "@/lib/tailored/view";
+
+/**
+ * 맞춤 이력서 탭 맨 위 "지원 서류" 카드(화면 문서 3.4): 키트의 프로필 PDF를 그대로 받는다.
+ * 프로필을 고르면 받을 파일이 바뀐다. 파일은 저장하지 않고 받을 때마다 만든다.
+ */
+export function ApplyDocsCard({ postingId, docs }: { postingId: number; docs: ApplyDocs }) {
+  const [profileId, setProfileId] = useState(docs.initialProfileId);
+  const all = docs.groups.flatMap((g) => g.profiles.map((p) => ({ ...p, track: g.track })));
+  const cur = all.find((p) => p.id === profileId);
+  const url = (doc: "resume" | "career", opts?: { format?: "html"; inline?: boolean }) =>
+    applyDocUrl({ kitId: docs.kitId, profileId, doc, postingId }, opts);
+
+  return (
+    <div className="card tl-box" data-testid="apply-docs">
+      <h3>지원 서류</h3>
+      <div className="tl-head">
+        <select
+          aria-label="프로필"
+          data-testid="apply-profile"
+          value={profileId}
+          onChange={(e) => setProfileId(e.target.value)}
+        >
+          {docs.groups.map((g) => (
+            <optgroup key={g.track} label={g.track}>
+              {g.profiles.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.id} {p.name}
+                  {p.recommended ? " (추천)" : ""}
+                </option>
+              ))}
+            </optgroup>
+          ))}
+        </select>
+        {cur && (
+          <span className="tl-text" data-testid="apply-line">
+            <b>{cur.id} {cur.name}</b>
+            {cur.percent != null && <> <span className="nw">{cur.percent}%</span></>}
+            {cur.recommended && <span className="tag-rec">추천</span>}
+            {" · "}{cur.track} · 키트 {docs.kitId}
+          </span>
+        )}
+      </div>
+      <div className="tl-actions" style={{ marginTop: 12 }}>
+        <a className="btn primary" data-testid="apply-resume" href={url("resume")}>이력서 PDF</a>
+        <a className="btn primary" data-testid="apply-career" href={url("career")}>경력기술서 PDF</a>
+        <details className="menu-pop">
+          <summary>미리보기 ▾</summary>
+          <div>
+            <a href={url("resume", { format: "html", inline: true })} target="_blank" rel="noopener">이력서 미리보기</a>
+            <a href={url("career", { format: "html", inline: true })} target="_blank" rel="noopener">경력기술서 미리보기</a>
+          </div>
+        </details>
+      </div>
+      <p className="muted small" style={{ margin: "8px 0 0" }}>
+        키트의 기본 서류를 이 프로필 순서로 조립한 것입니다. 받을 때마다 만들며 저장하지 않습니다.
+      </p>
+    </div>
+  );
+}

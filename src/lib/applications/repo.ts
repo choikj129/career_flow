@@ -21,14 +21,21 @@ export type StatusEvent = typeof statusEvents.$inferSelect;
 
 const now = () => new Date().toISOString();
 
-/** [지원 완료] 기본 선택: 키트가 있으면 추천 직무(분석의 프로필 추천, 직무가 하나뿐이면 그 직무)의 기본 서류. 고를 수 없으면 null */
-export function defaultKitChoice(postingId: number, db: Db): { id: number; track: string } | null {
+/**
+ * [지원 완료] 기본 선택: 키트가 있으면 추천 직무(분석의 프로필 추천, 직무가 하나뿐이면 그 직무)의 기본 서류.
+ * 추천 1순위 프로필이 이 키트에 있으면 그 프로필, 아니면 직무 기본 프로필(profileId 없음). 고를 수 없으면 null
+ */
+export function defaultKitChoice(postingId: number, db: Db): { id: number; track: string; profileId?: string } | null {
   const kit = getUsableKit(db);
   if (!kit) return null;
   const tracks = kit.parsed.tracks.map((t) => t.name);
   const analysis = getLatestAnalysis(postingId, db);
   const rec = analysis ? AnalysisResult.safeParse(analysis.result).data?.profileRecommendation : null;
-  if (rec && tracks.includes(rec.track)) return { id: kit.id, track: rec.track };
+  if (rec && tracks.includes(rec.track)) {
+    const top = rec.profiles[0]?.id;
+    const known = rec.kitId === kit.id && top != null && kit.parsed.profiles.some((p) => p.track === rec.track && p.id === top);
+    return known ? { id: kit.id, track: rec.track, profileId: top } : { id: kit.id, track: rec.track };
+  }
   return tracks.length === 1 ? { id: kit.id, track: tracks[0] } : null;
 }
 
@@ -50,17 +57,18 @@ function resolveSubmittedColumns(
       break;
     case 'kit': {
       const prev = ctx.prev?.submittedResume;
-      if (prev?.kind === 'kit' && prev.kitId === r.kitId && prev.track === r.track) {
+      if (prev?.kind === 'kit' && prev.kitId === r.kitId && prev.track === r.track && (!r.profileId || r.profileId === prev.profileId)) {
         kitProfile = { profileId: prev.profileId, profileName: prev.profileName }; // 바꾸지 않았으면 기록된 프로필 그대로
         break;
       }
       const parsed = getKit(r.kitId, db)?.parsed;
       const track = parsed?.tracks.find((t) => t.name === r.track);
       if (!parsed || !track) throw new Error('서류 키트에 없는 직무입니다');
-      const profile =
-        parsed.profiles.find((p) => p.track === track.name && p.id === track.defaultProfileId) ??
-        parsed.profiles.find((p) => p.track === track.name && p.isDefault);
-      if (!profile) throw new Error('서류 키트에 없는 직무입니다');
+      const profile = r.profileId
+        ? parsed.profiles.find((p) => p.track === track.name && p.id === r.profileId)
+        : (parsed.profiles.find((p) => p.track === track.name && p.id === track.defaultProfileId) ??
+          parsed.profiles.find((p) => p.track === track.name && p.isDefault));
+      if (!profile) throw new Error(r.profileId ? '서류 키트에 없는 프로필입니다' : '서류 키트에 없는 직무입니다');
       kitProfile = { profileId: profile.id, profileName: profile.name };
       break;
     }

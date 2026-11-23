@@ -19,7 +19,7 @@ import { registerPosting, saveAnalysis } from '@/lib/postings/repo';
 import { saveResumeVersion } from '@/lib/resume/repo';
 import { emptyResume } from '@/lib/resume/schema';
 import { createRecipeRevision } from '@/lib/tailored/repo';
-import { applications } from '@/lib/db/schema';
+import { applications, kits } from '@/lib/db/schema';
 import { eq } from 'drizzle-orm';
 import type { AnalysisResult } from '@/lib/ai/tasks/schemas';
 
@@ -75,8 +75,10 @@ describe('loadSubmittedFormData (TC-SUBMIT-08)', () => {
     expect(d.resumeOptions.map((o) => o.value)).toEqual([
       `tailored:${r2.id}`,
       `tailored:${r1.id}`,
-      expect.stringMatching(/^kit:\d+:백엔드$/),
-      expect.stringMatching(/^kit:\d+:데이터$/),
+      expect.stringMatching(/^kitp:\d+:B1:백엔드$/),
+      expect.stringMatching(/^kitp:\d+:B2:백엔드$/),
+      expect.stringMatching(/^kitp:\d+:D1:데이터$/),
+      expect.stringMatching(/^kitp:\d+:D2:데이터$/),
       'file:이력서_20261102.pdf',
       'file:이력서_20260901.pdf',
       'unknown',
@@ -85,7 +87,10 @@ describe('loadSubmittedFormData (TC-SUBMIT-08)', () => {
     expect(d.resumeOptions[0].full).toBe('맞춤 이력서 r2 · B2 성능');
     expect(d.resumeOptions[2].label).toBe('기본 서류 백엔드 · B1');
     expect(d.resumeOptions[2].full).toBe('기본 서류 백엔드 · B1 범용');
-    expect(d.resumeOptions[4].label).toBe('이력서 2026-11-02');
+    expect(d.resumeOptions[3].label).toBe('기본 서류 백엔드 · B2');
+    expect(d.resumeOptions[3].full).toBe('기본 서류 백엔드 · B2 성능');
+    expect(d.resumeOptions[5].label).toBe('기본 서류 데이터 · D2');
+    expect(d.resumeOptions[6].label).toBe('이력서 2026-11-02');
     expect(d.latestRevisionId).toBe(r2.id);
     expect(d.kit).toBeNull(); // 공고 분석에 추천이 없고 직무가 둘이라 고르지 않는다
     expect(d.current).toBeNull();
@@ -96,6 +101,42 @@ describe('loadSubmittedFormData (TC-SUBMIT-08)', () => {
     ]);
     expect(d.portfolioOptions.map((o) => o.value)).toEqual(['', 'none']);
     expect(d.noFiles).toBe(false);
+  });
+
+  test('SA-05 the default profile follows the analysis top recommendation, then the track default', () => {
+    const { db, postingId } = setup(true);
+    const kitId = (db.select().from(kits).get() as { id: number }).id;
+    saveAnalysis(
+      postingId,
+      saveResumeVersion(emptyResume(), undefined, db).id,
+      {
+        ...ANALYSIS,
+        profileRecommendation: {
+          track: '데이터',
+          trackReason: '',
+          profiles: [
+            { id: 'D2', fitPercent: 80, keywords: [], reason: '' },
+            { id: 'D1', fitPercent: 40, keywords: [], reason: '' },
+          ],
+          adjustments: [],
+          kitId,
+        },
+      },
+      registerPosting({ pastedText: '재분석' }, db).jobId!,
+      db,
+    );
+    expect(loadSubmittedFormData({ postingId }, db, docsDir({})).kit).toEqual({ id: kitId, track: '데이터', profileId: 'D2' });
+  });
+
+  test('SA-05 editing a record whose profile is not the track default selects that profile option', () => {
+    const { db, postingId } = setup(true);
+    const dir = docsDir({});
+    const kitId = (db.select().from(kits).get() as { id: number }).id;
+    const appId = markApplied({ postingId, appliedAt: '2026-11-03', submitted: { resume: { kind: 'kit', kitId, track: '백엔드', profileId: 'B2' }, career: null, portfolio: null } }, db, dir);
+    const d = loadSubmittedFormData({ applicationId: appId }, db, dir);
+    expect(d.current?.resume).toEqual({ kind: 'kit', kitId, track: '백엔드', profileId: 'B2' });
+    expect(d.resumeOptions.map((o) => o.value)).toContain(`kitp:${kitId}:B2:백엔드`);
+    expect(d.resumeOptions.filter((o) => o.label === '기본 서류 백엔드 · B2')).toHaveLength(1);
   });
 
   test('no kit, no revision, no files: only unknown, and the empty-folder hint is on', () => {

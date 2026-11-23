@@ -201,6 +201,7 @@ describe('routes (TC-PDF-07, TC-PDF-08)', () => {
   let tailored: (req: Request, c: Ctx<{ revisionId: string; doc: string }>) => Promise<Response>;
   let postingMd: (req: Request, c: Ctx<{ revisionId: string }>) => Promise<Response>;
   let kitRoute: (req: Request, c: Ctx<{ kitId: string; track: string; doc: string }>) => Promise<Response>;
+  let profileRoute: (req: Request, c: Ctx<{ kitId: string; profileId: string; doc: string }>) => Promise<Response>;
   let revId = 0;
   let kitId = 0;
 
@@ -219,6 +220,7 @@ describe('routes (TC-PDF-07, TC-PDF-08)', () => {
     tailored = (await import('@/app/api/tailored/[revisionId]/[doc]/route')).GET as never;
     postingMd = (await import('@/app/api/tailored/[revisionId]/posting-md/route')).GET as never;
     kitRoute = (await import('@/app/api/kit/[kitId]/[track]/[doc]/route')).GET as never;
+    profileRoute = (await import('@/app/api/kit/[kitId]/profile/[profileId]/[doc]/route')).GET as never;
   });
 
   const callT = (id: string | number, doc: string, qs = '') =>
@@ -316,6 +318,60 @@ describe('routes (TC-PDF-07, TC-PDF-08)', () => {
     expect((await call('999', '백엔드', 'resume')).status).toBe(404);
     expect((await call(String(kitId), '백엔드', 'x')).status).toBe(400);
   }, 60_000);
+
+  test('SA-01 profile route: assembled by the profile recipe, nothing is saved, 404/400 cases', async () => {
+    const { getDb } = await import('@/lib/db/client');
+    const { tailoredRevisions } = await import('@/lib/db/schema');
+    const { assemble } = await import('@/lib/kit/assemble');
+    const { getKit, readKitDoc } = await import('@/lib/kit/repo');
+    const db = getDb();
+    const call = (k: string, profileId: string, doc: string, qs = '') =>
+      profileRoute(new Request(`http://x/${qs}`), { params: Promise.resolve({ kitId: k, profileId, doc }) });
+    const before = db.select().from(tailoredRevisions).all().length;
+
+    const kit = getKit(kitId, db)!;
+    const want = assemble(
+      kit.parsed!,
+      { resumeMd: readKitDoc(kitId, '백엔드', 'resume', db), careerMd: readKitDoc(kitId, '백엔드', 'career', db) },
+      { track: '백엔드', profileId: 'B2', adjustmentIds: [] },
+    );
+    const md = await call(String(kitId), 'B2', 'resume', '?format=md');
+    expect(md.status).toBe(200);
+    expect(await md.text()).toBe(want.resumeMd);
+    expect(decodeURIComponent(md.headers.get('content-disposition')!)).toContain('홍길동_이력서_백엔드.md');
+    const career = await call(String(kitId), 'B2', 'career', '?format=md');
+    expect(await career.text()).toBe(want.careerMd);
+
+    const html = await call(String(kitId), 'D2', 'resume', '?format=html&inline=1');
+    expect(html.status).toBe(200);
+    expect(html.headers.get('content-security-policy')).toContain("default-src 'none'");
+
+    const pdf = await call(String(kitId), 'B2', 'resume', '?inline=1');
+    expect(pdf.headers.get('content-type')).toBe('application/pdf');
+    expect(pdf.headers.get('content-disposition')).toMatch(/^inline;/);
+
+    expect((await call('999', 'B2', 'resume')).status).toBe(404);
+    expect((await call(String(kitId), 'Z9', 'resume')).status).toBe(404);
+    expect((await call('abc', 'B2', 'resume')).status).toBe(404);
+    expect((await call(String(kitId), 'B2', 'x')).status).toBe(400);
+    expect((await call(String(kitId), 'B2', 'resume', '?format=docx')).status).toBe(400);
+    expect(db.select().from(tailoredRevisions).all().length).toBe(before);
+  }, 60_000);
+
+  test('SA-01 profile route: the file name uses the posting company, the track without one', async () => {
+    const { getDb } = await import('@/lib/db/client');
+    const { findOrCreateCompany } = await import('@/lib/companies/repo');
+    const { setPostingCompany, registerPosting } = await import('@/lib/postings/repo');
+    const db = getDb();
+    const postingId = registerPosting({ url: 'https://example.com/pdf-profile-company' }, db).postingId;
+    const none = registerPosting({ url: 'https://example.com/pdf-profile-nocompany' }, db).postingId;
+    setPostingCompany(postingId, findOrCreateCompany({ displayName: '가상 상사/팀' }, db), db);
+    const call = (pid: number) =>
+      profileRoute(new Request(`http://x/?format=md&postingId=${pid}`), { params: Promise.resolve({ kitId: String(kitId), profileId: 'B1', doc: 'career' }) });
+    expect(decodeURIComponent((await call(postingId)).headers.get('content-disposition')!)).toContain('홍길동_경력기술서_가상상사팀.md');
+    expect(decodeURIComponent((await call(none)).headers.get('content-disposition')!)).toContain('홍길동_경력기술서_백엔드.md');
+    expect(decodeURIComponent((await call(99999)).headers.get('content-disposition')!)).toContain('홍길동_경력기술서_백엔드.md');
+  });
 
   test('TC-PDF-14 a base document file that cannot be read gives 404, not a crash', async () => {
     const { config } = await import('@/lib/config');

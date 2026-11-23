@@ -645,6 +645,15 @@ AI 작업이 끝나면 `data/ai-work/<번호>/`를 바로 지운다. 올린 이�
 | TC-STATS-15~17 | 통계 | 서류 버전별 묶음 순서, `tailoredCompare`, `byProfile` | `tests/stats.test.ts` |
 | TC-RESUME-DIFF-01 | 기본 이력서 버전 비교 | 문장·목록·순서 변경, id로 짝짓는 항목 추가·삭제, 같으면 빈 목록 | `tests/resume-diff.test.ts` |
 
+### 간단한 지원 흐름 (브랜치 `feat/simple-apply`, Vitest)
+
+| ID | 대상 | 기대 결과 | 테스트 위치 |
+|---|---|---|---|
+| SA-01 | 프로필 PDF 라우트 | 프로필 레시피로 조립한 md·html·pdf, 리비전을 만들지 않음, 없는 키트·프로필 404, 서류·형식 오류 400, 파일 이름에 회사(없으면 직무) | `tests/pdf.test.ts` |
+| SA-02 | 지원 서류 카드 값 | 처음 프로필 = AI 추천 1순위, 없으면 직무 기본 프로필, 모든 프로필을 직무별로 묶음, 내려받기 주소 | `tests/tailored-view.test.ts`, `tests/apply-docs-url.test.ts` |
+| SA-04 | 제출 서류 저장 | 선택 값에 프로필 id(`kitp:`), 프로필 없는 예전 값은 직무 기본 프로필, 추천 1순위가 기본값, 다른 직무·없는 프로필 거부, 수정 때 프로필 변경·유지 | `tests/submitted.test.ts` |
+| SA-05 | 제출 서류 선택지 | 키트 프로필 전부 "기본 서류 백엔드 · B2"(긴 라벨 "… B2 성능"), 기본값 순서, 지금 값 프로필이 선택됨. 통계 프로필별은 기록된 프로필로 셈 | `tests/submitted-options.test.ts`, `tests/stats.test.ts` |
+
 ### E2E (Playwright, 가짜 claude)
 
 | ID | 대상 | 기대 결과 | 테스트 위치 |

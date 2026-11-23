@@ -47,11 +47,15 @@ export function listRevisionsForPosting(postingId: number, db: Db = getDb()): Re
     .all();
 }
 
-/** 리비전이 속한 공고의 회사 표시 이름(내려받기 파일 이름용). 회사가 없으면 null */
-export function revisionCompanyName(revisionId: number, db: Db = getDb()): string | null {
-  const postingId = revisionPostingId(revisionId, db);
+/** 공고의 회사 표시 이름(내려받기 파일 이름용). 공고나 회사가 없으면 null */
+export function postingCompanyName(postingId: number | null, db: Db = getDb()): string | null {
   const companyId = postingId != null ? getPosting(postingId, db)?.companyId : null;
   return companyId != null ? (getCompany(companyId, db)?.displayName ?? null) : null;
+}
+
+/** 리비전이 속한 공고의 회사 표시 이름(내려받기 파일 이름용). 회사가 없으면 null */
+export function revisionCompanyName(revisionId: number, db: Db = getDb()): string | null {
+  return postingCompanyName(revisionPostingId(revisionId, db), db);
 }
 
 /** 리비전이 속한 공고 id. 없으면 null */

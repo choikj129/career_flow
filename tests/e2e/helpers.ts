@@ -80,3 +80,11 @@ export async function uploadKit(page: Page, files: KitFile[]): Promise<KitUpload
   ]);
   return (await res.json()) as KitUploadResult;
 }
+
+/** 맞춤 이력서 탭의 접이식 "공고에 맞춰 고치기" 상자를 연다(이미 열려 있으면 그대로) */
+export async function openFixBox(page: Page): Promise<void> {
+  const box = page.getByTestId('fix-box');
+  await expect(box).toBeVisible();
+  if (!(await box.evaluate((el) => (el as HTMLDetailsElement).open))) await box.locator('summary').click();
+  await expect(box.locator('.tl')).toBeVisible();
+}

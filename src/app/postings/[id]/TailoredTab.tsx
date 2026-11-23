@@ -4,6 +4,7 @@ import { JobStatus } from "@/app/_components/JobStatus";
 import { REVISION_REQUEST_MAX } from "@/lib/tailored/limits";
 import type { RevisionSummary } from "@/lib/tailored/repo";
 import { loadTailorView, type RevisionView } from "@/lib/tailored/view";
+import { ApplyDocsCard } from "./ApplyDocsCard";
 import { ProfilePicker } from "./ProfilePicker";
 import {
   Checklist,
@@ -72,6 +73,16 @@ export function TailoredTab({ postingId, rev }: { postingId: number; rev: number
     <div className="tl" data-testid="tailored-tab">
       {v.staleKitNote && <div className="notice info" style={{ marginTop: 0 }}><span>{v.staleKitNote}</span></div>}
 
+      <ApplyDocsCard postingId={postingId} docs={v.applyDocs} />
+
+      <details className="card tl-box fix-box" data-testid="fix-box" open={selected != null || busy || v.failed != null}>
+        <summary>
+          공고에 맞춰 고치기{" "}
+          <span className="muted small" style={{ fontWeight: 400 }}>
+            공고 용어를 바꾸거나 성과 순서를 조정할 때만 씁니다. 맞춤본은 공고마다 따로 저장됩니다.
+          </span>
+        </summary>
+        <div className="tl" style={{ marginTop: 14 }}>
       {v.tailorJob && <JobStatus jobId={v.tailorJob.id} type={v.tailorJob.type} initial={v.tailorJob} />}
       {v.failed && (
         <JobFailureCard title={v.failed.type === "tailor_resume" ? "공고 용어 맞추기에 실패했습니다" : "다듬기에 실패했습니다"} job={v.failed} type={v.failed.type}>
@@ -91,6 +102,20 @@ export function TailoredTab({ postingId, rev }: { postingId: number; rev: number
         </div>
       ) : (
         <>
+          <div className="tl-actions" data-testid="downloads">
+            <b>내려받기</b>
+            <a className="btn sm" href={`/api/tailored/${selected.id}/resume`}>이력서 PDF</a>
+            <a className="btn sm" href={`/api/tailored/${selected.id}/career`}>경력기술서 PDF</a>
+            <details className="menu-pop">
+              <summary>md 받기 ▾</summary>
+              <div>
+                <a href={`/api/tailored/${selected.id}/resume?format=md`}>이력서.md</a>
+                <a href={`/api/tailored/${selected.id}/career?format=md`}>경력기술서.md</a>
+                <a href={`/api/tailored/${selected.id}/posting-md`}>공고.md</a>
+              </div>
+            </details>
+          </div>
+
           <div className="tl-head">
             <RevisionSelect
               postingId={postingId}
@@ -165,20 +190,6 @@ export function TailoredTab({ postingId, rev }: { postingId: number; rev: number
             <PreviewPane revisionId={selected.id} />
           </div>
 
-          <div className="tl-actions" data-testid="downloads">
-            <b>내려받기</b>
-            <a className="btn sm" href={`/api/tailored/${selected.id}/resume`}>이력서 PDF</a>
-            <a className="btn sm" href={`/api/tailored/${selected.id}/career`}>경력기술서 PDF</a>
-            <details className="menu-pop">
-              <summary>md 받기 ▾</summary>
-              <div>
-                <a href={`/api/tailored/${selected.id}/resume?format=md`}>이력서.md</a>
-                <a href={`/api/tailored/${selected.id}/career?format=md`}>경력기술서.md</a>
-                <a href={`/api/tailored/${selected.id}/posting-md`}>공고.md</a>
-              </div>
-            </details>
-          </div>
-
           {v.isLatest && (
             <>
               <div className="tl-actions">
@@ -192,6 +203,8 @@ export function TailoredTab({ postingId, rev }: { postingId: number; rev: number
           )}
         </>
       )}
+        </div>
+      </details>
     </div>
   );
 }

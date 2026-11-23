@@ -1,7 +1,7 @@
 // 맞춤본 내려받기(PDF·md·미리보기·공고 요약·기본 서류)와 분석 탭 프로필 추천 줄.
 // 키트 올리기, 공고 등록·분석, 맞춤본 만들기는 모두 화면 경로로 한다(가짜 claude, 가상 데이터).
 import { expect, test, type Page } from '@playwright/test';
-import { LONG_PROFILE, kitFixtureFiles, registerByPaste, setFake, toast, uploadKit, waitAnalyzed } from './helpers';
+import { LONG_PROFILE, kitFixtureFiles, openFixBox, registerByPaste, setFake, toast, uploadKit, waitAnalyzed } from './helpers';
 
 test.describe.configure({ mode: 'serial' });
 test.afterAll(() => setFake('seeded', {}));
@@ -26,6 +26,7 @@ test.beforeAll(async ({ browser, baseURL }) => {
   postingId = await registerByPaste(page, POSTING);
   await waitAnalyzed(page);
   await page.goto(`/postings/${postingId}?tab=tailored`);
+  await openFixBox(page);
   await page.getByRole('button', { name: '맞춤본 만들기' }).click();
   await toast(page, '맞춤본을 만들었습니다');
   const href = await page.getByTestId('downloads').getByRole('link', { name: '이력서 PDF' }).getAttribute('href');
@@ -68,13 +69,13 @@ test.describe('맞춤본 내려받기', () => {
     const md = await request.get(`/api/tailored/${revisionId}/resume?format=md`);
     expect(md.status()).toBe(200);
     expect(md.headers()['content-type']).toBe('text/markdown; charset=utf-8');
-    expect(decodeURIComponent(md.headers()['content-disposition'])).toContain('홍길동_이력서_백엔드.md');
+    expect(decodeURIComponent(md.headers()['content-disposition'])).toContain('홍길동_이력서_내려받기테스트.md');
     expect(await md.text()).toContain('# 홍길동 · 백엔드 개발자');
 
     const pdf = await request.get(`/api/tailored/${revisionId}/career`);
     expect(pdf.status()).toBe(200);
     expect(pdf.headers()['content-type']).toBe('application/pdf');
-    expect(decodeURIComponent(pdf.headers()['content-disposition'])).toContain('홍길동_경력기술서_백엔드.pdf');
+    expect(decodeURIComponent(pdf.headers()['content-disposition'])).toContain('홍길동_경력기술서_내려받기테스트.pdf');
     expect((await pdf.body()).subarray(0, 5).toString()).toBe('%PDF-');
 
     const base = await request.get(`/api/kit/${kitId}/${encodeURIComponent('백엔드')}/resume?inline=1`);
@@ -120,6 +121,7 @@ test.describe('맞춤본 내려받기', () => {
 
   test('긴 프로필 이름이 맞춤 이력서 탭에서 잘리거나 넘치지 않는다', async ({ page }) => {
     await page.goto(`/postings/${postingId}?tab=tailored`);
+    await openFixBox(page);
     await expect(page.getByTestId('profile-line')).toContainText(LONG_PROFILE.slice(0, 6));
     for (const width of [1024, 1240, 1440]) {
       await page.setViewportSize({ width, height: 900 });
