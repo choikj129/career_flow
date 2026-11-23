@@ -10,7 +10,8 @@ import { currentSubmitted, encodeResumeChoice, resumeLabel, type SubmittedInput 
 
 // [지원 완료] 창과 [기록 수정] 창의 "제출 서류" 선택지(화면 문서 3.7). 서버 전용이다.
 
-export type ChoiceOption = { value: string; label: string };
+/** label은 select 안에 들어가는 짧은 글(프로필 id까지), full은 select 아래에 줄바꿈해서 다 보이는 전체 이름 */
+export type ChoiceOption = { value: string; label: string; full?: string };
 
 export type SubmittedFormData = {
   resumeOptions: ChoiceOption[];
@@ -59,18 +60,19 @@ export function loadSubmittedFormData(
 
   const resumeOptions: ChoiceOption[] = [];
   const seen = new Set<string>();
-  const add = (value: string, label: string) => {
+  const add = (value: string, label: string, full?: string) => {
     if (seen.has(value)) return;
     seen.add(value);
-    resumeOptions.push({ value, label });
+    resumeOptions.push({ value, label, ...(full && full !== label ? { full } : {}) });
   };
 
   for (const r of revisions) {
-    add(encodeResumeChoice({ kind: 'tailored', tailoredRevisionId: r.id }), `맞춤 이력서 r${r.revNo} · ${r.profileId} ${r.profileName}`);
+    add(encodeResumeChoice({ kind: 'tailored', tailoredRevisionId: r.id }), `맞춤 이력서 r${r.revNo} · ${r.profileId}`, `맞춤 이력서 r${r.revNo} · ${r.profileId} ${r.profileName}`);
   }
   if (kit) {
     for (const t of kit.parsed.tracks) {
-      add(encodeResumeChoice({ kind: 'kit', kitId: kit.id, track: t.name }), `기본 서류 ${t.name} · ${t.defaultProfileId}`);
+      const pn = kit.parsed.profiles.find((p) => p.track === t.name && p.id === t.defaultProfileId)?.name;
+      add(encodeResumeChoice({ kind: 'kit', kitId: kit.id, track: t.name }), `기본 서류 ${t.name} · ${t.defaultProfileId}`, pn ? `기본 서류 ${t.name} · ${t.defaultProfileId} ${pn}` : undefined);
     }
   }
   for (const f of files.filter((x) => x.kind === 'resume')) {
@@ -84,15 +86,17 @@ export function loadSubmittedFormData(
     if (!seen.has(cv)) {
       const sr = app!.submittedResume;
       let label: string;
+      let full: string | undefined;
       if (current.resume.kind === 'base') {
         const no = getResumeVersion(current.resume.versionId, db)?.versionNo;
         label = `${no != null ? `기본 이력서 v${no}` : '기본 이력서'} (예전 기록)`;
       } else if (current.resume.kind === 'file') {
         label = `${docLabel(current.resume.fileName)} (파일 없음)`;
       } else {
-        label = resumeLabel(sr, app!.submittedDocs, {}, 'long') ?? '이전 값';
+        label = resumeLabel(sr, app!.submittedDocs, {}, 'short') ?? '이전 값';
+        full = resumeLabel(sr, app!.submittedDocs, {}, 'long') ?? undefined;
       }
-      resumeOptions.unshift({ value: cv, label });
+      resumeOptions.unshift({ value: cv, label, ...(full && full !== label ? { full } : {}) });
     }
   }
 

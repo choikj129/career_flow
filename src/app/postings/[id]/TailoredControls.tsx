@@ -79,6 +79,7 @@ export function RefineForm({ postingId, busy }: { postingId: number; busy: boole
       <span className="muted small"> 요청할 때마다 새 리비전이 생깁니다. 사실·숫자는 마스터스토리 안에서만 바뀝니다.</span>
       <form
         className="refine-row"
+        style={{ alignItems: "flex-start" }}
         onSubmit={(e) => {
           e.preventDefault();
           if (empty || busy) return;
@@ -362,17 +363,20 @@ function UploadExternalModal({ postingId, picker, recipe, onClose }: { postingId
           <label htmlFor="ext-profile">프로필</label>
           <select id="ext-profile" value={profileId} onChange={(e) => setProfileByTrack((m) => ({ ...m, [track]: e.target.value }))}>
             {t.profiles.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.id} {p.name}
+              <option key={p.id} value={p.id} title={`${p.id} ${p.name}`}>
+                {p.id}
               </option>
             ))}
           </select>
+          <span className="muted small" style={{ gridColumn: 2, overflowWrap: "anywhere" }} data-testid="ext-profile-full">
+            {t.profiles.find((p) => p.id === profileId)?.name}
+          </span>
         </div>
         {t.adjustments.length > 0 && (
           <div className="row stack">
             <span className="muted small">추가 조정</span>
             {t.adjustments.map((a) => (
-              <label key={a.id} style={{ display: "flex", gap: 8 }}>
+              <label key={a.id} className="chk">
                 <input
                   type="checkbox"
                   checked={adjustmentIds.includes(a.id)}

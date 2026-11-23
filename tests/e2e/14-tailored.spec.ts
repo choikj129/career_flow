@@ -256,6 +256,16 @@ test.describe('작업 공간 요청 (D-30 a)', () => {
     await dlg.getByLabel('이력서.md').setInputFiles(md('이력서.md', resume));
     await dlg.getByLabel('경력기술서.md').setInputFiles(md('경력기술서.md', readFileSync(join(KIT_DIR, '경력기술서_백엔드.md'))));
     await expect(dlg.getByLabel('프로필')).toHaveValue('B2'); // 지금 값이 기본
+    await expect(dlg.getByTestId('ext-profile-full')).toContainText('성능');
+    // 추가 조정 체크박스는 작게, 왼쪽 정렬로 문구 앞에 붙는다
+    const chk = dlg.locator('label.chk').first();
+    const boxes = await chk.evaluate((l) => {
+      const i = l.querySelector('input')!.getBoundingClientRect();
+      const lb = l.getBoundingClientRect();
+      return { w: i.width, left: i.left - lb.left };
+    });
+    expect(boxes.w).toBeLessThanOrEqual(20);
+    expect(boxes.left).toBeLessThanOrEqual(4);
     await dlg.getByRole('button', { name: '올리기' }).click();
     await toast(page, '작업 공간 결과를 올렸습니다');
     await expect(page.getByLabel('리비전 선택')).toContainText('작업 공간');
@@ -294,6 +304,9 @@ test.describe('제출 서류 선택', () => {
     await expect(resume.locator('option:checked')).toContainText('맞춤 이력서 r5 · B2');
     await expect(dlg.getByLabel('경력기술서')).toBeVisible();
     await expect(dlg.getByLabel('포트폴리오')).toBeVisible();
+    // select 안은 프로필 id까지, 전체 이름은 아래에 줄바꿈되어 다 보인다
+    await expect(resume.locator('option:checked')).toHaveText(/^맞춤 이력서 r5 · B2$/);
+    await expect(dlg.getByTestId('doc-full-resume')).toHaveText('맞춤 이력서 r5 · B2 성능');
     // 기본 서류 선택지도 있다
     await expect(resume.locator('option', { hasText: '기본 서류 백엔드 · B1' })).toHaveCount(1);
     await expect(resume.locator('option', { hasText: '기본 서류 데이터 · D1' })).toHaveCount(1);
@@ -391,6 +404,18 @@ test.describe('키트 바뀜과 배치', () => {
       await page.goto('/resume?tab=kit');
       await expect(page.getByTestId('kit-parsed')).toBeVisible();
       expect(await noOverflow(page), `폭 ${width}: 키트 탭 가로 스크롤`).toBe(true);
+      // 직무 칸의 한글 낱말이 줄 중간에서 끊기지 않는다(한 줄)
+      const lines = await page
+        .getByTestId('kit-profiles')
+        .locator('tbody tr td:first-child')
+        .evaluateAll((tds) =>
+          tds.map((td) => {
+            const r = document.createRange();
+            r.selectNodeContents(td);
+            return { lines: new Set([...r.getClientRects()].map((x) => Math.round(x.top))).size, over: td.scrollWidth > td.clientWidth + 1 };
+          }),
+        );
+      for (const l of lines) expect(l, `폭 ${width}: 직무 칸`).toEqual({ lines: 1, over: false });
     }
     await page.setViewportSize({ width: 1280, height: 720 });
   });

@@ -126,7 +126,7 @@ function ParsedKit({ kitId, parsed }: { kitId: number; parsed: KitParsed }) {
         <table className="kit-table" data-testid="kit-profiles">
           <thead>
             <tr>
-              <th>직무</th>
+              <th style={{ whiteSpace: "nowrap" }}>직무</th>
               <th>프로필</th>
               <th>공고 단어</th>
               <th>자기소개</th>
@@ -137,7 +137,7 @@ function ParsedKit({ kitId, parsed }: { kitId: number; parsed: KitParsed }) {
           <tbody>
             {parsed.profiles.map((p) => (
               <tr key={`${p.track}-${p.id}`}>
-                <td>{p.track}</td>
+                <td style={{ whiteSpace: "nowrap", minWidth: "4em" }}>{p.track}</td>
                 <td>
                   <b>{p.id}</b> {p.name}
                   {p.isDefault ? <span className="tag-rec">기본</span> : null}

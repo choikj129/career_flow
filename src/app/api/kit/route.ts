@@ -1,4 +1,5 @@
-import { isSameAsLatestKit, saveKit } from '@/lib/kit/repo';
+import { isSameAsLatestKit, KIT_MAX_TOTAL_BYTES, saveKit } from '@/lib/kit/repo';
+import { isSameOrigin } from '@/lib/same-origin';
 
 export type KitUploadResponse =
   | { ok: true; unchanged: boolean; kitId: number; errorCount: number }
@@ -8,16 +9,11 @@ const json = (body: KitUploadResponse, status = 200) => Response.json(body, { st
 
 /** 서류 키트 올리기(multipart, 필드 `files` 여러 개). 같은 내용이면 새 버전을 만들지 않는다(화면 문서 5.6, D-27 a) */
 export async function POST(req: Request) {
-  // 다른 사이트의 페이지가 이 주소로 파일을 보내지 못하게, 출처가 있으면 이 앱과 같아야 한다
-  const origin = req.headers.get('origin');
-  if (origin) {
-    let sameHost = false;
-    try {
-      sameHost = new URL(origin).host === req.headers.get('host');
-    } catch {
-      sameHost = false;
-    }
-    if (!sameHost) return json({ ok: false, error: '허용되지 않는 요청입니다' }, 403);
+  // 다른 사이트의 페이지가 이 주소로 파일을 보내지 못하게 한다
+  if (!isSameOrigin(req)) return json({ ok: false, error: '허용되지 않는 요청입니다' }, 403);
+  // 너무 큰 본문은 읽기 전에 거절한다(합계 한도 + 여유)
+  if (Number(req.headers.get('content-length') ?? 0) > KIT_MAX_TOTAL_BYTES + 512 * 1024) {
+    return json({ ok: false, error: '합계 5MB까지 올릴 수 있습니다' }, 413);
   }
 
   let form: FormData;

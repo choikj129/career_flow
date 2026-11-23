@@ -166,7 +166,7 @@ test.describe.serial('통계 화면', () => {
       await choose(apps[0].posting_id, '기본 서류 백엔드 · B1');
       for (const a of [apps[1], apps[2]]) {
         await makeRevision(a.posting_id);
-        await choose(a.posting_id, `맞춤 이력서 r1 · B2 ${longName}`);
+        await choose(a.posting_id, '맞춤 이력서 r1 · B2');
       }
 
       for (const width of [1440, 1024]) {

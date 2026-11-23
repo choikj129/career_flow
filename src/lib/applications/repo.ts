@@ -39,6 +39,8 @@ function resolveSubmittedColumns(
   db: Db,
 ): ReturnType<typeof toColumns> {
   const r = input.resume;
+  // 이전 기록과 같은 파일 이름이면 폴더에서 없어졌어도 다시 검사하지 않는다(다른 칸만 고칠 때 막히지 않게)
+  const sameAsPrev = (k: 'resume' | 'career' | 'portfolio', name: string) => ctx.prev?.submittedDocs?.[k] === name;
   let kitProfile: { profileId: string; profileName: string } | undefined;
   switch (r.kind) {
     case 'tailored':
@@ -63,7 +65,7 @@ function resolveSubmittedColumns(
       break;
     }
     case 'file':
-      if (!isDocsForKind('resume', r.fileName) || !docFileExists(r.fileName, ctx.docsDir)) {
+      if (!isDocsForKind('resume', r.fileName) || (!sameAsPrev('resume', r.fileName) && !docFileExists(r.fileName, ctx.docsDir))) {
         throw new Error(`서류 파일을 찾을 수 없습니다: ${r.fileName}`);
       }
       break;
@@ -75,7 +77,7 @@ function resolveSubmittedColumns(
     case 'unknown':
       break;
   }
-  assertDocsValid({ career: input.career, portfolio: input.portfolio }, ctx.docsDir);
+  assertDocsValid({ career: input.career, portfolio: input.portfolio }, ctx.docsDir, ctx.prev?.submittedDocs ?? undefined);
   return toColumns(input, { prevKind: ctx.prev?.submittedResume.kind, kitProfile });
 }
 
@@ -177,7 +179,7 @@ export function getPriorApplications(
 }
 
 /** 종류와 이름 규칙이 맞고 폴더에 실제 있는 파일만 허용한다. 아니면 던진다(저장 전에 확인하므로 아무것도 저장되지 않는다). */
-function assertDocsValid(docs: SubmittedDocs | undefined, docsDir?: string): void {
+function assertDocsValid(docs: SubmittedDocs | undefined, docsDir?: string, prev?: SubmittedDocs): void {
   if (!docs) return;
   for (const k of DOC_KINDS) {
     const name = docs[k];
@@ -186,7 +188,7 @@ function assertDocsValid(docs: SubmittedDocs | undefined, docsDir?: string): voi
       if (canBeNone(k)) continue;
       throw new Error(`서류 파일을 찾을 수 없습니다: ${name}`);
     }
-    if (!isDocsForKind(k, name) || !docFileExists(name, docsDir)) {
+    if (!isDocsForKind(k, name) || (prev?.[k] !== name && !docFileExists(name, docsDir))) {
       throw new Error(`서류 파일을 찾을 수 없습니다: ${name}`);
     }
   }

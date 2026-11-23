@@ -81,8 +81,10 @@ describe('loadSubmittedFormData (TC-SUBMIT-08)', () => {
       'file:이력서_20260901.pdf',
       'unknown',
     ]);
-    expect(d.resumeOptions[0].label).toBe('맞춤 이력서 r2 · B2 성능');
+    expect(d.resumeOptions[0].label).toBe('맞춤 이력서 r2 · B2');
+    expect(d.resumeOptions[0].full).toBe('맞춤 이력서 r2 · B2 성능');
     expect(d.resumeOptions[2].label).toBe('기본 서류 백엔드 · B1');
+    expect(d.resumeOptions[2].full).toBe('기본 서류 백엔드 · B1 범용');
     expect(d.resumeOptions[4].label).toBe('이력서 2026-11-02');
     expect(d.latestRevisionId).toBe(r2.id);
     expect(d.kit).toBeNull(); // 공고 분석에 추천이 없고 직무가 둘이라 고르지 않는다

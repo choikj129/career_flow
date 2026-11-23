@@ -456,6 +456,8 @@ textarea.in-sm { height: auto; min-height: 64px; padding: 8px 10px; }
 .modal.wide { width: 520px; }
 .modal .err { color: var(--mark); font-size: 13.5px; margin-top: 12px; }
 .modal .row.stack { grid-template-columns: 1fr; gap: 6px; }
+.modal input[type="checkbox"], .modal input[type="radio"] { width: 16px; height: 16px; padding: 0; flex: none; margin: 2px 0 0; }
+.modal .row label.chk { display: flex; gap: 8px; align-items: flex-start; justify-content: flex-start; color: var(--ink); font-size: 13.5px; text-align: left; }
 .cand { display: flex; justify-content: space-between; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 8px 12px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); cursor: pointer; margin-top: 6px; }
 .cand[aria-pressed="true"] { border-color: var(--accent); background: var(--accent-tint); }
 .fail-card { padding: 22px 24px; border: 1px solid color-mix(in srgb, var(--mark) 35%, white); background: var(--mark-tint); color: var(--mark-ink); }

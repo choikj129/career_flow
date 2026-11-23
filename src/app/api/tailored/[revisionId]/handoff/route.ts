@@ -1,5 +1,6 @@
 import { contentDisposition } from '@/lib/pdf/names';
 import { parseRouteId } from '@/lib/route-id';
+import { isSameOrigin } from '@/lib/same-origin';
 import { buildHandoffMdForRevision, HANDOFF_NOTE_MAX } from '@/lib/tailored/handoff-data';
 
 /**
@@ -7,16 +8,7 @@ import { buildHandoffMdForRevision, HANDOFF_NOTE_MAX } from '@/lib/tailored/hand
  * 메모는 주소가 아니라 폼 본문(note)으로 받는다.
  */
 export async function POST(req: Request, { params }: RouteContext<'/api/tailored/[revisionId]/handoff'>) {
-  const origin = req.headers.get('origin');
-  if (origin) {
-    let same = false;
-    try {
-      same = new URL(origin).host === req.headers.get('host');
-    } catch {
-      same = false;
-    }
-    if (!same) return new Response('허용되지 않는 요청입니다', { status: 403 });
-  }
+  if (!isSameOrigin(req)) return new Response('허용되지 않는 요청입니다', { status: 403 });
   const { revisionId } = await params;
   const id = parseRouteId(revisionId);
   let note = '';

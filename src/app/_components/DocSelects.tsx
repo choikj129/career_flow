@@ -7,7 +7,7 @@ import {
   docToSelect,
   encodeResumeChoice,
 } from "@/lib/applications/submitted";
-import type { SubmittedFormData } from "@/lib/applications/submitted-options";
+import type { ChoiceOption, SubmittedFormData } from "@/lib/applications/submitted-options";
 
 type Field = "resume" | "career" | "portfolio";
 export type SubmittedValues = { resume: string; career: string; portfolio: string };
@@ -61,11 +61,13 @@ export function DocSelects({
   onChange: (field: Field, v: string) => void;
   idPrefix: string;
 }) {
-  const rows: { field: Field; label: string; options: { value: string; label: string }[] }[] = [
+  const rows: { field: Field; label: string; options: ChoiceOption[] }[] = [
     { field: "resume", label: "이력서", options: data.resumeOptions },
     { field: "career", label: "경력기술서", options: data.careerOptions },
     { field: "portfolio", label: "포트폴리오", options: data.portfolioOptions },
   ];
+  // 고른 선택지의 전체 이름(짧은 글과 다를 때만)을 select 아래에 줄바꿈해서 보인다
+  const full = Object.fromEntries(rows.map((r) => [r.field, r.options.find((o) => o.value === value[r.field])?.full ?? ""])) as Record<Field, string>;
   return (
     <div data-testid="doc-selects">
       {rows.map((r) => (
@@ -76,13 +78,19 @@ export function DocSelects({
             value={value[r.field]}
             onChange={(e) => onChange(r.field, e.target.value)}
             style={{ minWidth: 0, maxWidth: "100%" }}
+            title={full[r.field] || undefined}
           >
             {r.options.map((o) => (
-              <option key={o.value} value={o.value}>
+              <option key={o.value} value={o.value} title={o.full ?? o.label}>
                 {o.label}
               </option>
             ))}
           </select>
+          {full[r.field] ? (
+            <span className="muted small" style={{ gridColumn: 2, overflowWrap: "anywhere" }} data-testid={`doc-full-${r.field}`}>
+              {full[r.field]}
+            </span>
+          ) : null}
         </div>
       ))}
       {data.noFiles ? (

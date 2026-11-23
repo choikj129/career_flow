@@ -497,3 +497,22 @@ describe('resumeDisplay (TC-SUBMIT-09)', () => {
     expect(resumeDisplay({ kind: 'imported' }, {})).toBeNull();
   });
 });
+
+describe('updateApplication with a vanished recorded file (TC-SUBMIT-10)', () => {
+  test('changing another field is not blocked, but picking a new missing file still is', () => {
+    const db = makeTestDb();
+    const { postingId } = analyzed(db);
+    const dir = docsDirWith({ resume: ['이력서_20260901.pdf'], career: ['경력기술서_20260901.pdf'] });
+    const id = markApplied(
+      { postingId, appliedAt: '2026-11-02', submitted: { resume: { kind: 'file', fileName: '이력서_20260901.pdf' }, career: '경력기술서_20260901.pdf', portfolio: null } },
+      db,
+      dir,
+    );
+    const empty = docsDirWith({}); // 기록된 파일이 폴더에서 없어졌다
+    updateApplication(id, { submitted: { resume: { kind: 'file', fileName: '이력서_20260901.pdf' }, career: '경력기술서_20260901.pdf', portfolio: 'none' } }, db, empty);
+    expect(getApplication(id, db)!.submittedDocs).toEqual({ resume: '이력서_20260901.pdf', career: '경력기술서_20260901.pdf', portfolio: 'none' });
+    expect(() =>
+      updateApplication(id, { submitted: { resume: { kind: 'file', fileName: '이력서_20260901.pdf' }, career: '경력기술서_20260902.pdf', portfolio: 'none' } }, db, empty),
+    ).toThrow('서류 파일을 찾을 수 없습니다');
+  });
+});

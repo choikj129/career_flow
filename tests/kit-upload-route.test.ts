@@ -62,3 +62,12 @@ describe('POST /api/kit (TC-KIT-09)', () => {
     expect(((await tooMany.json()) as { error: string }).error).toContain('10개');
   });
 });
+
+describe('POST /api/kit size guard (TC-KIT-09b)', () => {
+  test('a declared body far over the limit is refused with 413 before reading it', async () => {
+    process.env.CAREER_FLOW_DATA_DIR = makeTmpDir('cf-kit-route2-');
+    const { POST } = await import('@/app/api/kit/route');
+    const res = await POST(new Request('http://127.0.0.1:3939/api/kit', { method: 'POST', body: new FormData(), headers: { host: '127.0.0.1:3939', 'content-length': String(20 * 1024 * 1024) } }));
+    expect(res.status).toBe(413);
+  });
+});
