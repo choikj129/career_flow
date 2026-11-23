@@ -41,7 +41,7 @@ const KIT_DIR = join(process.cwd(), 'tests', 'fixtures', 'kit');
 const kitFiles = () => readdirSync(KIT_DIR).map((name) => ({ name, data: readFileSync(join(KIT_DIR, name)) }));
 const RECIPE = { track: '백엔드', profileId: 'B2', adjustmentIds: [] as string[] };
 
-function analysis(rec?: { track: string; kitId: number }): AnalysisResult {
+function analysis(rec?: { track: string; kitId: number; top?: string }): AnalysisResult {
   return {
     posting: {
       companyDisplayName: '가상상사',
@@ -63,14 +63,14 @@ function analysis(rec?: { track: string; kitId: number }): AnalysisResult {
     preferenceMismatches: [],
     tailoringAdvice: '',
     ...(rec
-      ? { profileRecommendation: { track: rec.track, trackReason: '', profiles: [], adjustments: [], kitId: rec.kitId } }
+      ? { profileRecommendation: { track: rec.track, trackReason: '', profiles: rec.top ? [{ id: rec.top, fitPercent: 80, keywords: [], reason: '' }] : [], adjustments: [], kitId: rec.kitId } }
       : {}),
   };
 }
 
 let seq = 0;
 /** 분석이 끝난 공고(회사 있음) */
-function analyzed(db: Db, rec?: { track: string; kitId: number }) {
+function analyzed(db: Db, rec?: { track: string; kitId: number; top?: string }) {
   seq += 1;
   const resume = saveResumeVersion(emptyResume(), undefined, db);
   const reg = registerPosting({ pastedText: `가상 공고 ${seq}` }, db);
@@ -102,12 +102,18 @@ describe('pure helpers', () => {
       { kind: 'tailored', tailoredRevisionId: 12 },
       { kind: 'kit', kitId: 3, track: '백엔드' },
       { kind: 'kit', kitId: 3, track: '데이터:분석' },
+      { kind: 'kit', kitId: 3, track: '백엔드', profileId: 'B4' },
+      { kind: 'kit', kitId: 3, track: '데이터:분석', profileId: 'D2' },
       { kind: 'file', fileName: '이력서_20261102.pdf' },
       { kind: 'unknown' },
       { kind: 'base', versionId: 3 },
     ] as const;
     for (const c of cs) expect(decodeResumeChoice(encodeResumeChoice(c))).toEqual(c);
     expect(encodeResumeChoice({ kind: 'kit', kitId: 3, track: '백엔드' })).toBe('kit:3:백엔드');
+    expect(encodeResumeChoice({ kind: 'kit', kitId: 3, track: '백엔드', profileId: 'B4' })).toBe('kitp:3:B4:백엔드');
+    for (const bad of ['kitp:3:B4', 'kitp:3::백엔드', 'kitp:x:B4:백엔드', 'kitp:3:B4:']) {
+      expect(decodeResumeChoice(bad), bad).toBeNull();
+    }
     for (const bad of ['', 'tailored', 'tailored:0', 'tailored:x', 'kit:3', 'kit:x:백엔드', 'kit:3:', 'file:', 'base:-1', 'zzz:1']) {
       expect(decodeResumeChoice(bad), bad).toBeNull();
     }
@@ -125,6 +131,7 @@ describe('pure helpers', () => {
       portfolio: null,
     });
     expect(defaultSubmitted({ ...base, kit: { id: 1, track: 'A' } }).resume).toEqual({ kind: 'kit', kitId: 1, track: 'A' });
+    expect(defaultSubmitted({ ...base, kit: { id: 1, track: 'A', profileId: 'A2' } }).resume).toEqual({ kind: 'kit', kitId: 1, track: 'A', profileId: 'A2' });
     expect(defaultSubmitted(base).resume).toEqual({ kind: 'file', fileName: '이력서_20260901.pdf' });
     expect(defaultSubmitted({ ...base, files: [] }).resume).toEqual({ kind: 'unknown' });
   });
@@ -151,7 +158,7 @@ describe('pure helpers', () => {
     expect(currentSubmitted({ kind: 'file' }, docs)).toEqual({ resume: { kind: 'file', fileName: '이력서_20261102.pdf' }, career: 'none', portfolio: null });
     expect(currentSubmitted({ kind: 'imported' }, null).resume).toEqual({ kind: 'unknown' });
     expect(currentSubmitted({ kind: 'tailored', tailoredRevisionId: 4 }, null).resume).toEqual({ kind: 'tailored', tailoredRevisionId: 4 });
-    expect(currentSubmitted({ kind: 'kit', kitId: 2, track: 'A', profileId: 'A1', profileName: 'x' }, null).resume).toEqual({ kind: 'kit', kitId: 2, track: 'A' });
+    expect(currentSubmitted({ kind: 'kit', kitId: 2, track: 'A', profileId: 'A1', profileName: 'x' }, null).resume).toEqual({ kind: 'kit', kitId: 2, track: 'A', profileId: 'A1' });
     expect(currentSubmitted({ kind: 'base', versionId: 3 }, null).resume).toEqual({ kind: 'base', versionId: 3 });
   });
 
@@ -224,6 +231,37 @@ describe('markApplied defaults (TC-SUBMIT-01)', () => {
     const a = getApplicationForPosting(postingId, db)!;
     expect(a.submittedResume).toEqual({ kind: 'file' });
     expect(a.submittedDocs?.resume).toBe('이력서_20260901.pdf');
+  });
+
+  test('SA-04 the recommended top profile is the default; it is recorded with its id and name', () => {
+    const db = makeTestDb();
+    const kitId = withKit(db);
+    const { postingId } = analyzed(db, { track: '백엔드', kitId, top: 'B2' });
+    markApplied({ postingId, appliedAt: '2026-11-02' }, db, docsDirWith({}));
+    const a = getApplicationForPosting(postingId, db)!;
+    expect(a.submittedResume).toMatchObject({ kind: 'kit', kitId, track: '백엔드', profileId: 'B2' });
+    expect((a.submittedResume as { profileName: string }).profileName).not.toBe('');
+  });
+
+  test('SA-04 an unknown recommended profile falls back to the track default', () => {
+    const db = makeTestDb();
+    const kitId = withKit(db);
+    const { postingId } = analyzed(db, { track: '백엔드', kitId, top: 'Z9' });
+    markApplied({ postingId, appliedAt: '2026-11-02' }, db, docsDirWith({}));
+    expect(getApplicationForPosting(postingId, db)!.submittedResume).toMatchObject({ kind: 'kit', profileId: 'B1' });
+  });
+
+  test('SA-04 an explicit profile is stored; a profile of another track or unknown is rejected', () => {
+    const db = makeTestDb();
+    const kitId = withKit(db);
+    const { postingId } = analyzed(db);
+    const dir = docsDirWith({});
+    const apply = (profileId: string) =>
+      markApplied({ postingId, appliedAt: '2026-11-02', submitted: { resume: { kind: 'kit', kitId, track: '백엔드', profileId }, career: null, portfolio: null } }, db, dir);
+    expect(() => apply('D1')).toThrow('서류 키트에 없는 프로필입니다');
+    expect(() => apply('B99')).toThrow('서류 키트에 없는 프로필입니다');
+    const id = apply('B2');
+    expect(getApplication(id, db)!.submittedResume).toMatchObject({ kind: 'kit', track: '백엔드', profileId: 'B2' });
   });
 
   test('the latest revision wins over the kit; a workspace (external) revision counts too', () => {
@@ -331,6 +369,19 @@ describe('updateApplication submitted (TC-SUBMIT-03)', () => {
       updateApplication(id, { submitted: { resume: { kind: 'base', versionId: 4 }, career: null, portfolio: null } }, db, dir),
     ).toThrow('기본 이력서 버전은 새로 고를 수 없습니다');
     expect(getApplication(id, db)!.submittedResume).toEqual({ kind: 'base', versionId: 3 });
+  });
+
+  test('SA-04 editing: changing the profile updates the record; a choice without profile on the same kit keeps the recorded one', () => {
+    const db = makeTestDb();
+    const kitId = withKit(db);
+    const { postingId } = analyzed(db);
+    const dir = docsDirWith({});
+    const id = markApplied({ postingId, appliedAt: '2026-11-02', submitted: { resume: { kind: 'kit', kitId, track: '백엔드', profileId: 'B1' }, career: null, portfolio: null } }, db, dir);
+    expect(getApplication(id, db)!.submittedResume).toMatchObject({ profileId: 'B1' });
+    updateApplication(id, { submitted: { resume: { kind: 'kit', kitId, track: '백엔드', profileId: 'B2' }, career: null, portfolio: null } }, db, dir);
+    expect(getApplication(id, db)!.submittedResume).toMatchObject({ profileId: 'B2' });
+    updateApplication(id, { submitted: { resume: { kind: 'kit', kitId, track: '백엔드' }, career: null, portfolio: null } }, db, dir);
+    expect(getApplication(id, db)!.submittedResume).toMatchObject({ profileId: 'B2' });
   });
 
   test('keeping the same kit choice keeps the recorded profile even if the kit default changed', () => {
@@ -484,13 +535,26 @@ describe('workspace (external) revisions in stats (item: external counts as tail
   });
 });
 
+describe('profile-based base documents in stats (SA-05)', () => {
+  test('a record submitted with a non-default profile is counted under that profile', () => {
+    const db = makeTestDb();
+    const kitId = withKit(db);
+    const { postingId } = analyzed(db, { track: '백엔드', kitId, top: 'B2' });
+    markApplied({ postingId, appliedAt: '2026-11-02' }, db, docsDirWith({}));
+    const [item] = loadStatItems({}, new Date(2026, 10, 30), db);
+    expect(item).toMatchObject({ tailored: false, profile: { id: 'B2', name: '성능' }, kitTrack: '백엔드' });
+    expect(byProfile([item]).map((r) => r.id)).toEqual(['B2']);
+    expect(searchApplications({}, db)[0]).toMatchObject({ resumeLabel: '기본 서류 백엔드 · B2' });
+  });
+});
+
 describe('resumeDisplay (TC-SUBMIT-09)', () => {
   test('tailored and kit rows link to the on-demand PDF routes, base has no link, file and unknown are not overridden', () => {
     expect(resumeDisplay({ kind: 'tailored', tailoredRevisionId: 12 }, { revNo: 2 })).toEqual({ label: '맞춤 이력서 r2', href: '/api/tailored/12/resume?inline=1' });
     expect(resumeDisplay({ kind: 'tailored', tailoredRevisionId: 12 }, {})).toEqual({ label: '맞춤 이력서', href: '/api/tailored/12/resume?inline=1' });
     expect(resumeDisplay({ kind: 'kit', kitId: 3, track: '백엔드/데이터', profileId: 'B1', profileName: '범용' }, {})).toEqual({
       label: '기본 서류 백엔드/데이터',
-      href: `/api/kit/3/${encodeURIComponent('백엔드/데이터')}/resume?inline=1`,
+      href: '/api/kit/3/profile/B1/resume?inline=1',
     });
     expect(resumeDisplay({ kind: 'base', versionId: 3 }, { versionNo: 3 })).toEqual({ label: '기본 이력서 v3 (예전 기록)', href: null });
     expect(resumeDisplay({ kind: 'file' }, {})).toBeNull();

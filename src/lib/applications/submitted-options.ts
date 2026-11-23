@@ -21,7 +21,7 @@ export type SubmittedFormData = {
   /** 지원일에 따라 기본값을 다시 고를 때 쓴다(클라이언트의 defaultSubmitted 입력) */
   files: DocFile[];
   latestRevisionId: number | null;
-  kit: { id: number; track: string } | null;
+  kit: { id: number; track: string; profileId?: string } | null;
   /** 수정 창일 때 지금 기록 값. 지원 완료 창이면 null */
   current: SubmittedInput | null;
   noFiles: boolean;
@@ -71,8 +71,9 @@ export function loadSubmittedFormData(
   }
   if (kit) {
     for (const t of kit.parsed.tracks) {
-      const pn = kit.parsed.profiles.find((p) => p.track === t.name && p.id === t.defaultProfileId)?.name;
-      add(encodeResumeChoice({ kind: 'kit', kitId: kit.id, track: t.name }), `기본 서류 ${t.name} · ${t.defaultProfileId}`, pn ? `기본 서류 ${t.name} · ${t.defaultProfileId} ${pn}` : undefined);
+      for (const p of kit.parsed.profiles.filter((x) => x.track === t.name)) {
+        add(encodeResumeChoice({ kind: 'kit', kitId: kit.id, track: t.name, profileId: p.id }), `기본 서류 ${t.name} · ${p.id}`, `기본 서류 ${t.name} · ${p.id} ${p.name}`);
+      }
     }
   }
   for (const f of files.filter((x) => x.kind === 'resume')) {

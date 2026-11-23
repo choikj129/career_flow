@@ -3,7 +3,7 @@
 import { expect, test, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { KIT_DIR, LONG_PROFILE, fakeCalls, kitFixtureFiles, pickKitFiles, registerByPaste, setFake, toast, uploadKit, waitAnalyzed } from './helpers';
+import { KIT_DIR, LONG_PROFILE, fakeCalls, kitFixtureFiles, openFixBox, pickKitFiles, registerByPaste, setFake, toast, uploadKit, waitAnalyzed } from './helpers';
 
 test.describe.configure({ mode: 'serial' });
 test.afterAll(() => setFake('seeded', {}));
@@ -83,6 +83,7 @@ test.describe('맞춤 이력서 탭: 프로필 고르기와 조립', () => {
     await expect(line).toContainText('다음 B1 80%');
     await line.getByRole('link', { name: '→ 맞춤 이력서 탭' }).click();
     await expect(page).toHaveURL(new RegExp(`/postings/${a}\\?tab=tailored`));
+    await openFixBox(page);
     await expect(page.getByTestId('profile-picker')).toBeVisible();
     await page.goto(`/postings/${a}`);
     await expect(page.getByTestId('advice-tailored-link')).toHaveAttribute('href', `/postings/${a}?tab=tailored`);
@@ -90,6 +91,7 @@ test.describe('맞춤 이력서 탭: 프로필 고르기와 조립', () => {
 
   test('TC-TAILOR-E2E-02 AI 추천 순서·추천 표시·추가 조정 미리 체크 → [맞춤본 만들기] → 바로 r1', async ({ page }) => {
     await page.goto(tab(a));
+    await openFixBox(page);
     await expect(page.getByTestId('picker-basis')).toContainText('AI 추천 (공고 분석');
     const picks = page.locator('[data-testid^="pick-"]');
     await expect(picks).toHaveCount(2);
@@ -120,12 +122,14 @@ test.describe('맞춤 이력서 탭: 프로필 고르기와 조립', () => {
 
   test('분석 전 추천이 없는 공고는 단어 수 기준 추천과 [AI 추천 받기]를 보인다', async ({ page }) => {
     await page.goto('/postings/5?tab=tailored'); // 시드 공고: 키트 없이 분석됨
+    await openFixBox(page);
     await expect(page.getByTestId('picker-basis')).toContainText('단어 수 기준 추천 (AI 추천 아님)');
     await expect(page.getByRole('button', { name: 'AI 추천 받기 (다시 분석)' })).toBeEnabled();
   });
 
   test('TC-TAILOR-E2E-07 본문을 읽지 못한 공고는 만들기가 비활성이고 안내가 보인다', async ({ page }) => {
     await page.goto('/postings/8?tab=tailored'); // 시드: 본문 추출 실패
+    await openFixBox(page);
     await expect(page.getByRole('button', { name: '맞춤본 만들기' })).toBeDisabled();
     await expect(page.getByTestId('tailored-empty')).toContainText('공고 본문을 읽은 뒤 만들 수 있습니다');
   });
@@ -135,6 +139,7 @@ test.describe('용어 맞추기·다듬기·리비전', () => {
   test('TC-TAILOR-E2E-03 [공고 용어 맞추기] → 진행 → r2, 자동 검사 경고, 바뀐 곳에 이유', async ({ page }) => {
     setFake('seeded', { delayMs: 4000 });
     await page.goto(tab(a));
+    await openFixBox(page);
     await page.getByRole('button', { name: '공고 용어 맞추기 (AI)' }).click();
     await expect(page.getByRole('status').filter({ hasText: '공고 용어 맞추는 중' })).toBeVisible();
     await expect(page.getByRole('button', { name: '공고 용어 맞추기 (AI)' })).toBeDisabled();
@@ -156,6 +161,7 @@ test.describe('용어 맞추기·다듬기·리비전', () => {
 
   test('TC-TAILOR-E2E-04 다듬기: 빈 입력은 비활성, 요청하면 r3, 이전 리비전은 ?rev=로 본다', async ({ page }) => {
     await page.goto(tab(a));
+    await openFixBox(page);
     const send = page.getByRole('button', { name: '수정 요청' });
     await expect(send).toBeDisabled();
     await page.getByLabel('다듬기 요청').fill('주요 성과 1의 병목 설명을 더 구체적으로');
@@ -179,6 +185,7 @@ test.describe('용어 맞추기·다듬기·리비전', () => {
   test('실패한 맞춤 작업은 [다시 시도]로 같은 내용을 다시 요청한다', async ({ page }) => {
     setFake('seeded', { mode: 'limit' });
     await page.goto(tab(a));
+    await openFixBox(page);
     await page.getByLabel('다듬기 요청').fill('실패 확인용 요청');
     await page.getByRole('button', { name: '수정 요청' }).click();
     const fail = page.getByRole('alert').filter({ hasText: '다듬기에 실패했습니다' });
@@ -193,6 +200,7 @@ test.describe('용어 맞추기·다듬기·리비전', () => {
 
   test('TC-TAILOR-E2E-12 제출 전 체크리스트는 새로고침 뒤에도 이 브라우저에 남는다', async ({ page }) => {
     await page.goto(tab(a));
+    await openFixBox(page);
     const box = page.getByTestId('manual-checklist').getByLabel('회사 이름이 맞는지 확인');
     await expect(box).not.toBeChecked();
     await box.check();
@@ -203,14 +211,15 @@ test.describe('용어 맞추기·다듬기·리비전', () => {
 
   test('TC-TAILOR-E2E-05 내려받기: PDF·md 링크와 파일 이름, 미리보기 전환', async ({ page, request }) => {
     await page.goto(tab(a));
+    await openFixBox(page);
     const dl = page.getByTestId('downloads');
     const href = await dl.getByRole('link', { name: '이력서 PDF' }).getAttribute('href');
     const res = await request.get(href!);
     expect(res.headers()['content-type']).toBe('application/pdf');
-    expect(decodeURIComponent(res.headers()['content-disposition'])).toContain('홍길동_이력서_백엔드.pdf');
+    expect(decodeURIComponent(res.headers()['content-disposition'])).toContain('홍길동_이력서_맞춤테스트A.pdf');
     expect((await res.body()).subarray(0, 5).toString()).toBe('%PDF-');
     const career = await request.get((await dl.getByRole('link', { name: '경력기술서 PDF' }).getAttribute('href'))!);
-    expect(decodeURIComponent(career.headers()['content-disposition'])).toContain('홍길동_경력기술서_백엔드.pdf');
+    expect(decodeURIComponent(career.headers()['content-disposition'])).toContain('홍길동_경력기술서_맞춤테스트A.pdf');
     await dl.getByText('md 받기').click();
     const mdRes = await request.get((await dl.getByRole('link', { name: '이력서.md' }).getAttribute('href'))!);
     expect(mdRes.headers()['content-type']).toBe('text/markdown; charset=utf-8');
@@ -231,6 +240,7 @@ test.describe('작업 공간 요청 (D-30 a)', () => {
   test('TC-TAILOR-E2E-14 권유 줄(남은 추가 조정), 요청문 복사·받기, 결과 올리기 → 작업 공간 리비전', async ({ page, context }) => {
     await context.grantPermissions(['clipboard-read', 'clipboard-write']);
     await page.goto(tab(a));
+    await openFixBox(page);
     const rec = page.getByTestId('handoff-recommend');
     await expect(rec).toContainText('이력서 작업 공간에 요청해 볼 만합니다');
     await expect(rec).toContainText('남은 추가 조정이 있음');
@@ -280,6 +290,7 @@ test.describe('작업 공간 요청 (D-30 a)', () => {
     b = await registerByPaste(page, POSTING_B);
     await waitAnalyzed(page);
     await page.goto(tab(b));
+    await openFixBox(page);
     await expect(page.locator('[data-testid^="pick-"]').first()).toContainText('55%');
     await page.getByRole('button', { name: '맞춤본 만들기' }).click();
     await toast(page, '맞춤본을 만들었습니다');
@@ -356,6 +367,7 @@ test.describe('키트 바뀜과 배치', () => {
     await uploadKit(page, kitFixtureFiles({ masterExtra: '- 가상의 추가 사실 한 줄', longName: true }));
     await toast(page, '키트를 올렸습니다');
     await page.goto(tab(b));
+    await openFixBox(page);
     const changed = page.getByTestId('kit-changed');
     await expect(changed).toContainText('이 맞춤본은');
     await expect(changed).toContainText('기준입니다. 지금 키트는');
@@ -370,6 +382,7 @@ test.describe('키트 바뀜과 배치', () => {
     // 긴 이름의 프로필로 새 맞춤본을 만들고, 줄바꿈 없는 긴 요청과 긴 한글 요청을 남긴다
     setFake('seeded', {});
     await page.goto(tab(a));
+    await openFixBox(page);
     await page.getByRole('button', { name: '프로필 바꾸기' }).click();
     const picker = page.locator('[data-testid="profile-picker"]');
     await picker.locator('label.pick', { hasText: LONG_PROFILE }).getByRole('radio').check();
@@ -382,6 +395,7 @@ test.describe('키트 바뀜과 배치', () => {
     for (const width of [1024, 1240, 1440]) {
       await page.setViewportSize({ width, height: 900 });
       await page.goto(tab(a));
+      await openFixBox(page);
       await expect(page.getByTestId('profile-line')).toContainText(LONG_PROFILE);
       expect(await noOverflow(page), `폭 ${width}: 가로 스크롤`).toBe(true);
       const fits = await page.getByTestId('tailored-tab').evaluate((root) => {
@@ -428,6 +442,7 @@ test.describe('키트 바뀜과 배치', () => {
     await sel.selectOption('sonnet');
     await toast(page, '모델을 저장했습니다');
     await page.goto(tab(b));
+    await openFixBox(page);
     await page.getByRole('button', { name: '공고 용어 맞추기 (AI)' }).click();
     await expect.poll(() => fakeCalls('seeded').filter((c) => c.kind === 'tailor_resume').at(-1)?.model, { timeout: 30_000 }).toBe('sonnet');
     await page.goto('/settings');

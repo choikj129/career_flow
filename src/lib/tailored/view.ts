@@ -51,6 +51,32 @@ export type Picker = {
   topWords: WordCount[];
 };
 
+/** 맨 위 "지원 서류" 카드(프로필 PDF 그대로 받기)가 쓰는 값 */
+export type ApplyDocs = {
+  kitId: number;
+  /** AI 추천을 쓰는지(추천 1순위를 처음 값으로 고르고 "추천" 표시) */
+  aiBased: boolean;
+  initialProfileId: string;
+  groups: { track: string; profiles: { id: string; name: string; percent: number | null; recommended: boolean }[] }[];
+};
+
+/** 처음 값: AI 추천이 있으면 그 1순위 프로필, 없으면 직무 기본 프로필 */
+export function buildApplyDocs(kitId: number, picker: Picker): ApplyDocs {
+  const aiBased = picker.basis === 'ai';
+  const groups = picker.tracks.map((track) => ({
+    track,
+    profiles: (picker.byTrack[track]?.profiles ?? []).map((p) => ({
+      id: p.id,
+      name: p.name,
+      percent: aiBased && picker.byTrack[track] && track === picker.track ? p.percent : null,
+      recommended: aiBased && track === picker.track && p.recommended,
+    })),
+  }));
+  const mine = picker.byTrack[picker.track]?.profiles ?? [];
+  const initial = (aiBased ? mine.find((p) => p.recommended) : undefined) ?? mine.find((p) => p.isDefault) ?? mine[0];
+  return { kitId, aiBased, initialProfileId: initial?.id ?? groups.flatMap((g) => g.profiles)[0]?.id ?? '', groups };
+}
+
 const CHECK_LABELS: { label: string; kinds: KitWarning['kind'][] }[] = [
   { label: '새 수치', kinds: ['new_number', 'new_fact_from_master'] },
   { label: '쓰면 안 되는 표현', kinds: ['forbidden_term'] },
@@ -100,6 +126,7 @@ export type TailorView =
   | {
       state: 'ready';
       kit: { id: number; name: string };
+      applyDocs: ApplyDocs;
       /** 가장 최근 키트에 오류가 있어 이전 키트를 쓸 때의 안내 */
       staleKitNote: string | null;
       hasText: boolean;
@@ -295,6 +322,7 @@ export function loadTailorView(postingId: number, revParam: number | null = null
   return {
     state: 'ready',
     kit: { id: kit.id, name: kitDisplayName(kit.id, kit.label) },
+    applyDocs: buildApplyDocs(kit.id, picker),
     staleKitNote:
       latestKit && latestKit.id !== kit.id && latestKit.errors.length > 0
         ? `가장 최근 키트에 오류가 있어 이전 ${kitDisplayName(kit.id, kit.label)}를 씁니다`

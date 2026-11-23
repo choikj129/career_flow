@@ -4,7 +4,7 @@ import Database from 'better-sqlite3';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { dataDir } from './paths';
-import { LONG_PROFILE, kitFixtureFiles, toast, uploadKit } from './helpers';
+import { LONG_PROFILE, kitFixtureFiles, openFixBox, toast, uploadKit } from './helpers';
 
 const docsDir = join(dataDir('seeded'), 'documents');
 
@@ -150,6 +150,7 @@ test.describe.serial('통계 화면', () => {
     const longName = LONG_PROFILE;
     const makeRevision = async (postingId: number) => {
       await page.goto(`/postings/${postingId}?tab=tailored`);
+      await openFixBox(page);
       await page.locator('label.pick', { hasText: longName }).getByRole('radio').check();
       await page.getByRole('button', { name: '맞춤본 만들기' }).click();
       await toast(page, '맞춤본을 만들었습니다');
