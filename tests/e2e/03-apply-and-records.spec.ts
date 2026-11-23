@@ -195,3 +195,68 @@ test.describe('기록만 행(가져온 기록)의 수정·삭제', () => {
     await expect(page.getByRole('heading', { name: "'그린로지스'에 지원한 기록이 없습니다." })).toBeVisible();
   });
 });
+
+test.describe.serial('상태 이력 수정·삭제(기록만 행)', () => {
+  const open = async (page: import('@playwright/test').Page) => {
+    await page.goto(`/?q=${encodeURIComponent('노을헬스')}`);
+    const row = page.locator('tbody tr.row-link').filter({ hasText: '노을헬스' });
+    await row.click();
+    return row;
+  };
+
+  test('TC-DASH-24 이력 항목을 고치면 현재 상태가 맞춰진다', async ({ page }) => {
+    const row = await open(page);
+    const form = page.locator('.rec-panel form').first();
+    await form.getByLabel('새 상태').selectOption('rejected');
+    await form.getByLabel('날짜').fill('2026-11-19');
+    await form.getByPlaceholder('선택').fill('결과 미상, 일괄 불합격 처리');
+    await form.getByRole('button', { name: '저장' }).click();
+    await toast(page, '상태를 바꿨습니다');
+    await expect(row).toContainText('불합격');
+    await row.click(); // 상태 변경을 저장하면 펼침이 닫힌다
+
+    const item = page.locator('.history li').filter({ hasText: '일괄 불합격 처리' });
+    await item.getByRole('button', { name: '수정' }).click();
+    const edit = page.locator('.hist-edit');
+    await edit.getByLabel('날짜').fill('2026-03-05');
+    await edit.getByLabel('메모').fill('서류 탈락');
+    await edit.getByRole('button', { name: '저장' }).click();
+    await toast(page, '상태 이력을 고쳤습니다');
+    await expect(page.locator('.history li').filter({ hasText: '서류 탈락' })).toContainText('2026-03-05');
+    await expect(page.locator('.history li').filter({ hasText: '일괄 불합격 처리' })).toHaveCount(0);
+
+    // 상태를 서류합격으로 고치면 현재 상태가 따라간다
+    await page.locator('.history li').filter({ hasText: '서류 탈락' }).getByRole('button', { name: '수정' }).click();
+    await page.locator('.hist-edit').getByLabel('상태').selectOption('document_passed');
+    await page.locator('.hist-edit').getByRole('button', { name: '저장' }).click();
+    await toast(page, '상태 이력을 고쳤습니다');
+    await expect(row).toContainText('서류합격');
+  });
+
+  test('TC-DASH-25 이력 항목 삭제: 확인 후 현재 상태가 돌아가고, 하나 남으면 삭제 불가', async ({ page }) => {
+    const row = await open(page);
+    const item = page.locator('.history li').filter({ hasText: '서류 탈락' });
+    await item.getByRole('button', { name: '삭제' }).click();
+    const dlg = page.getByRole('dialog', { name: '상태 이력 삭제' });
+    await dlg.getByRole('button', { name: '취소', exact: true }).click();
+    await expect(item).toHaveCount(1);
+    await item.getByRole('button', { name: '삭제' }).click();
+    await page.getByRole('dialog').getByRole('button', { name: '삭제' }).click();
+    await toast(page, '상태 이력을 삭제했습니다');
+    await expect(page.locator('.history li')).toHaveCount(1);
+    await expect(row).toContainText('최종합격');
+    await expect(page.locator('.history li').getByRole('button', { name: '삭제' })).toBeDisabled();
+  });
+
+  for (const width of [1024, 1240, 1440]) {
+    test(`TC-DASH-26 폭 ${width}: 이력 수정 폼이 잘리거나 가로로 넘치지 않는다`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await open(page);
+      await page.locator('.history li').first().getByRole('button', { name: '수정' }).click();
+      const over = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);
+      expect(over).toBe(false);
+      const box = await page.locator('.hist-edit').boundingBox();
+      expect(box!.x + box!.width).toBeLessThanOrEqual(width);
+    });
+  }
+});

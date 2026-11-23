@@ -2,12 +2,11 @@
 
 import { useState } from "react";
 import { deleteApplicationAction, updateNotesAction } from "@/app/_actions/applications";
-import { eventDate } from "@/lib/domain/dates";
 import type { DocKind, SubmittedDocs as Docs } from "@/lib/documents/files";
 import type { ApplicationStatus, SiteId } from "@/lib/domain/types";
 import { ApplicationEditModal } from "./ApplicationEditModal";
 import { ConfirmModal } from "./Modal";
-import { StatusBadge } from "./StatusBadge";
+import { StatusHistory } from "./StatusHistory";
 import { StatusForm } from "./StatusForm";
 import { SubmittedDocs } from "./SubmittedDocs";
 import { useAction } from "./useAction";
@@ -59,17 +58,7 @@ export function RecordPanel({
 
       <div>
         <b style={{ fontSize: 13.5 }}>상태 이력</b>
-        <ul className="history" style={{ marginTop: 4 }}>
-          {[...record.events].reverse().map((ev) => (
-            <li key={ev.id}>
-              <span>
-                <span className="nw">{eventDate(ev.at)}</span>
-                {ev.note ? <span className="tl-note">{ev.note}</span> : null}
-              </span>
-              <StatusBadge status={ev.status} round={ev.interviewRound} />
-            </li>
-          ))}
-        </ul>
+        <StatusHistory events={[...record.events].reverse()} />
       </div>
 
       <SubmittedDocs docs={record.submittedDocs} exists={record.docExists} />
