@@ -39,7 +39,7 @@ test.describe.serial('지원 완료부터 삭제까지(공고 하나의 일생)'
     await expect(row).toHaveCount(1);
     await expect(row).toContainText('지원 서버');
     await expect(row).toContainText('2026-11-17');
-    await expect(row).toContainText('기본 v2'); // 제출한 이력서(지원 시점의 기본 이력서)
+    await expect(row.locator('td').nth(5)).toContainText('모름'); // 제출한 이력서: 서류 파일·맞춤본·키트가 없으면 모름(기본값)
     await expect(row).toContainText('70');
     await expect(row.locator('.tag-rec')).toHaveCount(0);
     // 분석한 공고에서는 빠진다
@@ -79,7 +79,7 @@ test.describe.serial('지원 완료부터 삭제까지(공고 하나의 일생)'
   test('TC-DETAIL-04 지원 기록 탭: 요약, 메모 저장 유지', async ({ page }) => {
     await page.goto(`/postings/${id}?tab=record`);
     await expect(page.getByText('제출한 이력서').first()).toBeVisible();
-    await expect(page.getByText('기본 이력서 v2')).toBeVisible();
+    await expect(page.getByText('제출한 이력서').first().locator('xpath=..')).toContainText('모름'); // 서류 파일·맞춤본·키트가 없으면 모름
     const memo = page.locator('textarea').last();
     await memo.fill('면접 후기 메모');
     await page.getByRole('button', { name: '저장', exact: true }).click();

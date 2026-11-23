@@ -1,4 +1,5 @@
 import { expect, test } from 'vitest';
+import { eq } from 'drizzle-orm';
 import { makeTestDb } from './helpers/db';
 import { reachedStages } from '@/lib/applications/stages';
 import { applications } from '@/lib/db/schema';
@@ -85,13 +86,14 @@ test('filters by status and site, sorted by appliedAt desc', () => {
   expect(searchApplications({ from: '2026-11-01', to: '2026-11-10' }, db).map((r) => r.companyName)).toEqual(['C', 'B']);
 });
 
-test('DashboardRow carries fit score and base resume label', () => {
+test('DashboardRow carries fit score and the label of a base-version record', () => {
   const db = makeTestDb();
   saveResumeVersion(emptyResume(), undefined, db);
   const v2 = saveResumeVersion(emptyResume(), undefined, db);
   const reg = registerPosting({ url: 'https://www.wanted.co.kr/wd/5' }, db);
   saveAnalysis(reg.postingId, v2.id, result(77), reg.jobId!, db);
-  markApplied({ postingId: reg.postingId }, db);
+  const id = markApplied({ postingId: reg.postingId }, db);
+  db.update(applications).set({ submittedResume: { kind: 'base', versionId: v2.id } }).where(eq(applications.id, id)).run();
   const r = searchApplications({}, db)[0];
   expect(r).toMatchObject({
     postingId: reg.postingId,
@@ -139,6 +141,8 @@ function dr(over: Partial<DashboardRow>): DashboardRow {
     resumeLabel: null,
     resumeBaseVersionNo: null,
     resumeDocFile: null,
+    tailored: false,
+    resumeKitTrack: null,
     reached: [...reachedStages(over.status ?? 'applied', [])],
     ...over,
   };

@@ -65,16 +65,25 @@ const bucket = (key: string, label: string, unknown: boolean, items: StatItem[],
   return { key, label, unknown, absent, firstApplied: first, lastApplied: last, tally: tallyOf(items) };
 };
 
-/** resume: 기본 v{n}(번호 ↓) → 파일(날짜 ↓) → 모름. career·portfolio: 파일 → 모름. 0건 묶음은 없음 */
+/**
+ * resume: 맞춤 이력서 → 기본 서류 {직무}(직무 글자 순) → 기본 v{n}(번호 ↓) → 파일(날짜 ↓) → 모름.
+ * career·portfolio: 파일 → 없음 → 모름(맞춤·기본 서류 기록도 그 종류의 파일 값으로 센다). 0건 묶음은 없음
+ */
 export function byDocVersion(items: StatItem[], kind: DocKind): DocBucket[] {
   const out: DocBucket[] = [];
-  const useBase = kind === 'resume';
-  const isBase = (i: StatItem) => useBase && i.baseVersionNo != null;
-  if (useBase) {
+  const isResume = kind === 'resume';
+  const isTailored = (i: StatItem) => isResume && i.tailored;
+  const isKit = (i: StatItem) => isResume && i.kitTrack != null;
+  const isBase = (i: StatItem) => isResume && i.baseVersionNo != null;
+  if (isResume) {
+    const tailored = items.filter(isTailored);
+    if (tailored.length > 0) out.push(bucket('tailored', '맞춤 이력서', false, tailored));
+    const tracks = [...new Set(items.filter(isKit).map((i) => i.kitTrack as string))].sort((a, b) => a.localeCompare(b, 'ko'));
+    for (const t of tracks) out.push(bucket(`kit:${t}`, `기본 서류 ${t}`, false, items.filter((i) => isKit(i) && i.kitTrack === t)));
     const versions = [...new Set(items.filter(isBase).map((i) => i.baseVersionNo as number))].sort((a, b) => b - a);
     for (const v of versions) out.push(bucket(`v${v}`, `기본 v${v}`, false, items.filter((i) => i.baseVersionNo === v)));
   }
-  const rest = items.filter((i) => !isBase(i));
+  const rest = items.filter((i) => !isTailored(i) && !isKit(i) && !isBase(i));
   const files = [...new Set(rest.map((i) => docFileOf(i.docs[kind])).filter((f): f is string => f != null))].sort((a, b) =>
     a < b ? 1 : a > b ? -1 : 0,
   );
@@ -85,6 +94,46 @@ export function byDocVersion(items: StatItem[], kind: DocKind): DocBucket[] {
   const unknown = rest.filter((i) => docFileOf(i.docs[kind]) == null && !isAbsent(i));
   if (unknown.length > 0) out.push(bucket('none', '모름', true, unknown));
   return out;
+}
+
+export type TailoredCompare = {
+  /** 필터 안에서 맞춤본으로 낸 가장 이른 지원일 */
+  since: string;
+  /** 그날부터 맞춤본으로 낸 지원 */
+  tailored: Tally;
+  /** 그날부터 맞춤본이 아닌 지원(기본 서류·파일·예전 기본 버전·가져온 기록·모름 모두) */
+  plain: Tally;
+};
+
+/** 맞춤본 기록이 없으면 null. 같은 날 기록은 들어간다 */
+export function tailoredCompare(items: StatItem[]): TailoredCompare | null {
+  const tailored = items.filter((i) => i.tailored);
+  if (tailored.length === 0) return null;
+  const since = tailored.map((i) => i.appliedAt).sort()[0];
+  const from = items.filter((i) => i.appliedAt >= since);
+  return { since, tailored: tallyOf(from.filter((i) => i.tailored)), plain: tallyOf(from.filter((i) => !i.tailored)) };
+}
+
+export type ProfileRow = { id: string; name: string; tailored: Tally; plain: Tally; all: Tally };
+
+/**
+ * 프로필이 기록된 지원(맞춤본의 프로필 + 기본 서류 그대로의 기본 프로필)을 프로필 id 글자 순으로 센다.
+ * 프로필이 없는 기록(파일·모름·예전 기본 버전)은 빠진다. 이름은 그 프로필의 가장 최근 지원 기록 것.
+ */
+export function byProfile(items: StatItem[]): ProfileRow[] {
+  const withProfile = items.filter((i): i is StatItem & { profile: { id: string; name: string } } => i.profile != null);
+  const ids = [...new Set(withProfile.map((i) => i.profile.id))].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+  return ids.map((id) => {
+    const mine = withProfile.filter((i) => i.profile.id === id);
+    const latest = [...mine].sort((a, b) => (a.appliedAt < b.appliedAt ? 1 : a.appliedAt > b.appliedAt ? -1 : 0))[0];
+    return {
+      id,
+      name: latest.profile.name,
+      tailored: tallyOf(mine.filter((i) => i.tailored)),
+      plain: tallyOf(mine.filter((i) => !i.tailored)),
+      all: tallyOf(mine),
+    };
+  });
 }
 
 export type SiteBucket = { site: SiteId; tally: Tally };

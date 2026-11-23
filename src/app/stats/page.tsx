@@ -14,6 +14,7 @@ import { StackedBarChart } from "./StackedBarChart";
 import { StatsFilters } from "./StatsFilters";
 import { StatsTable } from "./StatsTable";
 import { SummaryCards } from "./SummaryCards";
+import { TailoredEffect } from "./TailoredEffect";
 
 export default function StatsPage(props: PageProps<"/stats">) {
   return (
@@ -97,6 +98,8 @@ async function StatsLoader({ searchParams }: { searchParams: PageProps<"/stats">
             </p>
           )}
 
+          <TailoredEffect compare={data.tailoredCompare} profiles={data.byProfile} />
+
           <section className="card stat-panel" data-testid="stats-periods">
             <div className="stat-head">
               <h2>기간별 지원과 결과</h2>
@@ -146,87 +149,87 @@ async function StatsLoader({ searchParams }: { searchParams: PageProps<"/stats">
             </details>
           </section>
 
-          <div className="stat-grid2">
-            <section className="card stat-panel" data-testid="stats-docs">
-              <div className="stat-head">
-                <h2>서류 버전별</h2>
-                <Seg
-                  items={DOC_KINDS.map((k) => ({ label: DOC_KIND_LABELS[k], href: href({ doc: k }), on: params.doc === k }))}
-                />
-              </div>
-              {data.docs.length === 1 && data.docs[0].unknown && params.doc !== "resume" && (
-                <p className="muted small" style={{ margin: "0 0 6px" }}>이 종류의 제출 서류 기록이 없습니다</p>
-              )}
-              <HBarChart
-                rows={data.docs.map((d) => ({
-                  key: d.key,
-                  label: d.label,
-                  sub: d.absent
-                    ? "내지 않은 지원"
-                    : d.unknown
-                      ? params.doc === "resume"
-                        ? "버전 파일보다 앞선 지원"
-                        : "제출 서류 기록 없음"
-                      : undefined,
-                  total: d.tally.total,
-                  passed: d.tally.passed,
-                  tally: d.tally,
-                }))}
+          <section className="card stat-panel" data-testid="stats-docs">
+            <div className="stat-head">
+              <h2>서류 버전별</h2>
+              <Seg
+                items={DOC_KINDS.map((k) => ({ label: DOC_KIND_LABELS[k], href: href({ doc: k }), on: params.doc === k }))}
               />
-              <StatsTable
-                head={["버전", "지원", "통과", "불합격", "무응답", "대기", "쓴 기간", "서류 통과율"]}
-                rows={data.docs.map((d) => ({
-                  key: d.key,
-                  cells: [
-                    d.label,
-                    d.tally.total,
-                    d.tally.passed,
-                    d.tally.rejected,
-                    d.tally.noResponse,
-                    d.tally.pending,
-                    d.firstApplied ? `${d.firstApplied.slice(5)} ~ ${d.lastApplied?.slice(5)}` : "–",
-                    rate(d.tally),
-                  ],
-                }))}
-              />
-              <p className="muted small" style={{ margin: "8px 0 0" }}>
-                버전마다 쓴 기간과 사이트가 다릅니다. 기간·사이트 필터로 조건을 맞춰 비교하세요.
-              </p>
-            </section>
+            </div>
+            {data.docs.length === 1 && data.docs[0].unknown && params.doc !== "resume" && (
+              <p className="muted small" style={{ margin: "0 0 6px" }}>이 종류의 제출 서류 기록이 없습니다</p>
+            )}
+            <HBarChart
+              rows={data.docs.map((d) => ({
+                key: d.key,
+                label: d.label,
+                sub: d.key === "tailored"
+                  ? "공고마다 맞춘 이력서"
+                  : d.absent
+                  ? "내지 않은 지원"
+                  : d.unknown
+                    ? params.doc === "resume"
+                      ? "버전 파일보다 앞선 지원"
+                      : "제출 서류 기록 없음"
+                    : undefined,
+                total: d.tally.total,
+                passed: d.tally.passed,
+                tally: d.tally,
+              }))}
+            />
+            <StatsTable
+              head={["버전", "지원", "통과", "불합격", "무응답", "대기", "쓴 기간", "서류 통과율"]}
+              rows={data.docs.map((d) => ({
+                key: d.key,
+                cells: [
+                  d.label,
+                  d.tally.total,
+                  d.tally.passed,
+                  d.tally.rejected,
+                  d.tally.noResponse,
+                  d.tally.pending,
+                  d.firstApplied ? `${d.firstApplied.slice(5)} ~ ${d.lastApplied?.slice(5)}` : "–",
+                  rate(d.tally),
+                ],
+              }))}
+            />
+            <p className="muted small" style={{ margin: "8px 0 0" }}>
+              버전마다 쓴 기간과 사이트가 다릅니다. 기간·사이트 필터로 조건을 맞춰 비교하세요.
+            </p>
+          </section>
 
-            <section className="card stat-panel" data-testid="stats-sites">
-              <div className="stat-head">
-                <h2>사이트별</h2>
-                {siteFiltered && <span className="st-badge">사이트 필터 적용 중</span>}
-              </div>
-              <HBarChart
-                rows={data.sites.map((x) => ({
-                  key: x.site,
-                  label: SITE_LABELS[x.site],
-                  total: x.tally.total,
-                  passed: x.tally.passed,
-                  color: `var(--site-${x.site})`,
-                  tally: x.tally,
-                }))}
-              />
-              <StatsTable
-                head={["사이트", "지원", "통과", "불합격", "무응답", "대기", "서류 통과율", "무응답 비율"]}
-                rows={data.sites.map((x) => ({
-                  key: x.site,
-                  cells: [
-                    SITE_LABELS[x.site],
-                    x.tally.total,
-                    x.tally.passed,
-                    x.tally.rejected,
-                    x.tally.noResponse,
-                    x.tally.pending,
-                    rate(x.tally),
-                    x.tally.noResponseRate != null && x.tally.sampleLevel !== "few" ? formatPercent(x.tally.noResponseRate) : "–",
-                  ],
-                }))}
-              />
-            </section>
-          </div>
+          <section className="card stat-panel" data-testid="stats-sites">
+            <div className="stat-head">
+              <h2>사이트별</h2>
+              {siteFiltered && <span className="st-badge">사이트 필터 적용 중</span>}
+            </div>
+            <HBarChart
+              rows={data.sites.map((x) => ({
+                key: x.site,
+                label: SITE_LABELS[x.site],
+                total: x.tally.total,
+                passed: x.tally.passed,
+                color: `var(--site-${x.site})`,
+                tally: x.tally,
+              }))}
+            />
+            <StatsTable
+              head={["사이트", "지원", "통과", "불합격", "무응답", "대기", "서류 통과율", "무응답 비율"]}
+              rows={data.sites.map((x) => ({
+                key: x.site,
+                cells: [
+                  SITE_LABELS[x.site],
+                  x.tally.total,
+                  x.tally.passed,
+                  x.tally.rejected,
+                  x.tally.noResponse,
+                  x.tally.pending,
+                  rate(x.tally),
+                  x.tally.noResponseRate != null && x.tally.sampleLevel !== "few" ? formatPercent(x.tally.noResponseRate) : "–",
+                ],
+              }))}
+            />
+          </section>
 
           <div className="stat-grid2">
             <section className="card stat-panel" data-testid="stats-funnel">

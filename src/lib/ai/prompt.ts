@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-export type PromptName = 'analyze-posting' | 'import-resume' | 'import-applications';
+export type PromptName = 'analyze-posting' | 'import-resume' | 'import-applications' | 'tailor-resume' | 'revise-tailored';
 
 /** prompts/<name>.md 를 읽어 {{var}} 를 한 번에 치환한다. 누락된 변수는 예외. */
 export function renderPrompt(name: PromptName, vars: Record<string, string>): string {

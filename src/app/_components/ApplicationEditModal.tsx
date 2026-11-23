@@ -1,7 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { updateApplicationAction } from "@/app/_actions/applications";
+import { useEffect, useState } from "react";
+import { submittedFormDataAction, updateApplicationAction } from "@/app/_actions/applications";
+import type { SubmittedFormData } from "@/lib/applications/submitted-options";
+import { DocSelects, useSubmittedValues } from "./DocSelects";
 import { SITE_IDS, SITE_LABELS, type SiteId } from "@/lib/domain/types";
 import { Modal } from "./Modal";
 import { useAction } from "./useAction";
@@ -32,6 +34,21 @@ export function ApplicationEditModal({
   const [siteNote, setSiteNote] = useState(record.siteNote ?? "");
   const [appliedAt, setAppliedAt] = useState(record.appliedAt);
   const { pending, error, run } = useAction();
+  // 제출 서류 선택지는 창이 열릴 때 읽는다. 읽는 동안·실패하면 제출 서류는 건드리지 않는다
+  const [form, setForm] = useState<SubmittedFormData | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  const submitted = useSubmittedValues(form, record.appliedAt, "edit");
+  useEffect(() => {
+    let alive = true;
+    submittedFormDataAction({ applicationId: record.applicationId }).then((r) => {
+      if (!alive) return;
+      if (r.ok) setForm(r.data);
+      else setFormError(r.error);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [record.applicationId]);
 
   return (
     <Modal title="지원 기록 수정" onClose={onClose}>
@@ -47,6 +64,8 @@ export function ApplicationEditModal({
                 site,
                 siteNote: site === "other" ? siteNote : undefined,
                 appliedAt,
+                // 직접 바꾼 때만 보낸다(그대로면 지금 기록 값을 다시 검증하지 않는다)
+                submitted: submitted.touched ? (submitted.value ?? undefined) : undefined,
               }),
             onClose,
           );
@@ -91,6 +110,14 @@ export function ApplicationEditModal({
           <label htmlFor="ed-date">지원일</label>
           <DateInput id="ed-date" required value={appliedAt} onChange={(e) => setAppliedAt(e.target.value)} />
         </div>
+        {form && submitted.value ? (
+          <DocSelects data={form} value={submitted.value} onChange={submitted.set} idPrefix="ed-doc" />
+        ) : (
+          <div className="row">
+            <label>제출 서류</label>
+            <span className="muted small">{formError ?? "불러오는 중…"}</span>
+          </div>
+        )}
         {error ? <p className="err">{error}</p> : null}
         <footer>
           <button type="button" className="btn" onClick={onClose}>

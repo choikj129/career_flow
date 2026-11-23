@@ -406,6 +406,7 @@ export function resumeLabel(sr: SubmittedResume, docs: SubmittedDocs | null, nam
 - `markApplied`·`updateApplication`·검증·`resolveSubmittedResume`은 처음 설계와 같다. 추가: `kit` 선택은 그 키트가 있고 직무가 키트에 있어야 한다. `resolveSubmittedResume`은 `tailored`·`kit`이면 `null`(앱 JSON 이력서가 아니므로) — 4단계는 대신 "맞춤본 md"를 쓰는 방법을 4단계 설계 때 정한다.
 - 대시보드 이력서별 묶음: "맞춤 이력서" → "기본 서류 {직무}" → "기본 v{n}" → 이력서 파일 → 모름.
 
+- 구현 메모(묶음 D): `resumeLabel`의 `names`에 `profileName`을 더했다(짧은 라벨은 프로필 id, 긴 라벨은 "id 이름"). `kit` 기본 직무는 분석의 프로필 추천 직무, 추천이 없으면 직무가 하나뿐일 때만 그 직무이고 여럿이면 고르지 않는다(파일 → 모름으로 내려감). `markApplied`·`updateApplication`에 서류 폴더 인자(`docsDir`)를 더했다. 서버 액션·화면(지원 완료 창의 select)은 묶음 F(Task 7) 몫이라 이번에는 액션이 기본값으로 저장한다. 수정 창 연결 전에는 `updateApplicationAction`이 제출 서류를 바꾸지 않는다.
 - [ ] Step 1 테스트 TC-SUBMIT-01~07(처음 설계와 같고 `kit` 종류 추가: 기본값 순서, 키트 없는 직무 거부, 라벨에 프로필). Step 2~4. Step 5 커밋 `feat: record submitted resume with profile on apply`.
 
 ---
@@ -439,6 +440,7 @@ export function resumeLabel(sr: SubmittedResume, docs: SubmittedDocs | null, nam
 - [ ] Step 3 **지원 완료 창·수정 창·지원 기록**(3.7·3.9·3.10): `DocSelects`에 "기본 서류" 선택지. 지원 기록 라벨에 프로필.
 - [ ] Step 4 **설정·기본 이력서**: 모델 2종("맞춤 이력서 공고 용어 맞추기", "맞춤 이력서 다듬기"). 버전 기록 "직전 버전과 비교"(`resume/diff.ts`의 `diffResume`, 5.3). 앱 기본 이력서 PDF 버튼은 만들지 않는다(D-26 a).
 - [ ] Step 5 E2E TC-TAILOR-E2E-01~12(아래 표). Step 6 커밋 `feat: kit tab, profile-based tailored resume tab, submitted resume with profile`.
+- 구현 메모(묶음 F): 위 Step을 구현했다. 화면 값은 `tailored/view.ts`(서버)에서 모으고 클라이언트 조각은 `ProfilePicker`·`TailoredControls`(리비전 선택·미리보기·체크리스트·다듬기·작업 공간 요청·바뀐 곳 비교)다. 제출 서류 선택지는 창이 열릴 때 `submittedFormDataAction`으로 읽는다. 작업 공간 요청(Task 9)의 화면·라우트(`POST /api/tailored/[revisionId]/handoff`)·액션도 여기서 연결했다. E2E는 `14-tailored.spec.ts`(22개)와 화면 경로로 바꾼 `13-stats`·`15-tailored-downloads`다. 케이스는 `docs/test/test-cases.md` 13장.
 
 ---
 
@@ -513,6 +515,7 @@ export function addExternalRevision(postingId: number, input: { resumeMd: string
 |---|---|---|---|
 | TC-TAILOR-01·02 | 저장소·공고 삭제 | Task 1 | `tailored-repo.test.ts` |
 | TC-KIT-01~05 | 키트 읽기·올리기 | Task 2 | `kit-parse.test.ts` |
+| TC-KIT-06~08 | 직무 0개 가이드는 오류, 올리기 파일 이름(금지 문자·예약어·중복) 거부, 파일 쓰기 실패 시 키트 행 없음 | Task 2 보강(묶음 C) | `kit-parse.test.ts` |
 | TC-KIT-10~16 | 조립·추천 | Task 3 | `kit-assemble.test.ts`, `kit-recommend.test.ts` |
 | TC-KIT-20~25 | 자동 검사·줄 비교 | Task 3 | `kit-checks.test.ts` |
 | TC-TAILOR-03, 09~16 | 조립 저장·AI 작업 | Task 4 | `tailor-task.test.ts`, `prompts.test.ts` |

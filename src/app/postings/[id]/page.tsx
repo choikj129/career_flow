@@ -26,6 +26,11 @@ import { StatusBadge } from "../../_components/StatusBadge";
 import { sortEventsAscending } from "@/lib/applications/event-order";
 import { StatusHistory } from "../../_components/StatusHistory";
 import { SubmittedDocs } from "../../_components/SubmittedDocs";
+import { resumeDisplay, resumeLabel } from "@/lib/applications/submitted";
+import { activeTailorJob, latestTailorJob } from "@/lib/tailored/repo";
+import { parseRouteId } from "@/lib/route-id";
+import { TailoredTab } from "./TailoredTab";
+import { listRevisionLabels } from "@/lib/tailored/repo";
 import { ApplyForm } from "./ApplyForm";
 import { CompanyLink } from "./CompanyLink";
 import { DeletePostingButton } from "./DeletePostingButton";
@@ -35,8 +40,8 @@ import { RecordActions } from "./RecordActions";
 import { RetryButton } from "./RetryButton";
 import { StatusChange } from "./StatusChange";
 
-type Tab = "analysis" | "raw" | "record";
-const TAB_LABELS: Record<Tab, string> = { analysis: "분석", raw: "공고 원문", record: "지원 기록" };
+type Tab = "analysis" | "tailored" | "raw" | "record";
+const TAB_LABELS: Record<Tab, string> = { analysis: "분석", tailored: "맞춤 이력서", raw: "공고 원문", record: "지원 기록" };
 const TABS = Object.keys(TAB_LABELS) as Tab[];
 
 export default function PostingPage(props: PageProps<"/postings/[id]">) {
@@ -64,10 +69,12 @@ async function PostingDetail({
   const rawTab = Array.isArray(sp.tab) ? sp.tab[0] : sp.tab;
   const tab: Tab = (TABS as string[]).includes(rawTab ?? "") ? (rawTab as Tab) : "analysis";
   const rawA = Array.isArray(sp.a) ? sp.a[0] : sp.a;
+  const rawRev = Array.isArray(sp.rev) ? sp.rev[0] : sp.rev;
+  const revParam = rawRev ? parseRouteId(rawRev) : null;
 
   const company = posting.companyId != null ? getCompany(posting.companyId) : undefined;
   const application = getApplicationForPosting(postingId); // 최신 기록
-  const job = latestJobFor("analyze_posting", (p) => p?.postingId === postingId);
+  const job = latestJobFor("analyze_posting", () => true, undefined, { postingId });
   const jobActive = job != null && (job.status === "queued" || job.status === "running");
   const jobFailed = job?.status === "failed";
   const siteNotes = listSiteNotes();
@@ -93,6 +100,8 @@ async function PostingDetail({
     : [];
 
   const analyzed = getLatestAnalysis(postingId) != null;
+  const tailorActive = activeTailorJob(postingId) != null;
+  const tailorFailed = !tailorActive && latestTailorJob(postingId)?.status === "failed";
   const tabHref = (t: Tab) => `/postings/${postingId}${t === "analysis" ? "" : `?tab=${t}`}`;
   const title =
     posting.positionTitle ?? (analyzed ? "(포지션 미상)" : jobActive ? "분석 중인 공고" : "아직 분석되지 않은 공고");
@@ -165,6 +174,8 @@ async function PostingDetail({
             {TAB_LABELS[t]}
             {t === "analysis" && jobActive && <span className="dot-flag" title="분석 중">…</span>}
             {t === "analysis" && !jobActive && jobFailed && <span className="dot-flag" title="분석 실패">!</span>}
+            {t === "tailored" && tailorActive && <span className="dot-flag" title="맞춤 작업 중">…</span>}
+            {t === "tailored" && tailorFailed && <span className="dot-flag" title="맞춤 작업 실패">!</span>}
           </Link>
         ))}
       </div>
@@ -181,6 +192,7 @@ async function PostingDetail({
             jobFailed={jobFailed}
           />
         )}
+        {tab === "tailored" && <TailoredTab postingId={postingId} rev={revParam} />}
         {tab === "raw" && <RawTab posting={posting} />}
         {tab === "record" && (
           <RecordTab
@@ -273,6 +285,7 @@ async function AnalysisTab({
           basis={`${version ? `기본 이력서 v${version.versionNo} 기준 · ` : ""}${formatDateTime(shown.createdAt)} 분석`}
           staleNote={stale}
           aside={history}
+          tailoredHref={`/postings/${postingId}?tab=tailored`}
         />
       </>
     ) : (
@@ -434,6 +447,7 @@ async function RecordTab({
     );
   }
   const multi = records.length > 1;
+  const revisionLabels = listRevisionLabels();
   return (
     <>
       {records.map((app, i) => (
@@ -443,7 +457,7 @@ async function RecordTab({
               {i === 0 ? "최근 지원" : "이전 지원"} · {app.appliedAt}
             </h2>
           )}
-          <RecordItem app={app} companyName={companyName} positionTitle={positionTitle} siteNotes={siteNotes} />
+          <RecordItem app={app} companyName={companyName} positionTitle={positionTitle} siteNotes={siteNotes} revisionLabels={revisionLabels} />
         </section>
       ))}
     </>
@@ -455,15 +469,20 @@ function RecordItem({
   companyName,
   positionTitle,
   siteNotes,
+  revisionLabels,
 }: {
+  revisionLabels: ReturnType<typeof listRevisionLabels>;
   app: NonNullable<ReturnType<typeof getApplication>>;
   companyName: string;
   positionTitle: string;
   siteNotes: string[];
 }) {
   const events = sortEventsAscending(listStatusEvents(app.id), app.appliedAt).reverse();
-  const resumeNo =
-    app.submittedResume.kind === "base" ? (getResumeVersion(app.submittedResume.versionId)?.versionNo ?? null) : null;
+  const sr = app.submittedResume;
+  const resumeNo = sr.kind === "base" ? (getResumeVersion(sr.versionId)?.versionNo ?? null) : null;
+  const rev = sr.kind === "tailored" ? revisionLabels.get(sr.tailoredRevisionId) : undefined;
+  const resumeShown = resumeDisplay(sr, { revNo: rev?.revNo, versionNo: resumeNo });
+  const resumeText = resumeLabel(sr, app.submittedDocs, { revNo: rev?.revNo, profile: rev?.profileId, profileName: rev?.profileName, versionNo: resumeNo }, "long");
   return (
     <>
       <div className="card" style={{ padding: "18px 22px", display: "flex", gap: 32, flexWrap: "wrap" }}>
@@ -480,7 +499,7 @@ function RecordItem({
         <span>
           <span className="muted small">제출한 이력서</span>
           <br />
-          <b>{resumeNo != null ? `기본 이력서 v${resumeNo}` : "모름"}</b>
+          <b>{resumeText ?? "모름"}</b>
         </span>
         <span style={{ marginLeft: "auto", display: "flex", gap: 6, alignItems: "center" }}>
           <RecordActions
@@ -496,9 +515,9 @@ function RecordItem({
           />
         </span>
       </div>
-      {app.submittedDocs && (
+      {(app.submittedDocs || resumeShown) && (
         <div className="card" style={{ padding: "14px 22px", marginTop: 12 }}>
-          <SubmittedDocs docs={app.submittedDocs} exists={docExistence(app.submittedDocs)} />
+          <SubmittedDocs docs={app.submittedDocs} exists={docExistence(app.submittedDocs)} resume={resumeShown} />
         </div>
       )}
       <h2 style={{ fontSize: 18, margin: "24px 0 10px" }}>진행 기록</h2>

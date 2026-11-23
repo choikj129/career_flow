@@ -11,5 +11,9 @@ export function estimateText(type: JobType): string {
       return '이력서를 읽는 중… (보통 1~2분)';
     case 'import_applications':
       return '지원 내역을 읽는 중… (보통 1~2분)';
+    case 'tailor_resume':
+      return '공고 용어 맞추는 중… (보통 1~3분)';
+    case 'revise_tailored':
+      return '맞춤 이력서 다듬는 중… (보통 1~3분)';
   }
 }

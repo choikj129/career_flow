@@ -11,6 +11,8 @@ import {
   updateNotes,
 } from '@/lib/applications/repo';
 import { deleteStatusEvent, updateStatusEvent } from '@/lib/applications/events';
+import { loadSubmittedFormData, type SubmittedFormData } from '@/lib/applications/submitted-options';
+import { decodeResumeChoice, selectToDoc, type SubmittedInput } from '@/lib/applications/submitted';
 import { validDate } from '@/lib/domain/dates';
 import { APPLICATION_STATUSES, SITE_IDS, type ApplicationStatus, type SiteId } from '@/lib/domain/types';
 import { run } from './run';
@@ -19,6 +21,18 @@ import type { ActionResult } from './types';
 const date = z.string().refine(validDate, '날짜 형식이 올바르지 않습니다');
 const status = z.enum(APPLICATION_STATUSES as [ApplicationStatus, ...ApplicationStatus[]]);
 const site = z.enum(SITE_IDS as [SiteId, ...SiteId[]]);
+
+/** 화면의 제출 서류 값(이력서는 encodeResumeChoice 글자, 경력기술서·포트폴리오는 select 값)을 저장소 입력으로 */
+const submittedInput = z
+  .object({ resume: z.string(), career: z.string(), portfolio: z.string() })
+  .transform((v, ctx): SubmittedInput => {
+    const resume = decodeResumeChoice(v.resume);
+    if (!resume) {
+      ctx.addIssue({ code: 'custom', message: '이력서 선택이 올바르지 않습니다' });
+      return z.NEVER;
+    }
+    return { resume, career: selectToDoc(v.career), portfolio: selectToDoc(v.portfolio) };
+  });
 
 export async function changeStatusAction(input: {
   applicationId: number;
@@ -51,6 +65,7 @@ export async function markAppliedAction(input: {
   site: string;
   siteNote?: string;
   notes?: string;
+  submitted?: { resume: string; career: string; portfolio: string };
 }): Promise<ActionResult> {
   return run(() => {
     const v = z
@@ -60,6 +75,7 @@ export async function markAppliedAction(input: {
         site,
         siteNote: z.string().optional(),
         notes: z.string().optional(),
+        submitted: submittedInput.optional(),
       })
       .parse(input);
     markApplied({
@@ -68,6 +84,7 @@ export async function markAppliedAction(input: {
       site: v.site,
       siteNote: v.siteNote,
       notes: v.notes?.trim() || undefined,
+      submitted: v.submitted,
     });
   }, '지원 완료로 저장했습니다');
 }
@@ -83,6 +100,18 @@ export async function recentApplicationsAction(postingId: number): Promise<Recen
   }
 }
 
+export type SubmittedFormResult = { ok: true; data: SubmittedFormData } | { ok: false; error: string };
+
+/** [지원 완료]·[기록 수정] 창이 열릴 때 제출 서류 선택지를 읽는다 */
+export async function submittedFormDataAction(input: { postingId: number } | { applicationId: number }): Promise<SubmittedFormResult> {
+  try {
+    const v = z.union([z.object({ postingId: z.number().int() }), z.object({ applicationId: z.number().int() })]).parse(input);
+    return { ok: true, data: loadSubmittedFormData(v) };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
 export async function updateApplicationAction(input: {
   applicationId: number;
   companyName: string;
@@ -90,6 +119,7 @@ export async function updateApplicationAction(input: {
   site: string;
   siteNote?: string;
   appliedAt: string;
+  submitted?: { resume: string; career: string; portfolio: string };
 }): Promise<ActionResult> {
   return run(() => {
     const v = z
@@ -100,6 +130,7 @@ export async function updateApplicationAction(input: {
         site,
         siteNote: z.string().optional(),
         appliedAt: date,
+        submitted: submittedInput.optional(),
       })
       .parse(input);
     updateApplication(v.applicationId, {
@@ -108,6 +139,7 @@ export async function updateApplicationAction(input: {
       site: v.site,
       siteNote: v.siteNote ?? null,
       appliedAt: v.appliedAt,
+      submitted: v.submitted,
     });
   }, '지원 기록을 고쳤습니다');
 }

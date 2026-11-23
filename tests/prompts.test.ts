@@ -8,8 +8,14 @@ const DIR = resolve(__dirname, '../prompts');
 const files = readdirSync(DIR).filter((f) => f.endsWith('.md'));
 
 describe('prompts/*.md', () => {
-  test('TC-AI-30 프롬프트는 3개(분석·이력서 가져오기·지원 내역 가져오기)', () => {
-    expect([...files].sort()).toEqual(['analyze-posting.md', 'import-applications.md', 'import-resume.md']);
+  test('TC-AI-30 프롬프트는 5개(분석·이력서 가져오기·지원 내역 가져오기·공고 용어 맞추기·다듬기)', () => {
+    expect([...files].sort()).toEqual([
+      'analyze-posting.md',
+      'import-applications.md',
+      'import-resume.md',
+      'revise-tailored.md',
+      'tailor-resume.md',
+    ]);
   });
 
   test.each(files)('TC-AI-31 %s: 없는 내용을 만들어 내지 않는다는 규칙이 있다', (f) => {
@@ -32,6 +38,32 @@ describe('prompts/*.md', () => {
     const t = readFileSync(join(DIR, 'import-resume.md'), 'utf8');
     expect(t).toMatch(/추측해서 채우지 않는다/);
     expect(t).toMatch(/YYYY-MM/);
+  });
+
+  test('TC-TAILOR-15 용어 맞추기 프롬프트: 첫 규칙, 모든 변수, 자기소개·제목·순서·기술 스택·숫자 고정', () => {
+    const t = readFileSync(join(DIR, 'tailor-resume.md'), 'utf8');
+    const rules = t.slice(t.indexOf('## 규칙'), t.indexOf('## 출력'));
+    expect(rules).toMatch(/마스터스토리에 없는 사실·숫자를 만들어 내지 않는다/);
+    expect(rules).toMatch(/기본 서류에 없는 경력, 프로젝트, 수치, 기술, 자격도 만들어 내지 않는다/);
+    expect(rules).toMatch(/자기소개, 제목, 항목 순서, 기술 스택, 숫자는 바꾸지 않는다/);
+    expect(rules).toMatch(/모르면 바꾸지 않는다/);
+    expect(t.indexOf('## 규칙')).toBeLessThan(t.indexOf('## 공고 본문'));
+    const vars = [
+      'today', 'posting_text', 'analysis_json', 'top_words', 'profile', 'pending_adjustments',
+      'writing_rules', 'terms_table', 'master_story', 'resume_md', 'career_md',
+    ];
+    for (const v of vars) expect(t, v).toContain('{{' + v + '}}');
+    expect([...t.matchAll(/\{\{(\w+)\}\}/g)].map((m) => m[1]).sort()).toEqual([...vars].sort());
+    const out = renderPrompt('tailor-resume', Object.fromEntries(vars.map((v) => [v, 'V_' + v])));
+    expect(out).toContain('V_master_story');
+    expect(() => renderPrompt('tailor-resume', {})).toThrow('프롬프트 변수가 없습니다');
+  });
+
+  test('TC-TAILOR-15b 프롬프트 파일에는 사용자 서류 내용이 없다(변수만)', () => {
+    for (const f of ['tailor-resume.md', 'revise-tailored.md']) {
+      const t = readFileSync(join(DIR, f), 'utf8');
+      expect(t, f).not.toMatch(/@|https?:\/\/|\d{2,}-\d{3,}/);
+    }
   });
 
   test('TC-AI-35 파일을 읽는 프롬프트는 지정한 파일 외의 경로를 읽지 말라고 한다', () => {

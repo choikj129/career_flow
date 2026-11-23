@@ -32,6 +32,7 @@ export function AnalysisView({
   basis,
   staleNote,
   aside,
+  tailoredHref,
 }: {
   result: AnalysisResult;
   /** 예: "기본 이력서 v3 기준 · 11월 16일 14:02 분석" */
@@ -39,6 +40,8 @@ export function AnalysisView({
   /** 기본 이력서가 더 새 버전일 때의 안내 */
   staleNote?: string;
   aside?: React.ReactNode;
+  /** 맞춤 이력서 탭 주소. 있으면 프로필 추천 줄에서 링크한다 */
+  tailoredHref?: string;
 }) {
   const p = result.posting;
   const hidden = result.gaps.filter((g) => g.kind === "hidden");
@@ -54,6 +57,18 @@ export function AnalysisView({
             </div>
             <div className="score-basis">{basis}</div>
           </div>
+          {result.profileRecommendation && result.profileRecommendation.profiles.length > 0 && (
+            <p className="analysis-note" style={{ fontSize: 13.5, margin: "8px 0 0", overflowWrap: "anywhere", wordBreak: "keep-all" }} data-testid="profile-rec-line">
+              추천 프로필 <b>{result.profileRecommendation.profiles[0].id}</b> 정합성 {result.profileRecommendation.profiles[0].fitPercent}%
+              {result.profileRecommendation.profiles[1] ? ` · 다음 ${result.profileRecommendation.profiles[1].id} ${result.profileRecommendation.profiles[1].fitPercent}%` : ""}
+              {tailoredHref ? (
+                <>
+                  {" "}
+                  <a href={tailoredHref}>→ 맞춤 이력서 탭</a>
+                </>
+              ) : null}
+            </p>
+          )}
           {staleNote ? <p className="analysis-note" style={{ color: "var(--mark)", fontSize: 13.5 }}>{staleNote}</p> : null}
           <div className="breakdown">
             {result.fit.breakdown.map((b) => (
@@ -138,6 +153,11 @@ export function AnalysisView({
             <span>
               <b>맞춤 이력서 조언.</b> {result.tailoringAdvice}
             </span>
+            {tailoredHref ? (
+              <a href={tailoredHref} data-testid="advice-tailored-link" style={{ whiteSpace: "nowrap" }}>
+                맞춤 이력서 탭으로 →
+              </a>
+            ) : null}
           </div>
         )}
       </div>

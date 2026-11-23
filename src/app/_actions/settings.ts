@@ -29,7 +29,7 @@ export async function checkLoginAction(): Promise<LoginCheckResult> {
 }
 
 const ModelSetting = z.object({
-  type: z.enum(['analyze_posting', 'import_resume', 'import_applications']),
+  type: z.enum(['analyze_posting', 'import_resume', 'import_applications', 'tailor_resume', 'revise_tailored']),
   model: z.enum(MODEL_CHOICES),
 });
 

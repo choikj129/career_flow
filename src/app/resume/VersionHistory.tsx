@@ -2,14 +2,18 @@
 
 import { useState } from "react";
 import { formatDateTime } from "@/lib/domain/dates";
+import { diffResume } from "@/lib/resume/diff";
 import type { ResumeContent } from "@/lib/resume/schema";
 
 type Version = { id: number; versionNo: number; createdAt: string; note: string | null; content: ResumeContent };
 
-/** 버전 목록과 읽기 전용 보기. docs/spec/screens.md 5.3 (직전 버전과 비교는 3단계 diffResume 이후) */
+/** 버전 목록과 읽기 전용 보기, 직전 버전과 비교. docs/spec/screens.md 5.3 */
 export function VersionHistory({ versions }: { versions: Version[] }) {
   const [selected, setSelected] = useState(versions[0]?.id);
+  const [mode, setMode] = useState<"view" | "diff">("view");
   const shown = versions.find((v) => v.id === selected) ?? versions[0];
+  const shownIndex = shown ? versions.indexOf(shown) : -1;
+  const prev = shownIndex >= 0 ? versions[shownIndex + 1] : undefined; // 목록은 최신이 위라 다음 칸이 직전 버전
   return (
     <div className="two" style={{ gridTemplateColumns: "280px minmax(0,1fr)" }}>
       <div className="card vlist" role="list">
@@ -23,7 +27,46 @@ export function VersionHistory({ versions }: { versions: Version[] }) {
           </button>
         ))}
       </div>
-      {shown && <ReadOnlyResume v={shown} />}
+      {shown && (
+        <div style={{ minWidth: 0 }}>
+          <div className="seg" role="tablist" aria-label="보기 방식" style={{ marginBottom: 12 }}>
+            <button type="button" role="tab" aria-selected={mode === "view"} onClick={() => setMode("view")}>
+              내용
+            </button>
+            <button type="button" role="tab" aria-selected={mode === "diff"} onClick={() => setMode("diff")}>
+              직전 버전과 비교
+            </button>
+          </div>
+          {mode === "view" ? <ReadOnlyResume v={shown} /> : <VersionDiff v={shown} prev={prev} />}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** 직전 버전과 달라진 곳. 맞춤 이력서 변경 내역과 같은 모양(이유 줄 없음) */
+function VersionDiff({ v, prev }: { v: Version; prev: Version | undefined }) {
+  if (!prev) return <div className="card" style={{ padding: 20 }} data-testid="version-diff">첫 버전입니다.</div>;
+  const changes = diffResume(prev.content, v.content);
+  return (
+    <div className="card" style={{ padding: "8px 0" }} data-testid="version-diff">
+      <h2 style={{ fontSize: 18, padding: "10px 16px 0" }}>
+        v{prev.versionNo} → v{v.versionNo}
+      </h2>
+      {changes.length === 0 ? (
+        <p className="muted" style={{ padding: "8px 16px" }}>직전 버전과 같은 내용입니다.</p>
+      ) : (
+        changes.map((c, i) => (
+          <div className="change" key={i}>
+            <div className="path">{c.section} · {c.label}</div>
+            <div style={{ overflowWrap: "anywhere" }}>
+              {c.before != null && <del>{c.before}</del>}
+              {c.before != null && c.after != null ? " → " : null}
+              {c.after != null && <ins>{c.after}</ins>}
+            </div>
+          </div>
+        ))
+      )}
     </div>
   );
 }

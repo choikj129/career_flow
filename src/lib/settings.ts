@@ -9,6 +9,8 @@ export const DEFAULT_MODELS: Record<JobType, 'opus' | 'sonnet' | 'haiku'> = {
   analyze_posting: 'opus',
   import_resume: 'sonnet',
   import_applications: 'sonnet',
+  tailor_resume: 'opus',
+  revise_tailored: 'opus',
 };
 
 export function getModelFor(type: JobType, db: Db = getDb()): string {

@@ -167,13 +167,14 @@ test('markApplied before analysis throws', () => {
   expect(() => markApplied({ postingId: reg.postingId }, db)).toThrow('분석이 끝난 뒤');
 });
 
-test('markApplied records base resume, status event and siteNote', () => {
+test('markApplied records the default submitted resume (file kind, unknown), status event and siteNote', () => {
   const db = makeTestDb();
-  const { postingId, resumeId } = analyzedPosting(db, 'https://example.com/y');
+  const { postingId } = analyzedPosting(db, 'https://example.com/y');
   const id = markApplied({ postingId, siteNote: '회사 채용 페이지', notes: '메모' }, db);
   const app = getApplicationForPosting(postingId, db)!;
   expect(app.id).toBe(id);
-  expect(app.submittedResume).toEqual({ kind: 'base', versionId: resumeId });
+  expect(app.submittedResume).toEqual({ kind: 'file' });
+  expect(app.submittedDocs).toEqual({ resume: null, career: null, portfolio: null });
   expect(app.status).toBe('applied');
   expect(app.siteNote).toBe('회사 채용 페이지');
   expect(app.notes).toBe('메모');

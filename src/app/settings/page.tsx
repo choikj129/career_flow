@@ -47,6 +47,8 @@ async function SettingsBody() {
     analyze_posting: getModelFor("analyze_posting"),
     import_resume: getModelFor("import_resume"),
     import_applications: getModelFor("import_applications"),
+    tailor_resume: getModelFor("tailor_resume"),
+    revise_tailored: getModelFor("revise_tailored"),
   };
   return (
     <>

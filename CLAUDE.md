@@ -9,7 +9,7 @@
 
 - 현황판(마일스톤 순서·백로그·사용자 할 일, 목표일 없음): [docs/pm/status.md](docs/pm/status.md). 메인 세션은 PM 역할을 한다([.claude/rules/pm.md](.claude/rules/pm.md)), 현황 보고는 `/project-status`.
 
-- **1·2단계 구현·검증 완료, `main`에 병합됨** (2026-11-19). 다음은 3단계(맞춤 이력서, `/feature-workflow`로 진행). 구현은 사용자가 명시적으로 지시할 때만, `docs/plans/`의 단계 순서대로 한다.
+- **1·2·3단계 구현·검증 완료, `main`에 병합됨** (3단계 맞춤 이력서 2026-11-23). 다음은 4단계(면접 준비, `/feature-workflow`로 진행). 구현은 사용자가 명시적으로 지시할 때만, `docs/plans/`의 단계 순서대로 한다.
 - Claude Code CLI 로그인과 응답 모양은 확인했다(2026-11-16, 2.1.325).
 
 ## 꼭 지킬 것

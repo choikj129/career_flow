@@ -1,8 +1,9 @@
 import { expect, type Page } from '@playwright/test';
-import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { controlFile, logFile, type AppName } from './paths';
 
-export type FakeControl = { mode?: 'ok' | 'auth' | 'limit' | 'garbage' | 'schema_bad'; delayMs?: number };
+export type FakeControl = { mode?: 'ok' | 'auth' | 'limit' | 'garbage' | 'schema_bad'; delayMs?: number; needsWorkspace?: boolean };
 
 /** 가짜 claude의 동작을 바꾼다(호출마다 다시 읽는다). */
 export function setFake(app: AppName, c: FakeControl = {}): void {
@@ -36,4 +37,46 @@ export async function waitAnalyzed(page: Page): Promise<void> {
 
 export async function toast(page: Page, text: string | RegExp): Promise<void> {
   await expect(page.getByRole('status').filter({ hasText: text }).first()).toBeVisible();
+}
+
+// ───────── 서류 키트 올리기(화면 경로) ─────────
+export const KIT_DIR = join(process.cwd(), 'tests', 'fixtures', 'kit');
+export const LONG_PROFILE = '성능과아주긴이름을가진프로필로트래픽처리정합성과대용량을함께강조하는긴설명';
+
+export type KitFile = { name: string; mimeType: string; buffer: Buffer };
+
+/** 예시 키트(지어낸 서류) 파일들. 옵션으로 마스터스토리에 줄을 더하고, B2 프로필 이름을 길게 바꾸고, 이력서 항목에 script 글자를 넣는다 */
+export function kitFixtureFiles(opts: { masterExtra?: string; longName?: boolean; scriptInResume?: boolean } = {}): KitFile[] {
+  return readdirSync(KIT_DIR).map((name) => {
+    let data = readFileSync(join(KIT_DIR, name));
+    if (name === '마스터스토리.md' && opts.masterExtra) data = Buffer.concat([data, Buffer.from(`\n${opts.masterExtra}\n`)]);
+    if (name === '서류_가이드.md' && opts.longName) data = Buffer.from(data.toString('utf8').replace('| B2 성능 |', `| B2 ${LONG_PROFILE} |`));
+    if (name === '이력서_백엔드_v1_20260101.md' && opts.scriptInResume) {
+      data = Buffer.from(data.toString('utf8').replace('서버 개발 경험과 설계 원칙', '서버 개발 경험과 설계 원칙 <script>window.__pwned = 1</script>'));
+    }
+    return { name, mimeType: 'text/markdown', buffer: data };
+  });
+}
+
+export type KitUploadResult = { ok: boolean; unchanged?: boolean; kitId?: number; errorCount?: number; error?: string };
+
+/** 키트 탭에서 파일을 고른다. 화면이 아직 준비되기 전에 고른 파일은 앱이 놓칠 수 있어, [키트 파일 올리기]가 켜질 때까지 다시 고른다 */
+export async function pickKitFiles(page: Page, files: KitFile[]): Promise<void> {
+  const input = page.locator('input[type=file][aria-label="키트 파일"]');
+  const button = page.getByRole('button', { name: '키트 파일 올리기' });
+  await expect(async () => {
+    await input.setInputFiles(files);
+    await expect(button).toBeEnabled({ timeout: 1000 });
+  }).toPass({ timeout: 20_000 });
+}
+
+/** 서류 키트 탭에서 파일을 골라 올리고 응답을 돌려준다 */
+export async function uploadKit(page: Page, files: KitFile[]): Promise<KitUploadResult> {
+  await page.goto('/resume?tab=kit');
+  await pickKitFiles(page, files);
+  const [res] = await Promise.all([
+    page.waitForResponse((r) => r.url().endsWith('/api/kit') && r.request().method() === 'POST'),
+    page.getByRole('button', { name: '키트 파일 올리기' }).click(),
+  ]);
+  return (await res.json()) as KitUploadResult;
 }

@@ -39,8 +39,8 @@ export async function registerPostingAction(_prev: RegisterState, formData: Form
 }
 
 function assertNoActiveJob(postingId: number): void {
-  const job = latestJobFor('analyze_posting', (p) => p?.postingId === postingId);
-  if (job && (job.status === 'queued' || job.status === 'running')) {
+  const job = latestJobFor('analyze_posting', () => true, undefined, { postingId, statuses: ['queued', 'running'] });
+  if (job) {
     throw new Error('이미 분석이 진행 중입니다.');
   }
 }
