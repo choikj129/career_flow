@@ -189,7 +189,7 @@
 | 묶음 C (Task 4·9) | `1ab5876` | 통과(로직·품질) | 0 | 맞춤본 저장·AI 작업(`createRecipeRevision`·`requestTermsMatch`·`requestTailoredRevision`, `tailor_resume`·`revise_tailored` 처리기, 프롬프트 2개, `buildRevisionPrompt`), 작업 공간 요청(`tailored/handoff.ts`, `addExternalRevision`), A·B 권장 2건(직무 0개 오류, 키트 저장 안전). 화면·서버 액션·라우트는 묶음 D~F 몫이라 만들지 않음. 실제 `claude` 호출 0회 |
 | 묶음 D (Task 5·8) | `884d69d` | 수정 필요(화면 필수 1: 통계 표 1024 잘림), 로직·품질 통과 | 1 | 제출 서류 기록(`applications/submitted.ts`, `markApplied`·`updateApplication`의 `submitted`, `resolveSubmittedResume`), 대시보드 이력서별 묶음(맞춤 → 기본 서류 → 기본 v → 파일 → 모름), 통계 `tailoredCompare`·`byProfile`·서류 버전별 묶음 + 맞춤 이력서 효과·프로필별 표. C 검증 항목 3건(`latestJobFor` SQL 제한, 외부 텍스트 긴 울타리, 외부 리비전의 기본값·통계 테스트). 지원 완료 창·수정 창의 select와 서버 액션은 묶음 F(Task 7) 몫. 실제 `claude` 호출 0회 |
 | 묶음 D 수정 1 | `4edcb7b` | 통과(화면 2회차, E2E 150) | 0 | 검증 1회차 필수 1건: 통계 "서류 버전별"·"사이트별" 카드를 전체 폭으로 바꿔 폭 1024에서 표가 카드 안에 다 들어가게 함(E2E 단언 추가). 사소 3건: architecture.md `fence.ts`, `RecordItem`의 리비전 라벨 조회를 부모에서 한 번, base 기록의 버전 행이 없을 때 대시보드 라벨을 파일 라벨(없으면 모름)로 폴백 |
-| 묶음 E (Task 6) | `5ed7653` | (검증 대기) | | PDF·md 내려받기: `lib/pdf/{fonts,names,md-html,render,respond}`, 라우트 3개(맞춤본 `[doc]`, `posting-md`, 기본 서류 `kit/[kitId]/[track]/[doc]`), `marked` 추가, 공고 요약 `tailored/posting-md.ts`. 분석 탭 추천 줄 `overflow-wrap` + 추천 줄·내려받기 E2E(`15-tailored-downloads`). 맞춤 탭이 없어 `?tab=tailored` 링크 연결·요청문 받기·결과 올리기·`lineDiff` 상한은 묶음 F(Task 7). 실제 `claude` 호출 0회 |
+| 묶음 E (Task 6) | `5ed7653` | 통과(로직·품질·화면, E2E 156) | 0 | PDF·md 내려받기: `lib/pdf/{fonts,names,md-html,render,respond}`, 라우트 3개(맞춤본 `[doc]`, `posting-md`, 기본 서류 `kit/[kitId]/[track]/[doc]`), `marked` 추가, 공고 요약 `tailored/posting-md.ts`. 분석 탭 추천 줄 `overflow-wrap` + 추천 줄·내려받기 E2E(`15-tailored-downloads`). 맞춤 탭이 없어 `?tab=tailored` 링크 연결·요청문 받기·결과 올리기·`lineDiff` 상한은 묶음 F(Task 7). 실제 `claude` 호출 0회 |
 
 A·B 검증의 권장·사소 항목(다음 묶음에서 처리):
 - 권장: 직무 0개인 가이드는 키트 오류로 처리(지금은 분석이 터짐).
@@ -202,6 +202,10 @@ C 검증의 권장·확인 항목(다음 묶음에서 처리):
 - 권장: 공고 본문 같은 외부 텍스트를 프롬프트에서 긴 울타리로 감싼다(분석 프롬프트도 함께).
 - 확인: 작업 공간 결과 뒤 남은 조정 권유가 사라지는 것, 용어 맞추기가 항상 1단계 기준인 것이 화면에서 자연스러운지(묶음 E·F).
 - 확인: 외부 리비전이 지원 완료 기본값·통계 "맞춤"에 들어가는지 테스트(묶음 D).
+
+E 검증의 권장·사소 항목(묶음 F에서 처리):
+- 권장: PDF 기본 스타일과 줄바꿈 CSS에 제목 `break-after: avoid`, 표 행·목록 `break-inside: avoid`(키트 CSS를 쓸 때도 적용되게).
+- 사소: 미리보기 화면 좌우 여백, 라우트 id 파싱 도우미로 모으기, 코드 블록 안 주석은 지우지 않기, `·` 없는 제목은 이름 비우기, PDF 변환 테스트에 표·하위 목록 단언, 기본 서류 PDF 라우트의 파일 읽기 실패 처리.
 
 ## 4. 결정 요청
 
