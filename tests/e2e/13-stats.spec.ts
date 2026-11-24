@@ -4,7 +4,7 @@ import Database from 'better-sqlite3';
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { dataDir } from './paths';
-import { LONG_PROFILE, kitFixtureFiles, openFixBox, toast, uploadKit } from './helpers';
+import { LONG_PROFILE, kitFixtureFiles, seedRevision, toast, uploadKit } from './helpers';
 
 const docsDir = join(dataDir('seeded'), 'documents');
 
@@ -137,7 +137,7 @@ test.describe.serial('통계 화면', () => {
     await expect(page.getByTestId('stats-docs')).not.toContainText('맞춤 이력서');
 
     // 2) 화면 경로로 만든다: 이름이 긴 프로필이 있는 예시 키트를 올리고, 시드 지원 기록 3건의 제출 서류를 고른다
-    //    (기본 서류 1건, 맞춤 이력서 2건). DB는 읽기(공고 번호)와 끝난 뒤 되돌리기에만 쓴다.
+    //    (기본 서류 1건, 맞춤 이력서 2건). 맞춤본(리비전)은 시드. DB는 읽기(공고 번호)와 끝난 뒤 되돌리기에만 쓴다.
     const db = new Database(join(dataDir('seeded'), 'career-flow.db'));
     const apps = db
       .prepare("select a.id, a.submitted_resume as sr, p.id as posting_id from applications a join postings p on p.id = a.posting_id order by a.applied_at limit 3")
@@ -148,12 +148,9 @@ test.describe.serial('통계 화면', () => {
     const insertedKit = up.kitId ?? 0;
     expect(insertedKit).toBeGreaterThan(0);
     const longName = LONG_PROFILE;
+    // 앱의 맞춤본은 화면에서 만들 수 없어(2026-11-24, session-request) 시드한다
     const makeRevision = async (postingId: number) => {
-      await page.goto(`/postings/${postingId}?tab=tailored`);
-      await openFixBox(page);
-      await page.locator('label.pick', { hasText: longName }).getByRole('radio').check();
-      await page.getByRole('button', { name: '맞춤본 만들기' }).click();
-      await toast(page, '맞춤본을 만들었습니다');
+      seedRevision('seeded', postingId, 'B2');
     };
     const choose = async (postingId: number, label: string) => {
       await page.goto(`/postings/${postingId}?tab=record`);

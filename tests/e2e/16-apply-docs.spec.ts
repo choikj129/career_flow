@@ -1,4 +1,4 @@
-// 간단한 지원 흐름: 맞춤 이력서 탭 맨 위 "지원 서류" 카드(프로필 PDF), 접이식 "공고에 맞춰 고치기", 프로필이 기록되는 [지원 완료].
+// 간단한 지원 흐름: 맞춤 이력서 탭 맨 위 "지원 서류" 카드(프로필 PDF), 프로필이 기록되는 [지원 완료]. (접이식 "공고에 맞춰 고치기"는 2026-11-24 화면에서 숨김, session-request)
 // 키트 올리기·공고 등록·분석은 화면 경로로 한다(가짜 claude, 가상 데이터).
 import { expect, test, type Page } from '@playwright/test';
 import { kitFixtureFiles, openFixBox, registerByPaste, setFake, toast, uploadKit, waitAnalyzed } from './helpers';
@@ -26,7 +26,7 @@ test.beforeAll(async ({ browser, baseURL }) => {
 });
 
 test.describe('지원 서류 카드', () => {
-  test('TC-SA-E2E-01 맞춤본이 없어도 맨 위에 보이고, 처음 값은 AI 추천 1순위이며, 고치기 상자는 접혀 있다', async ({ page }) => {
+  test('TC-SA-E2E-01 맞춤본이 없어도 맨 위에 보이고, 처음 값은 AI 추천 1순위이며, 고치기 상자는 없다', async ({ page }) => {
     await page.goto(`/postings/${x}?tab=tailored`);
     const card = page.getByTestId('apply-docs');
     await expect(card).toBeVisible();
@@ -42,16 +42,12 @@ test.describe('지원 서류 카드', () => {
     await expect(page.getByTestId('apply-profile').locator('option[value="B2"]')).toHaveText('B2 성능 95% (추천)');
     await expect(page.getByTestId('apply-profile').locator('option[value="B1"]')).toHaveText(/^B1 \S+ \d+%$/);
     await expect(page.getByTestId('apply-profile').locator('option[value="D1"]')).not.toHaveText(/%/);
-    const box = page.getByTestId('fix-box');
-    await expect(box).toBeVisible();
-    expect(await box.evaluate((el) => (el as HTMLDetailsElement).open)).toBe(false);
-    await expect(box.locator('summary')).toContainText('공고에 맞춰 고치기');
-    await expect(box.locator('summary')).toContainText('공고 용어를 바꾸거나 성과 순서를 조정할 때만 씁니다');
-    await expect(page.getByTestId('profile-picker')).toBeHidden();
-    // 카드가 상자보다 위에 있다
-    const cardY = (await card.boundingBox())!.y;
-    const boxY = (await box.boundingBox())!.y;
-    expect(cardY).toBeLessThan(boxY);
+    // 2026-11-24: "공고에 맞춰 고치기" 상자는 화면에 없고, 카드 아래쪽에 이력서 세션 요청 칸이 있다
+    await expect(page.getByTestId('fix-box')).toHaveCount(0);
+    await expect(page.getByTestId('profile-picker')).toHaveCount(0);
+    const req = page.getByTestId('session-request');
+    await expect(req).toBeVisible();
+    expect((await card.boundingBox())!.y).toBeLessThan((await req.boundingBox())!.y);
   });
 
   test('TC-SA-E2E-02 프로필을 바꾸면 받을 파일이 바뀌고, 받을 때마다 만들며 맞춤본(리비전)이 생기지 않는다', async ({ page, request }) => {
@@ -88,7 +84,6 @@ test.describe('지원 서류 카드', () => {
     // 몇 번 받아도 맞춤본이 생기지 않는다
     await page.reload();
     await expect(page.getByLabel('리비전 선택')).toHaveCount(0);
-    await expect(page.getByTestId('fix-box')).not.toHaveAttribute('open', '');
   });
 
   test('TC-SA-E2E-03 폭 1024·1440에서 카드가 넘치지 않고 한글 낱말이 끊기지 않는다', async ({ page }) => {
@@ -111,7 +106,8 @@ test.describe('지원 서류 카드', () => {
 });
 
 test.describe('공고에 맞춰 고치기', () => {
-  test('TC-SA-E2E-04 열어서 맞춤본을 만들면 상자가 펼쳐진 채 남고, 내려받기가 상자 맨 위에 있다', async ({ page }) => {
+  // 2026-11-24 화면에서 숨김(session-request): 고치기 상자·맞춤본 만들기 화면이 없다.
+  test.skip('TC-SA-E2E-04 열어서 맞춤본을 만들면 상자가 펼쳐진 채 남고, 내려받기가 상자 맨 위에 있다', async ({ page }) => {
     await page.goto(`/postings/${x}?tab=tailored`);
     await openFixBox(page);
     await expect(page.getByTestId('profile-picker')).toBeVisible();

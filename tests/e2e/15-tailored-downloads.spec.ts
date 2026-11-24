@@ -1,7 +1,7 @@
 // 맞춤본 내려받기(PDF·md·미리보기·공고 요약·기본 서류)와 분석 탭 프로필 추천 줄.
-// 키트 올리기, 공고 등록·분석, 맞춤본 만들기는 모두 화면 경로로 한다(가짜 claude, 가상 데이터).
+// 키트 올리기, 공고 등록·분석은 화면 경로로 한다(가짜 claude, 가상 데이터). 맞춤본(리비전)은 화면에서 만들 수 없어 시드한다(2026-11-24, session-request).
 import { expect, test, type Page } from '@playwright/test';
-import { LONG_PROFILE, kitFixtureFiles, openFixBox, registerByPaste, setFake, toast, uploadKit, waitAnalyzed } from './helpers';
+import { LONG_PROFILE, kitFixtureFiles, registerByPaste, seedRevision, setFake, uploadKit, waitAnalyzed } from './helpers';
 
 test.describe.configure({ mode: 'serial' });
 test.afterAll(() => setFake('seeded', {}));
@@ -25,12 +25,7 @@ test.beforeAll(async ({ browser, baseURL }) => {
   expect(kitId).toBeGreaterThan(0);
   postingId = await registerByPaste(page, POSTING);
   await waitAnalyzed(page);
-  await page.goto(`/postings/${postingId}?tab=tailored`);
-  await openFixBox(page);
-  await page.getByRole('button', { name: '맞춤본 만들기' }).click();
-  await toast(page, '맞춤본을 만들었습니다');
-  const href = await page.getByTestId('downloads').getByRole('link', { name: '이력서 PDF' }).getAttribute('href');
-  revisionId = Number(/\/api\/tailored\/(\d+)\//.exec(href!)![1]);
+  revisionId = seedRevision('seeded', postingId, 'B2').id;
   await page.close();
 });
 
@@ -119,10 +114,11 @@ test.describe('맞춤본 내려받기', () => {
     await page.setViewportSize({ width: 1280, height: 720 });
   });
 
-  test('긴 프로필 이름이 맞춤 이력서 탭에서 잘리거나 넘치지 않는다', async ({ page }) => {
+  test('긴 프로필 이름이 이전 맞춤본 목록에서 잘리거나 넘치지 않는다', async ({ page }) => {
     await page.goto(`/postings/${postingId}?tab=tailored`);
-    await openFixBox(page);
-    await expect(page.getByTestId('profile-line')).toContainText(LONG_PROFILE.slice(0, 6));
+    const box = page.getByTestId('past-revisions');
+    await box.locator('summary').click();
+    await expect(box.getByTestId('past-revision').first()).toContainText(LONG_PROFILE.slice(0, 6));
     for (const width of [1024, 1240, 1440]) {
       await page.setViewportSize({ width, height: 900 });
       expect(await noOverflow(page), `폭 ${width}`).toBe(true);

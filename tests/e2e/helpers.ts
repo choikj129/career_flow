@@ -1,7 +1,8 @@
 import { expect, type Page } from '@playwright/test';
+import { spawnSync } from 'node:child_process';
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { controlFile, logFile, type AppName } from './paths';
+import { controlFile, dataDir, logFile, type AppName } from './paths';
 
 export type FakeControl = { mode?: 'ok' | 'auth' | 'limit' | 'garbage' | 'schema_bad'; delayMs?: number; needsWorkspace?: boolean };
 
@@ -81,7 +82,21 @@ export async function uploadKit(page: Page, files: KitFile[]): Promise<KitUpload
   return (await res.json()) as KitUploadResult;
 }
 
-/** 맞춤 이력서 탭의 접이식 "공고에 맞춰 고치기" 상자를 연다(이미 열려 있으면 그대로) */
+/**
+ * 앱의 맞춤본(리비전)을 시드한다. 2026-11-24부터 화면에서 만들 수 없어 앱 코드로 직접 만든다(tests/e2e/seed-revision.ts, 조립만, claude 호출 없음).
+ * 키트가 먼저 올라가 있어야 한다. 새 리비전 id를 돌려준다.
+ */
+export function seedRevision(app: AppName, postingId: number, profileId: string, track = '백엔드'): { id: number; revNo: number } {
+  const r = spawnSync(process.execPath, [join(process.cwd(), 'node_modules/tsx/dist/cli.mjs'), 'tests/e2e/seed-revision.ts', String(postingId), track, profileId], {
+    cwd: process.cwd(),
+    env: { ...process.env, CAREER_FLOW_DATA_DIR: dataDir(app) },
+    encoding: 'utf8',
+  });
+  if (r.status !== 0) throw new Error(`리비전 시드 실패: ${r.stderr || r.stdout}`);
+  return JSON.parse(r.stdout.trim().split('\n').at(-1)!) as { id: number; revNo: number };
+}
+
+/** (숨긴 화면용) 맞춤 이력서 탭의 접이식 "공고에 맞춰 고치기" 상자를 연다. 2026-11-24부터 화면에 상자가 없어 숨긴 화면 테스트(skip)만 쓴다 */
 export async function openFixBox(page: Page): Promise<void> {
   const box = page.getByTestId('fix-box');
   await expect(box).toBeVisible();

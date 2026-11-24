@@ -28,7 +28,6 @@ import { StatusHistory } from "../../_components/StatusHistory";
 import { SubmittedDocs } from "../../_components/SubmittedDocs";
 import { resumeDisplay, resumeLabel } from "@/lib/applications/submitted";
 import { activeTailorJob, latestTailorJob } from "@/lib/tailored/repo";
-import { parseRouteId } from "@/lib/route-id";
 import { TailoredTab } from "./TailoredTab";
 import { listRevisionLabels } from "@/lib/tailored/repo";
 import { ApplyForm } from "./ApplyForm";
@@ -69,8 +68,6 @@ async function PostingDetail({
   const rawTab = Array.isArray(sp.tab) ? sp.tab[0] : sp.tab;
   const tab: Tab = (TABS as string[]).includes(rawTab ?? "") ? (rawTab as Tab) : "analysis";
   const rawA = Array.isArray(sp.a) ? sp.a[0] : sp.a;
-  const rawRev = Array.isArray(sp.rev) ? sp.rev[0] : sp.rev;
-  const revParam = rawRev ? parseRouteId(rawRev) : null;
 
   const company = posting.companyId != null ? getCompany(posting.companyId) : undefined;
   const application = getApplicationForPosting(postingId); // 최신 기록
@@ -192,7 +189,7 @@ async function PostingDetail({
             jobFailed={jobFailed}
           />
         )}
-        {tab === "tailored" && <TailoredTab postingId={postingId} rev={revParam} />}
+        {tab === "tailored" && <TailoredTab postingId={postingId} />}
         {tab === "raw" && <RawTab posting={posting} />}
         {tab === "record" && (
           <RecordTab

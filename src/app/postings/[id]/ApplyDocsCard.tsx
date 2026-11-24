@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { sessionRequestTextAction } from "@/app/_actions/tailored";
 import { RetryButton } from "./RetryButton";
 import { applyDocUrl } from "@/lib/tailored/apply-docs-url";
 import type { ApplyDocs } from "@/lib/tailored/view";
@@ -9,16 +10,47 @@ import type { ApplyDocs } from "@/lib/tailored/view";
  * 맞춤 이력서 탭 맨 위 "지원 서류" 카드(화면 문서 3.4): 키트의 프로필 PDF를 그대로 받는다.
  * 프로필을 고르면 받을 파일이 바뀐다. 파일은 저장하지 않고 받을 때마다 만든다.
  */
-/** 사용자가 눌렀을 때만 "공고에 맞춰 고치기" 상자를 펼치고 그 자리로 간다 */
-function openFixBox() {
-  const box = document.querySelector<HTMLDetailsElement>('[data-testid="fix-box"]');
-  if (!box) return;
-  box.open = true;
-  box.scrollIntoView({ behavior: "smooth", block: "start" });
-}
-
-export function ApplyDocsCard({ postingId, docs, canReanalyze }: { postingId: number; docs: ApplyDocs; canReanalyze: boolean }) {
+export function ApplyDocsCard({ postingId, docs, hasText, analyzing }: { postingId: number; docs: ApplyDocs; hasText: boolean; analyzing: boolean }) {
+  const canReanalyze = hasText && !analyzing;
   const [profileId, setProfileId] = useState(docs.initialProfileId);
+  const [copied, setCopied] = useState(false);
+  const [copying, setCopying] = useState(false);
+  const [reqError, setReqError] = useState<string | null>(null);
+  const [fallbackText, setFallbackText] = useState<string | null>(null);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const area = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => () => { if (timer.current) clearTimeout(timer.current); }, []);
+  useEffect(() => {
+    if (fallbackText != null) area.current?.select();
+  }, [fallbackText]);
+
+  /** [이력서 세션 요청 복사]: 서버가 만든 요청문을 클립보드에 넣는다. 못 넣으면 읽기 전용 칸으로 대신한다 */
+  async function copyRequest() {
+    setCopying(true);
+    setCopied(false);
+    setReqError(null);
+    setFallbackText(null);
+    try {
+      const r = await sessionRequestTextAction(postingId, profileId);
+      if (!r.ok) {
+        setReqError(r.error);
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(r.text);
+        setCopied(true);
+        if (timer.current) clearTimeout(timer.current);
+        timer.current = setTimeout(() => setCopied(false), 2000);
+      } catch {
+        setReqError("복사하지 못했습니다. 아래 글을 직접 복사하세요.");
+        setFallbackText(r.text);
+      }
+    } catch {
+      setReqError("요청문을 만들 수 없습니다");
+    } finally {
+      setCopying(false);
+    }
+  }
   const all = docs.groups.flatMap((g) => g.profiles.map((p) => ({ ...p, track: g.track })));
   const cur = all.find((p) => p.id === profileId);
   const url = (doc: "resume" | "career", opts?: { format?: "html"; inline?: boolean }) =>
@@ -67,9 +99,6 @@ export function ApplyDocsCard({ postingId, docs, canReanalyze }: { postingId: nu
           {docs.tailorRec.high ? (
             <>
               <span className="tl-tailor-reason" data-testid="tailor-rec-reason">{docs.tailorRec.reason}</span>
-              <button type="button" className="tl-tailor-link" data-testid="tailor-rec-open" onClick={openFixBox}>
-                공고에 맞춰 고치기 ↓
-              </button>
             </>
           ) : (
             <span className="tl-tailor-reason">1순위 프로필 서류 그대로 충분</span>
@@ -96,6 +125,29 @@ export function ApplyDocsCard({ postingId, docs, canReanalyze }: { postingId: nu
       <p className="muted small" style={{ margin: "8px 0 0" }}>
         키트의 기본 서류를 이 프로필 순서로 조립한 것입니다. 받을 때마다 만들며 저장하지 않습니다.
       </p>
+      <div className="session-request" data-testid="session-request">
+        <p style={{ margin: 0 }}>공고에 맞춘 이력서는 이력서 세션에서 만듭니다.</p>
+        <div className="tl-actions" style={{ marginTop: 8 }}>
+          <button type="button" className="btn sm" data-testid="session-request-copy" disabled={!hasText || copying} onClick={copyRequest}>
+            이력서 세션 요청 복사
+          </button>
+          {copied && <span role="status" className="muted small" data-testid="session-request-copied">복사됨</span>}
+        </div>
+        {!hasText ? (
+          <p className="muted small" style={{ margin: "6px 0 0" }} data-testid="session-request-notext">
+            공고 본문이 없어 요청문을 만들 수 없습니다. 공고 원문 탭에서 본문을 넣으세요.
+          </p>
+        ) : (
+          <p className="muted small" style={{ margin: "6px 0 0" }}>
+            {analyzing && <><span data-testid="session-request-analyzing">분석 중입니다. 끝난 뒤 복사하면 추천·강점이 들어갑니다.</span>{" "}</>}
+            위에서 고른 프로필과 공고 분석 내용이 들어갑니다. 연락처는 넣지 않습니다.
+          </p>
+        )}
+        {reqError && <p className="field-err" role="alert" data-testid="session-request-error">{reqError}</p>}
+        {fallbackText != null && (
+          <textarea ref={area} readOnly rows={8} className="session-request-text" aria-label="이력서 세션 요청문" data-testid="session-request-text" value={fallbackText} />
+        )}
+      </div>
     </div>
   );
 }

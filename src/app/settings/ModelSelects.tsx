@@ -10,6 +10,9 @@ const ROWS = [
   { type: "tailor_resume", label: "맞춤 이력서 공고 용어 맞추기" },
   { type: "revise_tailored", label: "맞춤 이력서 다듬기" },
 ] as const;
+// 맞춤 이력서 2종은 화면에서 숨긴다(2026-11-24, 이력서 세션 요청). 작업 종류·저장 값·getModelFor는 그대로다.
+const HIDDEN: ReadonlySet<string> = new Set(["tailor_resume", "revise_tailored"]);
+const SHOWN = ROWS.filter((r) => !HIDDEN.has(r.type));
 const CHOICES = ["opus", "sonnet", "haiku"];
 
 export function ModelSelects({ models }: { models: Record<(typeof ROWS)[number]["type"], string> }) {
@@ -24,7 +27,7 @@ export function ModelSelects({ models }: { models: Record<(typeof ROWS)[number][
           </tr>
         </thead>
         <tbody>
-          {ROWS.map((r) => (
+          {SHOWN.map((r) => (
             <tr key={r.type}>
               <td style={{ paddingLeft: 0 }}>{r.label}</td>
               <td>
