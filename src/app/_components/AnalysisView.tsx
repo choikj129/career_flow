@@ -61,6 +61,7 @@ export function AnalysisView({
             <p className="analysis-note" style={{ fontSize: 13.5, margin: "8px 0 0", overflowWrap: "anywhere", wordBreak: "keep-all" }} data-testid="profile-rec-line">
               추천 프로필 <b>{result.profileRecommendation.profiles[0].id}</b> 정합성 {result.profileRecommendation.profiles[0].fitPercent}%
               {result.profileRecommendation.profiles[1] ? ` · 다음 ${result.profileRecommendation.profiles[1].id} ${result.profileRecommendation.profiles[1].fitPercent}%` : ""}
+              {result.profileRecommendation.tailorRec ? ` · 맞춤 이력서 ${result.profileRecommendation.tailorRec.percent}%` : ""}
               {tailoredHref ? (
                 <>
                   {" "}

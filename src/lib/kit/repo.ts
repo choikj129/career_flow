@@ -247,3 +247,14 @@ export function readKitText(
   if (!kit || !f) throw new Error('키트에 그 파일이 없습니다');
   return readKitFile(kitId, f.name, dir);
 }
+
+/** 공고 분석 프롬프트용 마스터스토리. 읽지 못하거나 공백뿐이면 null(이력서만으로 분석한다). */
+export function readKitMasterOrNull(kitId: number, db: Db = getDb(), dir: string = config.kitDir): string | null {
+  try {
+    const text = readKitText(kitId, 'master', db, dir);
+    return text.trim() ? text : null;
+  } catch {
+    console.warn('[analyze] 마스터스토리를 읽지 못해 이력서만으로 분석합니다', kitId);
+    return null;
+  }
+}

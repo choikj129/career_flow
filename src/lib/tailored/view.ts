@@ -1,5 +1,5 @@
 import { getJob, latestJobFor, listActiveJobs, type JobSummary } from '@/lib/ai/queue';
-import { AnalysisResult } from '@/lib/ai/tasks/schemas';
+import { AnalysisResult, type TailorRec } from '@/lib/ai/tasks/schemas';
 import type { Db } from '@/lib/db/client';
 import { getDb } from '@/lib/db/client';
 import { formatDateTime } from '@/lib/domain/dates';
@@ -51,6 +51,9 @@ export type Picker = {
   topWords: WordCount[];
 };
 
+/** 맞춤 이력서 추천도가 이 값 이상이면 "권함"으로 보인다(B-14) */
+export const TAILOR_REC_HIGH = 60;
+
 /** 맨 위 "지원 서류" 카드(프로필 PDF 그대로 받기)가 쓰는 값 */
 export type ApplyDocs = {
   kitId: number;
@@ -58,10 +61,12 @@ export type ApplyDocs = {
   aiBased: boolean;
   initialProfileId: string;
   groups: { track: string; profiles: { id: string; name: string; percent: number | null; recommended: boolean }[] }[];
+  /** 1순위 프로필 서류 대비 맞춤 이력서를 만들 가치(AI 추천이 지금 키트 기준이고 값이 있을 때만) */
+  tailorRec: { percent: number; reason: string; high: boolean } | null;
 };
 
 /** 처음 값: AI 추천이 있으면 그 1순위 프로필, 없으면 직무 기본 프로필 */
-export function buildApplyDocs(kitId: number, picker: Picker): ApplyDocs {
+export function buildApplyDocs(kitId: number, picker: Picker, tailorRec: TailorRec | null): ApplyDocs {
   const aiBased = picker.basis === 'ai';
   const groups = picker.tracks.map((track) => ({
     track,
@@ -74,7 +79,13 @@ export function buildApplyDocs(kitId: number, picker: Picker): ApplyDocs {
   }));
   const mine = picker.byTrack[picker.track]?.profiles ?? [];
   const initial = (aiBased ? mine.find((p) => p.recommended) : undefined) ?? mine.find((p) => p.isDefault) ?? mine[0];
-  return { kitId, aiBased, initialProfileId: initial?.id ?? groups.flatMap((g) => g.profiles)[0]?.id ?? '', groups };
+  return {
+    kitId,
+    aiBased,
+    initialProfileId: initial?.id ?? groups.flatMap((g) => g.profiles)[0]?.id ?? '',
+    groups,
+    tailorRec: aiBased && tailorRec ? { ...tailorRec, high: tailorRec.percent >= TAILOR_REC_HIGH } : null,
+  };
 }
 
 const CHECK_LABELS: { label: string; kinds: KitWarning['kind'][] }[] = [
@@ -322,7 +333,7 @@ export function loadTailorView(postingId: number, revParam: number | null = null
   return {
     state: 'ready',
     kit: { id: kit.id, name: kitDisplayName(kit.id, kit.label) },
-    applyDocs: buildApplyDocs(kit.id, picker),
+    applyDocs: buildApplyDocs(kit.id, picker, analysis ? (AnalysisResult.safeParse(analysis.result).data?.profileRecommendation?.tailorRec ?? null) : null),
     staleKitNote:
       latestKit && latestKit.id !== kit.id && latestKit.errors.length > 0
         ? `가장 최근 키트에 오류가 있어 이전 ${kitDisplayName(kit.id, kit.label)}를 씁니다`

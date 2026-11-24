@@ -6,7 +6,7 @@ import type { JobType } from '@/lib/domain/types';
 export function estimateText(type: JobType): string {
   switch (type) {
     case 'analyze_posting':
-      return '분석 중… (보통 1~2분)';
+      return '분석 중… (보통 1~3분)';
     case 'import_resume':
       return '이력서를 읽는 중… (보통 1~2분)';
     case 'import_applications':

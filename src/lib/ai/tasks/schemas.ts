@@ -34,6 +34,10 @@ const AnalysisBase = z.object({
   tailoringAdvice: z.string(),
 });
 
+/** 맞춤 이력서 추천도(B-14): 1순위 프로필 서류를 그대로 내는 것보다 맞춤 이력서를 만들 가치가 얼마나 되는가 */
+export const TailorRecOut = z.object({ percent: z.number().int().min(0).max(100), reason: z.string() });
+export type TailorRec = z.infer<typeof TailorRecOut>;
+
 /** AI가 내는 프로필 추천(D-28 b). 서류 키트가 있을 때만 분석 출력에 넣는다. */
 export const ProfileRecommendationOut = z.object({
   track: z.string(), // 키트 직무 이름 중 하나
@@ -47,12 +51,13 @@ export const ProfileRecommendationOut = z.object({
     }),
   ), // 그 직무의 프로필 전부
   adjustments: z.array(z.object({ id: z.string(), recommended: z.boolean(), keywords: z.array(z.string()) })),
+  tailorRec: TailorRecOut, // CLI 출력에서는 필수. 저장된 옛 결과에는 없을 수 있다(아래 AnalysisResult)
 });
-export type ProfileRec = z.infer<typeof ProfileRecommendationOut> & { kitId: number };
+export type ProfileRec = Omit<z.infer<typeof ProfileRecommendationOut>, 'tailorRec'> & { kitId: number; tailorRec?: TailorRec };
 
 /** 저장·화면용. 옛 분석 결과도 읽히도록 profileRecommendation은 선택이다. kitId는 코드가 붙인다. */
 export const AnalysisResult = AnalysisBase.extend({
-  profileRecommendation: ProfileRecommendationOut.extend({ kitId: z.number().int() }).nullable().optional(),
+  profileRecommendation: ProfileRecommendationOut.extend({ kitId: z.number().int(), tailorRec: TailorRecOut.optional() }).nullable().optional(),
 });
 export type AnalysisResult = z.infer<typeof AnalysisResult>;
 

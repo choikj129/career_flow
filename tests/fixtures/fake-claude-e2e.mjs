@@ -110,7 +110,9 @@ function profileRecommendation() {
     const hits = a.triggers.filter((k) => text.includes(k));
     return { id: a.id, recommended: hits.length > 0, keywords: hits };
   });
-  return { track: track.name, trackReason: `포지션 ${track.name}`, profiles, adjustments };
+  // 맞춤 이력서 추천도(B-14): 공고 본문의 `맞춤추천: 숫자`·`맞춤이유: 글`로 정한다. 없으면 72
+  const tailorRec = { percent: Number(field('맞춤추천') ?? 72), reason: field('맞춤이유') ?? 'Kafka 운영 사례를 주요 성과 앞으로' };
+  return { track: track.name, trackReason: `포지션 ${track.name}`, profiles, adjustments, tailorRec };
 }
 
 /** 코드 울타리 안의 md(이력서, 경력기술서 순서) */

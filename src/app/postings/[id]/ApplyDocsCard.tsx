@@ -8,6 +8,14 @@ import type { ApplyDocs } from "@/lib/tailored/view";
  * 맞춤 이력서 탭 맨 위 "지원 서류" 카드(화면 문서 3.4): 키트의 프로필 PDF를 그대로 받는다.
  * 프로필을 고르면 받을 파일이 바뀐다. 파일은 저장하지 않고 받을 때마다 만든다.
  */
+/** 사용자가 눌렀을 때만 "공고에 맞춰 고치기" 상자를 펼치고 그 자리로 간다 */
+function openFixBox() {
+  const box = document.querySelector<HTMLDetailsElement>('[data-testid="fix-box"]');
+  if (!box) return;
+  box.open = true;
+  box.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
 export function ApplyDocsCard({ postingId, docs }: { postingId: number; docs: ApplyDocs }) {
   const [profileId, setProfileId] = useState(docs.initialProfileId);
   const all = docs.groups.flatMap((g) => g.profiles.map((p) => ({ ...p, track: g.track })));
@@ -44,6 +52,29 @@ export function ApplyDocsCard({ postingId, docs }: { postingId: number; docs: Ap
           </span>
         )}
       </div>
+      {docs.tailorRec && (
+        <p
+          className={`tl-tailor${docs.tailorRec.high ? " high" : ""}`}
+          data-testid="tailor-rec-line"
+          title={docs.tailorRec.reason}
+        >
+          <span className="tl-tailor-head">
+            맞춤 이력서 {docs.tailorRec.percent}%
+            {docs.tailorRec.high && <span className="tag-rec" data-testid="tailor-rec-tag">권함</span>}
+            {" · "}
+          </span>
+          {docs.tailorRec.high ? (
+            <>
+              <span className="tl-tailor-reason" data-testid="tailor-rec-reason">{docs.tailorRec.reason}</span>
+              <button type="button" className="tl-tailor-link" data-testid="tailor-rec-open" onClick={openFixBox}>
+                공고에 맞춰 고치기 ↓
+              </button>
+            </>
+          ) : (
+            <span className="tl-tailor-reason">1순위 프로필 서류 그대로 충분</span>
+          )}
+        </p>
+      )}
       <div className="tl-actions" style={{ marginTop: 12 }}>
         <a className="btn primary" data-testid="apply-resume" href={url("resume")}>이력서 PDF</a>
         <a className="btn primary" data-testid="apply-career" href={url("career")}>경력기술서 PDF</a>

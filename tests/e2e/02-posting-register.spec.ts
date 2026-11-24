@@ -197,7 +197,7 @@ test.describe('진행 중 표시와 한 번에 하나씩 실행', () => {
   test('TC-AI-10 분석 중: 진행 문구·경과 시간·내비게이션 표시, [지원 완료] 비활성', async ({ page }) => {
     setFake('seeded', { delayMs: 5000 });
     await registerByPaste(page, body(['회사명: 느린회사']));
-    await expect(page.getByRole('status').filter({ hasText: '분석 중… (보통 1~2분)' })).toBeVisible();
+    await expect(page.getByRole('status').filter({ hasText: '분석 중… (보통 1~3분)' })).toBeVisible();
     await expect(page.getByRole('status').filter({ hasText: /\d+:\d\d/ })).toBeVisible();
     await expect(page.getByRole('button', { name: '지원 완료' })).toBeDisabled();
     await expect(page.getByText('분석이 끝난 뒤 누를 수 있습니다')).toBeVisible();

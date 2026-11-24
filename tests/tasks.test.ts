@@ -1,14 +1,14 @@
-import { mkdirSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, existsSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { beforeEach, expect, test, vi } from 'vitest';
+import { beforeEach, describe, expect, test, vi } from 'vitest';
 
-const h = vi.hoisted(() => ({ uploadsDir: '' }));
+const h = vi.hoisted(() => ({ uploadsDir: '', kitDir: '' }));
 vi.mock('@/lib/config', async (orig) => {
   const mod = (await orig()) as { config: Record<string, unknown> };
   return {
     ...mod,
     config: new Proxy(mod.config, {
-      get: (t, k) => (k === 'uploadsDir' ? h.uploadsDir : t[k as string]),
+      get: (t, k) => (k === 'uploadsDir' ? h.uploadsDir : k === 'kitDir' ? h.kitDir : t[k as string]),
     }),
   };
 });
@@ -25,6 +25,9 @@ import { AiError, type AiRunRequest, type AiRunResult, type AiRunner } from '@/l
 import { JOB_TIMEOUT_MS } from '@/lib/ai/queue';
 import { renderPrompt } from '@/lib/ai/prompt';
 import { handlers } from '@/lib/ai/tasks';
+import { MASTER_STORY_MAX_CHARS, masterStoryForPrompt } from '@/lib/ai/tasks/analyze-posting';
+import { fence } from '@/lib/ai/fence';
+import { getKit, readKitMasterOrNull, saveKit } from '@/lib/kit/repo';
 import { extractPostingText } from '@/lib/extract/extract-posting';
 import type { AnalysisResult } from '@/lib/ai/tasks/schemas';
 import { makeTmpDir } from './helpers/tmp';
@@ -270,6 +273,123 @@ test('renderPrompt throws on missing variable and substitutes in a single pass',
     preferences_json: 'P',
     today: 'T',
     profile_table: 'X',
+    master_story: 'M',
+    profile_skeleton: 'S',
   });
   expect(out).toContain('{{resume_json}}');
+  // TC-AM-08: 새 변수가 빠지면 던진다
+  const vars = { posting_text: 'a', resume_json: 'R', preferences_json: 'P', today: 'T', profile_table: 'X', master_story: 'M', profile_skeleton: 'S' };
+  for (const k of ['master_story', 'profile_skeleton'] as const) {
+    const rest = Object.fromEntries(Object.entries(vars).filter(([name]) => name !== k));
+    expect(() => renderPrompt('analyze-posting', rest)).toThrow();
+  }
+});
+
+// ---- B-14: 마스터스토리·뼈대·맞춤본 추천도 (TC-AM-01~06, 25, 26) ----
+describe('analysis prompt with master story and skeleton', () => {
+  const KIT_DIR = join(process.cwd(), 'tests', 'fixtures', 'kit');
+  const kitFiles = () => readdirSync(KIT_DIR).map((name) => ({ name, data: readFileSync(join(KIT_DIR, name)) }));
+  const REC_OUT = {
+    track: '백엔드',
+    trackReason: '포지션명',
+    profiles: [{ id: 'B1', fitPercent: 60, keywords: [], reason: '범용' }, { id: 'B2', fitPercent: 50, keywords: [], reason: '성능' }],
+    adjustments: [],
+    tailorRec: { percent: 72, reason: '이유' },
+  };
+  function withKit(kitDirOverride?: string) {
+    const db = makeTestDb();
+    saveResumeVersion(emptyResume(), undefined, db);
+    const kitDir = kitDirOverride ?? makeTmpDir('cf-kit-');
+    h.kitDir = kitDir;
+    const { kitId } = saveKit(kitFiles(), db, kitDir);
+    const reg = registerPosting({ pastedText: '백엔드 공고. 캐시와 성능.' }, db);
+    return { db, kitId, kitDir, reg };
+  }
+  async function analyze(db: ReturnType<typeof makeTestDb>, reg: { jobId?: number | null; postingId: number }, out: unknown) {
+    const runner = new FakeRunner(out);
+    await handlers.analyze_posting({ jobId: reg.jobId!, payload: { postingId: reg.postingId }, runner, workDir: workDir(), db });
+    return runner;
+  }
+  const ANALYSIS_NO_KIT = VALID_ANALYSIS;
+  const ANALYSIS_KIT = { ...VALID_ANALYSIS, profileRecommendation: REC_OUT };
+
+  test('TC-AM-01 prompt has the master story in a fence, one call, analysis saved', async () => {
+    const { db, reg } = withKit();
+    const runner = await analyze(db, reg, ANALYSIS_KIT);
+    expect(runner.reqs).toHaveLength(1);
+    const p = runner.lastReq.prompt;
+    expect(p).toContain('## 경력 마스터스토리');
+    const i = p.indexOf('## 경력 마스터스토리');
+    const section = p.slice(i);
+    expect(section).toMatch(/`{3,}\n# 마스터스토리 \(지어낸 예시\)/);
+    expect(section).toContain('처리 시간을 40% 줄였다.');
+    expect(getLatestAnalysis(reg.postingId, db)).toBeTruthy();
+  });
+
+  test('TC-AM-02/26 no kit: no-master text, kit-less table and skeleton text, analysis saved', async () => {
+    const db = makeTestDb();
+    saveResumeVersion(emptyResume(), undefined, db);
+    const reg = registerPosting({ pastedText: '공고 본문' }, db);
+    const runner = await analyze(db, reg, ANALYSIS_NO_KIT);
+    const p = runner.lastReq.prompt;
+    expect(p).toContain('(마스터스토리 없음. 기본 이력서만 근거로 쓴다)');
+    expect(p).toContain('(키트 없음. profileRecommendation을 내지 않는다)');
+    expect(p).toMatch(/## 프로필별 뼈대 \(서류 키트\)\s+\(키트 없음\)/);
+    expect(getLatestAnalysis(reg.postingId, db)).toBeTruthy();
+  });
+
+  test('TC-AM-03 unreadable master story file: warns, analysis still succeeds, profile table stays', async () => {
+    const { db, kitId, kitDir, reg } = withKit();
+    const kitRow = getKit(kitId, db)!;
+    const master = kitRow.files.find((f) => f.role === 'master')!;
+    rmSync(join(kitDir, String(kitId), master.name));
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const runner = await analyze(db, reg, ANALYSIS_KIT);
+    expect(warn).toHaveBeenCalled();
+    expect(JSON.stringify(warn.mock.calls)).not.toContain('처리 시간을 40%');
+    warn.mockRestore();
+    const p = runner.lastReq.prompt;
+    expect(p).toContain('(마스터스토리 없음. 기본 이력서만 근거로 쓴다)');
+    expect(p).toContain('B2');
+    expect(p).toContain('| 프로필 id |');
+    expect(getLatestAnalysis(reg.postingId, db)).toBeTruthy();
+  });
+
+  test('TC-AM-04 readKitMasterOrNull: whitespace-only file is null, normal file is text', () => {
+    const { db, kitId, kitDir } = withKit();
+    expect(readKitMasterOrNull(kitId, db, kitDir)).toContain('주문 처리 개선');
+    const master = getKit(kitId, db)!.files.find((f) => f.role === 'master')!;
+    writeFileSync(join(kitDir, String(kitId), master.name), '  \n\t \n');
+    expect(readKitMasterOrNull(kitId, db, kitDir)).toBeNull();
+  });
+
+  test('TC-AM-05 masterStoryForPrompt: 60000 chars untouched, 60001 cut with a notice outside the fence', () => {
+    const none = masterStoryForPrompt(null);
+    expect(none).toBe('(마스터스토리 없음. 기본 이력서만 근거로 쓴다)');
+    expect(MASTER_STORY_MAX_CHARS).toBe(60_000);
+    const exact = masterStoryForPrompt('가'.repeat(60_000));
+    expect(exact).toBe(fence('가'.repeat(60_000)));
+    expect(exact).not.toContain('앞 60000자만');
+    const over = masterStoryForPrompt('가'.repeat(60_000) + '나');
+    expect(over).toBe(fence('가'.repeat(60_000)) + '\n(마스터스토리가 길어 앞 60000자만 넣었다. 나머지는 근거로 쓰지 않는다)');
+    expect(over.split('\n(마스터스토리가')[0]).not.toContain('나');
+  });
+
+  test('TC-AM-06 fence is longer than the longest backtick run inside', () => {
+    const md = 'a\n``````\nb';
+    const out = masterStoryForPrompt(md);
+    expect(out).toBe(fence(md));
+    expect(out.startsWith('```````')).toBe(true);
+  });
+
+  test('TC-AM-25 skeleton section with profile intro and titles, profile table intact', async () => {
+    const { db, reg } = withKit();
+    const runner = await analyze(db, reg, ANALYSIS_KIT);
+    const p = runner.lastReq.prompt;
+    const sec = p.slice(p.indexOf('## 프로필별 뼈대 (서류 키트)'));
+    expect(sec).toContain('#### B2 성능');
+    expect(sec).toContain('성능과 안정성에 집중하는 백엔드 개발자입니다.');
+    expect(sec).toContain('- 주요 성과: 1) 캐시 도입 2) 주문 처리 개선 3) 배치 안정화');
+    expect(p).toContain('| 프로필 id | 이름 | 기본 | 공고 단어 |');
+  });
 });
