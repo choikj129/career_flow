@@ -40,6 +40,6 @@ describe('describeJobFailure', () => {
 
 describe('estimateText', () => {
   test('analysis wording', () => {
-    expect(estimateText('analyze_posting')).toBe('분석 중… (보통 1~2분)');
+    expect(estimateText('analyze_posting')).toBe('분석 중… (보통 1~3분)');
   });
 });

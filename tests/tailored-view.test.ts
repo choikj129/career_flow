@@ -18,7 +18,7 @@ import { registerPosting, saveAnalysis, setPostingText } from '@/lib/postings/re
 import { saveResumeVersion } from '@/lib/resume/repo';
 import { emptyResume } from '@/lib/resume/schema';
 import { addRevision, createRecipeRevision, requestTermsMatch } from '@/lib/tailored/repo';
-import { loadTailorView, kitDisplayName } from '@/lib/tailored/view';
+import { loadTailorView, kitDisplayName, TAILOR_REC_HIGH } from '@/lib/tailored/view';
 import type { AnalysisResult } from '@/lib/ai/tasks/schemas';
 import type { Db } from '@/lib/db/client';
 
@@ -261,3 +261,59 @@ describe('loadTailorView (TC-TAILOR-VIEW)', () => {
 });
 
 void ({} as Db);
+
+describe('applyDocs.tailorRec (TC-AM-14~16, 18)', () => {
+  const recWith = (kitId: number, percent: number | null) => ({
+    ...REC(kitId),
+    ...(percent == null ? {} : { tailorRec: { percent, reason: 'Kafka 운영 사례를 주요 성과 앞으로' } }),
+  });
+  const ready = (db: Db, postingId: number) => {
+    const v = loadTailorView(postingId, null, db);
+    if (v.state !== 'ready') throw new Error('ready expected');
+    return v;
+  };
+
+  test('TC-AM-15 high is false at 59 and true at 60 (TAILOR_REC_HIGH)', () => {
+    expect(TAILOR_REC_HIGH).toBe(60);
+    for (const [pct, high] of [[59, false], [60, true]] as const) {
+      const { db, postingId, kitId, resumeVersionId, jobId } = setup();
+      saveAnalysis(postingId, resumeVersionId, ANALYSIS(recWith(kitId, pct)), jobId, db);
+      expect(ready(db, postingId).applyDocs.tailorRec).toEqual({ percent: pct, reason: 'Kafka 운영 사례를 주요 성과 앞으로', high });
+    }
+  });
+
+  test('TC-AM-14 old analysis without tailorRec gives null', () => {
+    const { db, postingId, kitId, resumeVersionId, jobId } = setup();
+    saveAnalysis(postingId, resumeVersionId, ANALYSIS(recWith(kitId, null)), jobId, db);
+    const v = ready(db, postingId);
+    expect(v.applyDocs.aiBased).toBe(true);
+    expect(v.applyDocs.tailorRec).toBeNull();
+  });
+
+  test('TC-AM-16 null when the basis is not the current kit AI recommendation', () => {
+    const none = setup();
+    expect(ready(none.db, none.postingId).applyDocs.tailorRec).toBeNull(); // 분석 없음(단어 수 기준)
+
+    const old = setup();
+    saveAnalysis(old.postingId, old.resumeVersionId, ANALYSIS(recWith(old.kitId, 90)), old.jobId, old.db);
+    saveKit(files().map((f) => (f.name === '마스터스토리.md' ? { ...f, data: Buffer.concat([f.data, Buffer.from('\n한 줄')]) } : f)), old.db, h.kitDir);
+    const v = ready(old.db, old.postingId);
+    expect(v.picker.basis).toBe('ai_old_kit');
+    expect(v.applyDocs.tailorRec).toBeNull();
+
+    const words = setup();
+    saveAnalysis(words.postingId, words.resumeVersionId, ANALYSIS(null), words.jobId, words.db);
+    const w = ready(words.db, words.postingId);
+    expect(w.picker.basis).toBe('words');
+    expect(w.applyDocs.tailorRec).toBeNull();
+  });
+
+  test('TC-AM-18 a high tailorRec does not change the initial profile or add a revision', () => {
+    const { db, postingId, kitId, resumeVersionId, jobId } = setup();
+    saveAnalysis(postingId, resumeVersionId, ANALYSIS(recWith(kitId, 90)), jobId, db);
+    const v = ready(db, postingId);
+    expect(v.applyDocs.initialProfileId).toBe('B2'); // 추천 1순위 그대로
+    expect(v.revisions).toEqual([]);
+    expect(v.selected).toBeNull();
+  });
+});

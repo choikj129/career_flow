@@ -77,7 +77,10 @@ export function TailoredTab({ postingId, rev }: { postingId: number; rev: number
 
       <details className="card tl-box fix-box" data-testid="fix-box" open={selected != null || busy || v.failed != null}>
         <summary>
-          공고에 맞춰 고치기{" "}
+          공고에 맞춰 고치기
+          {v.applyDocs.tailorRec?.high && (
+            <span className="tag-rec" data-testid="fix-box-rec-tag">AI 권함 {v.applyDocs.tailorRec.percent}%</span>
+          )}{" "}
           <span className="muted small" style={{ fontWeight: 400 }}>
             공고 용어를 바꾸거나 성과 순서를 조정할 때만 씁니다. 맞춤본은 공고마다 따로 저장됩니다.
           </span>

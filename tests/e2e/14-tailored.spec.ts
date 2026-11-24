@@ -1,8 +1,10 @@
 // 맞춤 이력서(3단계, 프로필 방식) 화면: 서류 키트 탭, 맞춤 이력서 탭, 용어 맞추기·다듬기, 작업 공간 요청, 제출 서류 선택, 배치.
 // 가짜 claude(tests/fixtures/fake-claude-e2e.mjs)만 쓴다. 키트·맞춤본·지원 기록은 모두 화면 경로로 만든다. 가상 데이터만 쓴다.
 import { expect, test, type Page } from '@playwright/test';
+import Database from 'better-sqlite3';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { dataDir } from './paths';
 import { KIT_DIR, LONG_PROFILE, fakeCalls, kitFixtureFiles, openFixBox, pickKitFiles, registerByPaste, setFake, toast, uploadKit, waitAnalyzed } from './helpers';
 
 test.describe.configure({ mode: 'serial' });
@@ -469,5 +471,91 @@ test.describe('기본 이력서 버전 비교', () => {
     await expect(page.getByTestId('version-diff')).toContainText('첫 버전입니다');
     await page.getByRole('tab', { name: '내용' }).click();
     await expect(page.getByTestId('version-diff')).toHaveCount(0);
+  });
+});
+
+// B-14: 공고 분석의 맞춤 이력서 추천도. 지원 서류 카드 줄, 고치기 상자 제목 태그, 분석 탭 줄. 가짜 claude는 공고 본문의 `맞춤추천:`·`맞춤이유:` 줄을 따른다.
+test.describe('맞춤 이력서 추천도 (TC-AM-18~20)', () => {
+  const POSTING = (name: string, pct: number, reason?: string) =>
+    [`회사명: ${name}`, '포지션: 백엔드 서버 개발자', '적합도: 75', `맞춤추천: ${pct}`, ...(reason ? [`맞춤이유: ${reason}`] : []), '주요업무', '- 백엔드 API, 캐시, 성능, 트래픽 대응(가상 공고)'].join('\n');
+  const LONG_REASON = '마스터스토리의 결제 장애 대응 사례와 대용량 트래픽 처리 경험을 주요 성과 맨 앞으로 옮기고 자기소개 문장에도 반영하면 좋다 ' + '아주 긴 설명이 계속 이어진다 '.repeat(6);
+  let hi = 0;
+  let lo = 0;
+  let top = 0;
+
+  test('TC-AM-19 높은 추천도: 카드 줄·권함 태그·링크로 상자 펼침·상자 제목 태그, 분석 탭 줄 끝', async ({ page }) => {
+    setFake('seeded', {});
+    const up = await uploadKit(page, kitFixtureFiles());
+    expect(up.ok).toBe(true);
+    hi = await registerByPaste(page, POSTING('추천도높음', 72, LONG_REASON));
+    await waitAnalyzed(page);
+    await expect(page.getByTestId('profile-rec-line')).toContainText('맞춤 이력서 72%');
+
+    await page.goto(`/postings/${hi}?tab=tailored`);
+    const line = page.getByTestId('tailor-rec-line');
+    await expect(line).toContainText('맞춤 이력서 72%');
+    await expect(line.getByTestId('tailor-rec-tag')).toHaveText('권함');
+    await expect(line.getByTestId('tailor-rec-reason')).toContainText('마스터스토리의 결제 장애 대응 사례');
+    await expect(line).toHaveAttribute('title', LONG_REASON.trim().slice(0, 120)) // 앱이 120자에서 자른다;
+    const box = page.getByTestId('fix-box');
+    expect(await box.evaluate((el) => (el as HTMLDetailsElement).open)).toBe(false); // 저절로 펼치지 않는다
+    await expect(box.locator('summary')).toContainText('AI 권함 72%');
+
+    for (const width of [1024, 1240, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      await expect(line).toBeVisible();
+      expect((await line.boundingBox())!.height, `한 줄 말줄임 ${width}`).toBeLessThan(40);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth), `가로 스크롤 ${width}`).toBe(true);
+      expect(await line.getByTestId('tailor-rec-reason').evaluate((el) => getComputedStyle(el).wordBreak)).toBe('keep-all');
+      expect((await line.getByTestId('tailor-rec-open').boundingBox())!.height, `링크 한 줄 ${width}`).toBeLessThan(30);
+      expect((await box.locator('summary').boundingBox())!.height, `상자 제목 ${width}`).toBeLessThan(80);
+    }
+    await page.setViewportSize({ width: 1280, height: 720 });
+
+    await line.getByTestId('tailor-rec-open').click();
+    await expect.poll(() => box.evaluate((el) => (el as HTMLDetailsElement).open)).toBe(true);
+  });
+
+  test('TC-AM-19 낮은 추천도: 회색 줄만, 태그·링크·상자 제목 태그 없음', async ({ page }) => {
+    lo = await registerByPaste(page, POSTING('추천도낮음', 25));
+    await waitAnalyzed(page);
+    await expect(page.getByTestId('profile-rec-line')).toContainText('맞춤 이력서 25%');
+    await page.goto(`/postings/${lo}?tab=tailored`);
+    const line = page.getByTestId('tailor-rec-line');
+    await expect(line).toContainText('맞춤 이력서 25%');
+    await expect(line).toContainText('1순위 프로필 서류 그대로 충분');
+    await expect(page.getByTestId('tailor-rec-tag')).toHaveCount(0);
+    await expect(page.getByTestId('tailor-rec-open')).toHaveCount(0);
+    await expect(page.getByTestId('fix-box-rec-tag')).toHaveCount(0);
+    await expect(page.getByTestId('fix-box').locator('summary')).not.toContainText('AI 권함');
+  });
+
+  test('TC-AM-18 추천도가 90이어도 처음 프로필은 추천 1순위 그대로, 상자는 닫혀 있고 맞춤본은 생기지 않는다', async ({ page }) => {
+    top = await registerByPaste(page, POSTING('추천도최고', 90));
+    await waitAnalyzed(page);
+    await page.goto(`/postings/${top}?tab=tailored`);
+    await expect(page.getByTestId('apply-profile')).toHaveValue('B2');
+    await expect(page.getByTestId('tailor-rec-line')).toContainText('맞춤 이력서 90%');
+    expect(await page.getByTestId('fix-box').evaluate((el) => (el as HTMLDetailsElement).open)).toBe(false);
+    await expect(page.getByTestId('fix-box').locator('summary')).toContainText('AI 권함 90%');
+    await openFixBox(page);
+    await expect(page.getByTestId('tailored-empty')).toBeVisible(); // 맞춤본이 아직 없다
+  });
+
+  test('TC-AM-20 옛 분석(tailorRec 없음): 카드 줄 없음, 분석 탭 줄은 변경 전과 같음', async ({ page }) => {
+    const db = new Database(join(dataDir('seeded'), 'career-flow.db'));
+    try {
+      db.prepare("update analyses set result = json_remove(result, '$.profileRecommendation.tailorRec') where posting_id = ?").run(hi);
+    } finally {
+      db.close();
+    }
+    await page.goto(`/postings/${hi}?tab=tailored`);
+    await expect(page.getByTestId('apply-docs')).toBeVisible();
+    await expect(page.getByTestId('tailor-rec-line')).toHaveCount(0);
+    await expect(page.getByTestId('fix-box-rec-tag')).toHaveCount(0);
+    await page.goto(`/postings/${hi}`);
+    const rec = page.getByTestId('profile-rec-line');
+    await expect(rec).toContainText('추천 프로필 B2');
+    await expect(rec).not.toHaveText(/맞춤 이력서 \d+%/);
   });
 });

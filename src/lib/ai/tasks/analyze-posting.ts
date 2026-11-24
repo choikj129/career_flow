@@ -9,9 +9,19 @@ import { getLatestResume, getPreferences } from '@/lib/resume/repo';
 import { getModelFor } from '@/lib/settings';
 import { toCliJsonSchema } from './json-schema';
 import { runValidated } from './run-validated';
-import { getUsableKit } from '@/lib/kit/repo';
-import { normalizeProfileRec, profileTableMd } from '@/lib/kit/profile-table';
+import { getUsableKit, readKitMasterOrNull } from '@/lib/kit/repo';
+import { normalizeProfileRec, profileSkeletonMd, profileTableMd } from '@/lib/kit/profile-table';
 import { analysisOutputSchema, type AnalysisResult } from './schemas';
+
+/** 프롬프트에 넣는 마스터스토리 길이 상한(글자). 넘으면 앞부분만 넣는다. */
+export const MASTER_STORY_MAX_CHARS = 60_000;
+
+/** 순수 함수. 마스터스토리를 울타리로 감싸 프롬프트 자리 글로 만든다. */
+export function masterStoryForPrompt(md: string | null): string {
+  if (md == null) return '(마스터스토리 없음. 기본 이력서만 근거로 쓴다)';
+  if (md.length <= MASTER_STORY_MAX_CHARS) return fence(md);
+  return fence(md.slice(0, MASTER_STORY_MAX_CHARS)) + '\n(마스터스토리가 길어 앞 60000자만 넣었다. 나머지는 근거로 쓰지 않는다)';
+}
 
 export const analyzePosting: JobHandler = async ({ jobId, payload, runner, workDir, db }) => {
   const postingId = Number(payload?.postingId);
@@ -30,6 +40,7 @@ export const analyzePosting: JobHandler = async ({ jobId, payload, runner, workD
 
   const model = getModelFor('analyze_posting', db);
   const kit = getUsableKit(db); // 키트가 있으면 프로필 추천을 함께 받는다(호출 수는 그대로)
+  const master = kit ? readKitMasterOrNull(kit.id, db) : null;
   const outSchema = analysisOutputSchema(kit != null);
   const prompt = renderPrompt('analyze-posting', {
     today: todayLocal(),
@@ -37,6 +48,8 @@ export const analyzePosting: JobHandler = async ({ jobId, payload, runner, workD
     resume_json: JSON.stringify(resume.content, null, 2),
     preferences_json: JSON.stringify(getPreferences(db), null, 2),
     profile_table: kit ? profileTableMd(kit.parsed) : '(키트 없음. profileRecommendation을 내지 않는다)',
+    profile_skeleton: kit ? profileSkeletonMd(kit.parsed) : '(키트 없음)',
+    master_story: masterStoryForPrompt(master),
   });
   const { data, sessionId, usage } = await runValidated(
     runner,
