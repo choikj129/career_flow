@@ -112,7 +112,7 @@ test.describe.serial('기본 이력서 편집', () => {
 
   test('TC-RESUME-10 새 분석은 최신 버전(v3)을 기준으로 한다', async ({ page }) => {
     await page.goto('/postings/4');
-    await page.getByRole('button', { name: '다시 분석' }).click();
+    await page.getByRole('button', { name: '다시 분석' }).first().click();
     await expect(page.getByText('기본 이력서 v3 기준')).toBeVisible();
     await expect(page.getByText('기본 이력서가 v3로 바뀌었습니다')).toHaveCount(0);
   });

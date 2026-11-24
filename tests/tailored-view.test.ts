@@ -288,6 +288,15 @@ describe('applyDocs.tailorRec (TC-AM-14~16, 18)', () => {
     const v = ready(db, postingId);
     expect(v.applyDocs.aiBased).toBe(true);
     expect(v.applyDocs.tailorRec).toBeNull();
+    expect(v.applyDocs.tailorRecMissing).toBe(true); // TC-RA-03: 카드가 [다시 분석] 안내를 보인다
+  });
+
+  test('TC-RA-04 tailorRecMissing is false with a value and when the basis is not the current AI recommendation', () => {
+    const a = setup();
+    saveAnalysis(a.postingId, a.resumeVersionId, ANALYSIS(recWith(a.kitId, 40)), a.jobId, a.db);
+    expect(ready(a.db, a.postingId).applyDocs.tailorRecMissing).toBe(false);
+    const none = setup();
+    expect(ready(none.db, none.postingId).applyDocs.tailorRecMissing).toBe(false); // 분석 없음
   });
 
   test('TC-AM-16 null when the basis is not the current kit AI recommendation', () => {

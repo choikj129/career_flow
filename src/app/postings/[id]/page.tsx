@@ -286,6 +286,7 @@ async function AnalysisTab({
           staleNote={stale}
           aside={history}
           tailoredHref={`/postings/${postingId}?tab=tailored`}
+          action={isLatest ? <RetryButton postingId={postingId} label="다시 분석" small disabled={jobActive} /> : undefined}
         />
       </>
     ) : (

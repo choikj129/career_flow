@@ -63,6 +63,8 @@ export type ApplyDocs = {
   groups: { track: string; profiles: { id: string; name: string; percent: number | null; recommended: boolean }[] }[];
   /** 1순위 프로필 서류 대비 맞춤 이력서를 만들 가치(AI 추천이 지금 키트 기준이고 값이 있을 때만) */
   tailorRec: { percent: number; reason: string; high: boolean } | null;
+  /** AI 추천이 지금 키트 기준인데 맞춤 이력서 추천도가 없는 옛 분석(다시 분석하면 나온다) */
+  tailorRecMissing: boolean;
 };
 
 /** 처음 값: AI 추천이 있으면 그 1순위 프로필, 없으면 직무 기본 프로필 */
@@ -85,6 +87,7 @@ export function buildApplyDocs(kitId: number, picker: Picker, tailorRec: TailorR
     initialProfileId: initial?.id ?? groups.flatMap((g) => g.profiles)[0]?.id ?? '',
     groups,
     tailorRec: aiBased && tailorRec ? { ...tailorRec, high: tailorRec.percent >= TAILOR_REC_HIGH } : null,
+    tailorRecMissing: aiBased && !tailorRec,
   };
 }
 

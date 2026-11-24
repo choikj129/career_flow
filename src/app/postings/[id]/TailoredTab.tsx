@@ -73,7 +73,7 @@ export function TailoredTab({ postingId, rev }: { postingId: number; rev: number
     <div className="tl" data-testid="tailored-tab">
       {v.staleKitNote && <div className="notice info" style={{ marginTop: 0 }}><span>{v.staleKitNote}</span></div>}
 
-      <ApplyDocsCard postingId={postingId} docs={v.applyDocs} />
+      <ApplyDocsCard postingId={postingId} docs={v.applyDocs} canReanalyze={v.hasText && !analyzing} />
 
       <details className="card tl-box fix-box" data-testid="fix-box" open={selected != null || busy || v.failed != null}>
         <summary>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { RetryButton } from "./RetryButton";
 import { applyDocUrl } from "@/lib/tailored/apply-docs-url";
 import type { ApplyDocs } from "@/lib/tailored/view";
 
@@ -16,7 +17,7 @@ function openFixBox() {
   box.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
-export function ApplyDocsCard({ postingId, docs }: { postingId: number; docs: ApplyDocs }) {
+export function ApplyDocsCard({ postingId, docs, canReanalyze }: { postingId: number; docs: ApplyDocs; canReanalyze: boolean }) {
   const [profileId, setProfileId] = useState(docs.initialProfileId);
   const all = docs.groups.flatMap((g) => g.profiles.map((p) => ({ ...p, track: g.track })));
   const cur = all.find((p) => p.id === profileId);
@@ -73,6 +74,12 @@ export function ApplyDocsCard({ postingId, docs }: { postingId: number; docs: Ap
           ) : (
             <span className="tl-tailor-reason">1순위 프로필 서류 그대로 충분</span>
           )}
+        </p>
+      )}
+      {docs.tailorRecMissing && (
+        <p className="tl-tailor tl-tailor-old" data-testid="tailor-rec-missing">
+          <span className="tl-tailor-head">맞춤 이력서 추천도는 다시 분석하면 나옵니다</span>
+          <RetryButton postingId={postingId} label="다시 분석" small disabled={!canReanalyze} />
         </p>
       )}
       <div className="tl-actions" style={{ marginTop: 12 }}>
