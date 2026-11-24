@@ -55,7 +55,7 @@ test.describe.serial('설정 화면', () => {
     await page.reload();
     await expect(page.getByLabel('공고 분석 모델')).toHaveValue('haiku');
     await page.goto('/postings/5');
-    await page.getByRole('button', { name: '다시 분석' }).click();
+    await page.getByRole('button', { name: '다시 분석' }).first().click();
     await waitAnalyzed(page);
     await expect.poll(() => fakeCalls('seeded').filter((c) => c.kind === 'analyze_posting').at(-1)?.model).toBe('haiku');
     // 되돌림
@@ -66,7 +66,7 @@ test.describe.serial('설정 화면', () => {
 
   test('TC-SETTINGS-06 분석 호출 옵션: 도구 없음, 안전 옵션, 프롬프트는 인자가 아니라 표준입력', async ({ page }) => {
     await page.goto('/postings/5');
-    await page.getByRole('button', { name: '다시 분석' }).click();
+    await page.getByRole('button', { name: '다시 분석' }).first().click();
     await waitAnalyzed(page);
     const call = fakeCalls('seeded').filter((c) => c.kind === 'analyze_posting').at(-1)!;
     expect(call.tools).toBe('');

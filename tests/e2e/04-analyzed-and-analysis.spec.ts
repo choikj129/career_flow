@@ -116,7 +116,7 @@ test.describe('공고 상세: 분석 탭', () => {
   test('TC-DETAIL-16 다시 분석: 이전 결과가 기록에 남고 읽기 전용으로 볼 수 있다', async ({ page }) => {
     await page.goto('/postings/5');
     await expect(page.locator('ul.history li')).toHaveCount(1);
-    await page.getByRole('button', { name: '다시 분석' }).click();
+    await page.getByRole('button', { name: '다시 분석' }).first().click();
     await toast(page, '분석을 시작했습니다');
     await expect(page.locator('ul.history li')).toHaveCount(2);
     await expect(page.locator('.score')).toContainText('80'); // 가짜 claude 기본 점수
@@ -131,10 +131,10 @@ test.describe('공고 상세: 분석 탭', () => {
   test('TC-DETAIL-17 분석 중에는 [다시 분석]이 비활성', async ({ page }) => {
     setFake('seeded', { delayMs: 5000 });
     await page.goto('/postings/4');
-    await page.getByRole('button', { name: '다시 분석' }).click();
-    await expect(page.getByRole('button', { name: '다시 분석' })).toBeDisabled();
+    await page.getByRole('button', { name: '다시 분석' }).first().click();
+    await expect(page.getByRole('button', { name: '다시 분석' }).first()).toBeDisabled();
     await expect(page.getByRole('status').filter({ hasText: '분석 중' })).toBeVisible();
-    await expect(page.getByRole('button', { name: '다시 분석' })).toBeEnabled({ timeout: 30_000 });
+    await expect(page.getByRole('button', { name: '다시 분석' }).first()).toBeEnabled({ timeout: 30_000 });
   });
 
   test('TC-DETAIL-18 [본문 다시 붙여넣기]: 본문이 바뀌고 다시 분석된다', async ({ page }) => {

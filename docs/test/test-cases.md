@@ -710,4 +710,9 @@ AI 작업이 끝나면 `data/ai-work/<번호>/`를 바로 지운다. 올린 이�
 | TC-AM-25 | 프롬프트에 뼈대 | 예시 키트 올림 | 가짜 실행기가 받은 프롬프트에 "## 프로필별 뼈대 (서류 키트)"와 예시 키트 프로필의 자기소개·제목이 들어 있음. 기존 프로필 표도 그대로 | 통합 · `tests/tasks.test.ts` |
 | TC-AM-26 | 키트 없을 때 | 키트 없음 | 뼈대 자리 "(키트 없음)", 분석 성공, 프롬프트의 나머지는 변경 전과 같음(마스터스토리 자리 문구 제외) | 통합 · `tests/tasks.test.ts` |
 | TC-AM-27 | 프롬프트 규칙(뼈대 기준) | `prompts/analyze-posting.md` | "{{profile_skeleton}}" 있음, hidden·tailorRec의 "드러나 있나" 기준이 1순위 프로필 뼈대·자기소개(키트 없으면 기본 이력서), "제목만"이라 용어 판단은 핵심 용어가 제목·자기소개에 전혀 없을 때만, 프로필 추천이 뼈대·자기소개도 본다, fit·strengths는 기본 이력서·마스터스토리 근거 | 단위 · `tests/prompts.test.ts` |
+| TC-RA-01 | 화면: 점수 머리 [다시 분석] | 분석된 공고 | 점수 머리 오른쪽에 버튼, 누르면 분석 작업 1건이 큐에 들어가고(가짜 claude) 끝나면 다시 활성 | E2E · `tests/e2e/17-reanalyze.spec.ts` |
+| TC-RA-02 | 이전 분석 | 분석 기록에서 이전 분석 선택 | 점수 머리 버튼 없음 | E2E · `tests/e2e/17-reanalyze.spec.ts` |
+| TC-RA-03 | 옛 분석의 지원 서류 카드 | tailorRec 없는 분석 | 안내 줄 "맞춤 이력서 추천도는 다시 분석하면 나옵니다"와 [다시 분석], `tailorRecMissing`이 true | 단위·E2E · `tests/tailored-view.test.ts`, `tests/e2e/17-reanalyze.spec.ts` |
+| TC-RA-04 | 추천도가 있을 때 | tailorRec 있음 / 분석 없음 | 안내 줄 없음, `tailorRecMissing`이 false | 단위·E2E · `tests/tailored-view.test.ts`, `tests/e2e/17-reanalyze.spec.ts` |
+| TC-RA-05 | 폭 | 1024·1240·1440 | 버튼·안내 한 줄, 가로 스크롤 없음, 한글 keep-all | E2E · `tests/e2e/17-reanalyze.spec.ts` |
 | TC-AM-M1 | 실제 분석 비교 | 실제 키트·공고 1건, opus 1회 | 숨은 강점이 마스터스토리의 실제 사례를 가리키고, 두 자료에 없는 수치·기술이 없음. 맞춤본 추천도와 이유가 공고 핵심 요건과 맞음. 분석 시간이 5분 제한 안 | 수동(병합 뒤 사용자, 선택) |

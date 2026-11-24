@@ -33,6 +33,7 @@ export function AnalysisView({
   staleNote,
   aside,
   tailoredHref,
+  action,
 }: {
   result: AnalysisResult;
   /** 예: "기본 이력서 v3 기준 · 11월 16일 14:02 분석" */
@@ -42,6 +43,8 @@ export function AnalysisView({
   aside?: React.ReactNode;
   /** 맞춤 이력서 탭 주소. 있으면 프로필 추천 줄에서 링크한다 */
   tailoredHref?: string;
+  /** 점수 머리 오른쪽에 두는 버튼(예: [다시 분석]). 최신 분석을 볼 때만 넘긴다 */
+  action?: React.ReactNode;
 }) {
   const p = result.posting;
   const hidden = result.gaps.filter((g) => g.kind === "hidden");
@@ -56,6 +59,11 @@ export function AnalysisView({
               <small> / 100</small>
             </div>
             <div className="score-basis">{basis}</div>
+            {action ? (
+              <div style={{ marginLeft: "auto", paddingBottom: 2 }} data-testid="score-action">
+                {action}
+              </div>
+            ) : null}
           </div>
           {result.profileRecommendation && result.profileRecommendation.profiles.length > 0 && (
             <p className="analysis-note" style={{ fontSize: 13.5, margin: "8px 0 0", overflowWrap: "anywhere", wordBreak: "keep-all" }} data-testid="profile-rec-line">
