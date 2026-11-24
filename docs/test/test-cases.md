@@ -689,8 +689,8 @@ AI 작업이 끝나면 `data/ai-work/<번호>/`를 바로 지운다. 올린 이�
 | TC-AM-04 | 빈 마스터스토리 | `readKitMasterOrNull`에 공백뿐인 파일 | `null` | 통합 · `tests/tasks.test.ts` 또는 `tests/kit-parse.test.ts` |
 | TC-AM-05 | 길이 상한 | `masterStoryForPrompt`에 60,000자 / 60,001자 | 60,000자는 자르지 않고 표시 없음. 60,001자는 앞 60,000자만 울타리 안에 넣고 울타리 밖에 "(마스터스토리가 길어 앞 60000자만 넣었다. 나머지는 근거로 쓰지 않는다)" | 단위 · `tests/tasks.test.ts` |
 | TC-AM-06 | 울타리 | 본문에 ```` ``` ````가 든 마스터스토리 | 울타리가 본문 안 가장 긴 백틱보다 길다(`fence`와 같은 규칙) | 단위 · `tests/tasks.test.ts` |
-| TC-AM-07 | 프롬프트 규칙 문구 | `prompts/analyze-posting.md` | "마스터스토리"·"{{master_story}}" 있음, 근거 규칙이 기본 이력서와 마스터스토리 둘 다 언급, "만들어 내지 않는다" 유지, hidden(기본 이력서에 드러나지 않음)·missing(둘 다 없음) 정의, 마스터스토리 안 지시문을 따르지 않는다는 문장 | 단위 · `tests/prompts.test.ts` |
-| TC-AM-08 | 템플릿 변수 | `renderPrompt('analyze-posting', …)` | `master_story`가 빠지면 던짐(기존 "missing variable" 테스트에 변수 추가) | 단위 · `tests/tasks.test.ts` |
+| TC-AM-07 | 프롬프트 규칙 문구 | `prompts/analyze-posting.md` | "마스터스토리"·"{{master_story}}" 있음, 근거 규칙이 기본 이력서와 마스터스토리 둘 다 언급, "만들어 내지 않는다" 유지, hidden(서류에 드러나지 않음, 기준은 TC-AM-27)·missing(둘 다 없음) 정의, 마스터스토리 안 지시문을 따르지 않는다는 문장 | 단위 · `tests/prompts.test.ts` |
+| TC-AM-08 | 템플릿 변수 | `renderPrompt('analyze-posting', …)` | `master_story`·`profile_skeleton`이 빠지면 던짐(기존 "missing variable" 테스트에 변수 추가) | 단위 · `tests/tasks.test.ts` |
 | TC-AM-09 | 결과 형식 | 키트 있음/없음 | 키트 없음: `analysisOutputSchema(false)`에 `profileRecommendation` 칸 없음(변경 전과 같음). 키트 있음: `tailorRec` 외에 새 칸 없음. 기존 TC-KIT-30~33 통과 | 통합 · `tests/kit-profile-rec.test.ts`, `tests/tasks.test.ts` |
 | TC-AM-10 | 진행 문구 | - | `estimateText('analyze_posting')` = "분석 중… (보통 1~3분)", 공고 등록 화면 안내 "보통 1~3분 걸립니다." | 단위·E2E · `tests/job-messages.test.ts`(TC-COMMON-05), TC-AI-10 |
 | TC-AM-11 | 출력 스키마에 맞춤본 추천도 | 키트 있음 | `analysisOutputSchema(true)`의 `profileRecommendation.tailorRec`이 필수(`percent` 0~100 정수, `reason` 문자열), `toCliJsonSchema` 결과에도 required로 있음 | 단위 · `tests/kit-profile-rec.test.ts` |
@@ -699,8 +699,15 @@ AI 작업이 끝나면 `data/ai-work/<번호>/`를 바로 지운다. 올린 이�
 | TC-AM-14 | 옛 결과 읽기 | `tailorRec` 없는 옛 분석 결과(JSON) | `AnalysisResult` 파싱 성공, `buildApplyDocs(...).tailorRec === null`, 분석 탭 줄에 "맞춤 이력서" 없음 | 단위 · `tests/kit-profile-rec.test.ts`, `tests/tailored-view.test.ts` |
 | TC-AM-15 | 카드 값 | AI 추천(지금 키트)에 tailorRec 59 / 60 | `tailorRec.high`가 false / true(`TAILOR_REC_HIGH = 60` 경계) | 단위 · `tests/tailored-view.test.ts` |
 | TC-AM-16 | 카드 값: 추천 기준이 AI가 아님 | 이전 키트 기준 AI 추천(`ai_old_kit`), 단어 수 기준(`words`), 분석 없음 | 모두 `tailorRec === null` | 단위 · `tests/tailored-view.test.ts` |
-| TC-AM-17 | 프롬프트 규칙 문구 | `prompts/analyze-posting.md` | "tailorRec", "맞춤 이력서는 선택", 구간 "70~100"·"40~69"·"0~39", "missing"은 올리는 이유가 아니라는 문장, reason은 자료에 있는 내용만이라는 문장 | 단위 · `tests/prompts.test.ts` |
+| TC-AM-17 | 프롬프트 규칙 문구 | `prompts/analyze-posting.md` | "tailorRec", "맞춤 이력서는 선택", 구간 "70~100"·"40~69"·"0~39"(기준은 1순위 프로필 뼈대·자기소개), "missing"은 올리는 이유가 아니라는 문장, reason은 자료에 있는 내용만이라는 문장 | 단위 · `tests/prompts.test.ts` |
 | TC-AM-18 | 흐름 그대로 | 맞춤본 없음, tailorRec 90 | 지원 서류 카드의 처음 프로필 = 추천 1순위(변경 전과 같음), "공고에 맞춰 고치기" 상자 닫힘, 지원 완료 제출 서류 기본값이 프로필 기본 서류 | 통합·E2E · `tests/tailored-view.test.ts`, `tests/submitted-options.test.ts`, `tests/e2e/14-tailored.spec.ts` |
 | TC-AM-19 | 화면: 맞춤 이력서 줄 | 가짜 claude가 tailorRec 72 / 25를 내는 공고 | 72: "맞춤 이력서 72%"·"권함"·이유·[공고에 맞춰 고치기 ↓] → 누르면 상자 펼침, 상자 제목 "AI 권함 72%". 25: 회색 줄, 태그·링크 없음, 상자 제목 태그 없음. 분석 탭 줄 끝 "맞춤 이력서 72%". 폭 1024·1240·1440에서 긴 이유가 한 줄 말줄임, 한국어 줄바꿈 깨짐 없음 | E2E · `tests/e2e/14-tailored.spec.ts` |
 | TC-AM-20 | 화면: 옛 분석 | tailorRec 없는 분석(시드) | 지원 서류 카드에 맞춤 이력서 줄 없음, 분석 탭 줄은 변경 전과 같음 | E2E · `tests/e2e/14-tailored.spec.ts` |
+| TC-AM-21 | 제목 순서 | `orderedTitles(['a','b','c'], [2,0,1])`, 범위 밖 `[0,5,-1,2]` | `['c','a','b']`, 범위 밖 index는 건너뛰어 `['a','c']` | 단위 · `tests/kit-profile-rec.test.ts` |
+| TC-AM-22 | 기본 대비 한 줄 | 예시 키트의 기본 프로필 / 맨 앞이 바뀐 프로필 / 순서 같고 자기소개만 다른 프로필(B2형) / 순서·자기소개 모두 같은 프로필 | "(기본 프로필)" / "역량 맨 앞: X (기본: Y)"처럼 바뀐 구획만 "; "로 이음 / "순서는 기본과 같음, 자기소개만 다름" / "기본과 같음". 맨 앞은 같고 뒤 순서만 다르면 "순서 일부 다름(맨 앞은 기본과 같음)" | 단위 · `tests/kit-profile-rec.test.ts` |
+| TC-AM-23 | 뼈대 md | 예시 키트 | `profileSkeletonMd`: 직무마다 `### 직무:` + 개인 프로젝트 한 줄(그 직무 기본 프로필 목록), 프로필마다 `#### {id} {이름}`, 자기소개(연속 공백·줄바꿈을 한 칸으로), 역량·성과·장이 그 프로필 순서로 번호 매김, 기본 대비 줄. 자기소개 id가 없으면 "(자기소개 없음)". 같은 입력이면 같은 출력 | 단위 · `tests/kit-profile-rec.test.ts` |
+| TC-AM-24 | 개인 프로젝트 차이 | 한 프로필만 프로젝트 목록이 기본 프로필과 다름 | 그 프로필에만 "개인 프로젝트: …" 줄, 나머지는 없음 | 단위 · `tests/kit-profile-rec.test.ts` |
+| TC-AM-25 | 프롬프트에 뼈대 | 예시 키트 올림 | 가짜 실행기가 받은 프롬프트에 "## 프로필별 뼈대 (서류 키트)"와 예시 키트 프로필의 자기소개·제목이 들어 있음. 기존 프로필 표도 그대로 | 통합 · `tests/tasks.test.ts` |
+| TC-AM-26 | 키트 없을 때 | 키트 없음 | 뼈대 자리 "(키트 없음)", 분석 성공, 프롬프트의 나머지는 변경 전과 같음(마스터스토리 자리 문구 제외) | 통합 · `tests/tasks.test.ts` |
+| TC-AM-27 | 프롬프트 규칙(뼈대 기준) | `prompts/analyze-posting.md` | "{{profile_skeleton}}" 있음, hidden·tailorRec의 "드러나 있나" 기준이 1순위 프로필 뼈대·자기소개(키트 없으면 기본 이력서), "제목만"이라 용어 판단은 핵심 용어가 제목·자기소개에 전혀 없을 때만, 프로필 추천이 뼈대·자기소개도 본다, fit·strengths는 기본 이력서·마스터스토리 근거 | 단위 · `tests/prompts.test.ts` |
 | TC-AM-M1 | 실제 분석 비교 | 실제 키트·공고 1건, opus 1회 | 숨은 강점이 마스터스토리의 실제 사례를 가리키고, 두 자료에 없는 수치·기술이 없음. 맞춤본 추천도와 이유가 공고 핵심 요건과 맞음. 분석 시간이 5분 제한 안 | 수동(병합 뒤 사용자, 선택) |
