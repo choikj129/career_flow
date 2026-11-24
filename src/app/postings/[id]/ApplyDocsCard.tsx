@@ -29,8 +29,7 @@ export function ApplyDocsCard({ postingId, docs }: { postingId: number; docs: Ap
             <optgroup key={g.track} label={g.track}>
               {g.profiles.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.id} {p.name}
-                  {p.recommended ? " (추천)" : ""}
+                  {`${p.id} ${p.name}${p.percent != null ? ` ${p.percent}%` : ""}${p.recommended ? " (추천)" : ""}`}
                 </option>
               ))}
             </optgroup>
