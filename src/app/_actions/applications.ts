@@ -24,14 +24,14 @@ const site = z.enum(SITE_IDS as [SiteId, ...SiteId[]]);
 
 /** 화면의 제출 서류 값(이력서는 encodeResumeChoice 글자, 경력기술서·포트폴리오는 select 값)을 저장소 입력으로 */
 const submittedInput = z
-  .object({ resume: z.string(), career: z.string(), portfolio: z.string() })
+  .object({ resume: z.string(), career: z.string(), portfolio: z.string(), baseDate: z.string().optional() })
   .transform((v, ctx): SubmittedInput => {
     const resume = decodeResumeChoice(v.resume);
     if (!resume) {
       ctx.addIssue({ code: 'custom', message: '이력서 선택이 올바르지 않습니다' });
       return z.NEVER;
     }
-    return { resume, career: selectToDoc(v.career), portfolio: selectToDoc(v.portfolio) };
+    return { resume, career: selectToDoc(v.career), portfolio: selectToDoc(v.portfolio), sessionBaseDate: resume.kind === 'session' ? (v.baseDate ?? null) : null };
   });
 
 export async function changeStatusAction(input: {
@@ -65,7 +65,7 @@ export async function markAppliedAction(input: {
   site: string;
   siteNote?: string;
   notes?: string;
-  submitted?: { resume: string; career: string; portfolio: string };
+  submitted?: { resume: string; career: string; portfolio: string; baseDate?: string };
 }): Promise<ActionResult> {
   return run(() => {
     const v = z
@@ -119,7 +119,7 @@ export async function updateApplicationAction(input: {
   site: string;
   siteNote?: string;
   appliedAt: string;
-  submitted?: { resume: string; career: string; portfolio: string };
+  submitted?: { resume: string; career: string; portfolio: string; baseDate?: string };
 }): Promise<ActionResult> {
   return run(() => {
     const v = z

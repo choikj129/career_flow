@@ -4,7 +4,7 @@ import { expect, test, type Page } from '@playwright/test';
 import Database from 'better-sqlite3';
 import { join } from 'node:path';
 import { dataDir } from './paths';
-import { fakeCalls, kitFixtureFiles, registerByPaste, seedRevision, setFake, uploadKit, waitAnalyzed } from './helpers';
+import { fakeCalls, kitFixtureFiles, registerByPaste, seedRevision, setFake, toast, uploadKit, waitAnalyzed } from './helpers';
 
 test.describe.configure({ mode: 'serial' });
 test.afterAll(() => setFake('seeded', {}));
@@ -201,5 +201,108 @@ test.describe('지원 완료 기본값', () => {
     await expect(resume).toHaveValue(/^tailored:\d+$/);
     await expect(resume.locator('option:checked')).toHaveText(/^맞춤 이력서 r2 · B2$/);
     await revs.getByRole('button', { name: '취소' }).click();
+  });
+});
+
+// D-33 a: 지원 완료·기록 수정의 "이력서 세션 맞춤본"과 바탕 이력서 날짜
+test.describe('이력서 세션 맞춤본 기록 (D-33 a)', () => {
+  const SESS = '이력서 세션 맞춤본 · B2';
+  const today = () => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  };
+
+  test('TC-SR-29 지원 완료: 선택하면 바탕 이력서 날짜 줄이 생기고, 저장하면 기록 탭에 날짜와 함께 보인다', async ({ page }) => {
+    await page.goto(`/postings/${main}`);
+    await page.getByRole('button', { name: '지원 완료', exact: true }).click();
+    const dlg = page.getByRole('dialog', { name: '지원 완료로 기록' });
+    const resume = dlg.getByLabel('이력서', { exact: true });
+    await expect(dlg.getByTestId('resume-base-date')).toHaveCount(0);
+    await resume.selectOption({ label: SESS });
+    await expect(dlg.getByTestId('doc-full-resume')).toHaveText('이력서 세션 맞춤본 · B2 성능');
+    const date = dlg.getByLabel('바탕 이력서');
+    await expect(dlg.getByTestId('resume-base-date')).toBeVisible();
+    await expect(date).toHaveValue(today()); // 처음 값: 지금 키트를 올린 날
+    await resume.selectOption({ label: '기본 서류 백엔드 · B2' });
+    await expect(dlg.getByTestId('resume-base-date')).toHaveCount(0);
+    await resume.selectOption({ label: SESS });
+    await date.fill('20261120');
+    await expect(date).toHaveValue('2026-11-20');
+    await dlg.getByRole('button', { name: '저장' }).click();
+    await toast(page, '지원 완료로 저장했습니다');
+
+    await page.goto(`/postings/${main}?tab=record`);
+    await expect(page.getByText('제출한 이력서').locator('..')).toContainText('이력서 세션 맞춤본 · B2 성능 (2026-11-20 이력서 기반)');
+    const docs = page.getByTestId('submitted-docs');
+    await expect(docs.getByTestId('resume-line')).toHaveText('이력서 세션 맞춤본 · B2 성능 (2026-11-20 이력서 기반)');
+    await expect(docs.getByRole('link', { name: '보기' })).toHaveCount(0);
+  });
+
+  test('TC-SR-29 지원일보다 늦은 날짜는 오류 문구가 보이고 저장되지 않는다', async ({ page }) => {
+    await page.goto(`/postings/${old}`);
+    await page.getByRole('button', { name: '지원 완료', exact: true }).click();
+    const dlg = page.getByRole('dialog', { name: '지원 완료로 기록' });
+    await dlg.getByLabel('이력서', { exact: true }).selectOption({ label: SESS });
+    await dlg.getByLabel('바탕 이력서').fill('20991231');
+    await dlg.getByRole('button', { name: '저장' }).click();
+    await expect(dlg).toContainText('바탕 이력서 날짜는 지원일보다 늦을 수 없습니다');
+    await dlg.getByRole('button', { name: '취소' }).click();
+    await page.goto(`/postings/${old}?tab=record`);
+    await expect(page.getByText('아직 지원하지 않은 공고입니다.')).toBeVisible();
+  });
+
+  test('TC-SR-30 수정 창·대시보드·통계가 그 값을 따른다', async ({ page }) => {
+    await page.goto(`/postings/${main}?tab=record`);
+    await page.getByRole('button', { name: '기록 수정' }).click();
+    const dlg = page.getByRole('dialog', { name: '지원 기록 수정' });
+    await expect(dlg.getByLabel('이력서', { exact: true }).locator('option:checked')).toHaveText(SESS);
+    await expect(dlg.getByLabel('바탕 이력서')).toHaveValue('2026-11-20');
+    await dlg.getByRole('button', { name: '취소' }).click();
+
+    await page.goto('/');
+    await expect(page.getByText('세션 맞춤 · B2 · 2026-11-20').first()).toBeVisible();
+    await page.goto('/?view=resume');
+    await expect(page.locator('.group-head', { hasText: '맞춤 이력서' }).first()).toBeVisible();
+
+    await page.goto('/stats');
+    const table = page.getByTestId('stats-tailored-table');
+    const row = table.locator('tbody tr', { hasText: '맞춤 이력서' }).first();
+    await expect(row).toBeVisible();
+    expect(Number(await row.locator('td').nth(1).innerText())).toBeGreaterThanOrEqual(1);
+    await expect(page.getByTestId('stats-profiles-table').getByRole('cell', { name: /^B2/ }).first()).toBeVisible();
+  });
+
+  test('TC-SR-31 폭 1024·1240·1440: 지원 완료 창·수정 창이 넘치지 않고 한글 keep-all', async ({ page }) => {
+    for (const width of [1024, 1240, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      for (const mode of ['apply', 'edit'] as const) {
+        if (mode === 'apply') {
+          await page.goto(`/postings/${withRevs}`);
+          await page.getByRole('button', { name: '지원 완료', exact: true }).click();
+        } else {
+          await page.goto(`/postings/${main}?tab=record`);
+          await page.getByRole('button', { name: '기록 수정' }).click();
+        }
+        const dlg = page.getByRole('dialog');
+        await dlg.getByLabel('이력서', { exact: true }).selectOption({ label: SESS });
+        await expect(dlg.getByTestId('resume-base-date')).toBeVisible();
+        expect(await noOverflow(page), `${mode} 가로 스크롤 ${width}`).toBe(true);
+        const bad = await dlg.evaluate((root) => {
+          const limit = root.getBoundingClientRect().right + 1;
+          return [...root.querySelectorAll<HTMLElement>('*')]
+            .filter((el) => {
+              const r = el.getBoundingClientRect();
+              return r.width > 0 && r.right > limit && getComputedStyle(el).position !== 'fixed';
+            })
+            .map((el) => el.tagName + '.' + el.className)
+            .slice(0, 5);
+        });
+        expect(bad, `${mode} 창 밖 요소 ${width}`).toEqual([]);
+        const wb = await dlg.getByTestId('doc-full-resume').evaluate((el) => getComputedStyle(el).wordBreak);
+        expect(wb).toBe('keep-all');
+        await dlg.getByRole('button', { name: '취소' }).click();
+      }
+    }
+    await page.setViewportSize({ width: 1280, height: 720 });
   });
 });

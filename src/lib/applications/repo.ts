@@ -1,7 +1,7 @@
 import { and, eq, gte, inArray, or } from 'drizzle-orm';
 import { getDb, type Db } from '@/lib/db/client';
 import { applications, statusEvents } from '@/lib/db/schema';
-import { monthsAgoLocal, syntheticKstIso, toKstIso, todayLocal } from '@/lib/domain/dates';
+import { monthsAgoLocal, syntheticKstIso, toKstIso, todayLocal, validDate } from '@/lib/domain/dates';
 import type { ApplicationStatus, SiteId, SubmittedResume } from '@/lib/domain/types';
 import { AnalysisResult } from '@/lib/ai/tasks/schemas';
 import { findOrCreateCompany } from '@/lib/companies/repo';
@@ -42,7 +42,7 @@ export function defaultKitChoice(postingId: number, db: Db): { id: number; track
 /** 저장 전 검증과 칸 변환. 실패하면 예외(아무것도 저장되지 않는다). prev는 수정할 때의 지금 기록 */
 function resolveSubmittedColumns(
   input: SubmittedInput,
-  ctx: { postingId: number | null; prev?: Application; docsDir?: string },
+  ctx: { postingId: number | null; prev?: Application; docsDir?: string; appliedAt: string },
   db: Db,
 ): ReturnType<typeof toColumns> {
   const r = input.resume;
@@ -70,6 +70,24 @@ function resolveSubmittedColumns(
           parsed.profiles.find((p) => p.track === track.name && p.isDefault));
       if (!profile) throw new Error(r.profileId ? '서류 키트에 없는 프로필입니다' : '서류 키트에 없는 직무입니다');
       kitProfile = { profileId: profile.id, profileName: profile.name };
+      break;
+    }
+    case 'session': {
+      // 이력서 세션 맞춤본(D-33 a): kit와 같은 프로필 검사 + 바탕 이력서 날짜 검사
+      const prev = ctx.prev?.submittedResume;
+      if (prev?.kind === 'session' && prev.kitId === r.kitId && prev.track === r.track && prev.profileId === r.profileId) {
+        kitProfile = { profileId: prev.profileId, profileName: prev.profileName };
+      } else {
+        const parsed = getKit(r.kitId, db)?.parsed;
+        const track = parsed?.tracks.find((t) => t.name === r.track);
+        if (!parsed || !track) throw new Error('서류 키트에 없는 직무입니다');
+        const profile = parsed.profiles.find((p) => p.track === track.name && p.id === r.profileId);
+        if (!profile) throw new Error('서류 키트에 없는 프로필입니다');
+        kitProfile = { profileId: profile.id, profileName: profile.name };
+      }
+      const d = input.sessionBaseDate;
+      if (!d || !validDate(d)) throw new Error('바탕 이력서 날짜를 확인하세요');
+      if (d > ctx.appliedAt) throw new Error('바탕 이력서 날짜는 지원일보다 늦을 수 없습니다');
       break;
     }
     case 'file':
@@ -120,7 +138,7 @@ export function markApplied(
       latestRevisionId: listRevisionsForPosting(posting.id, db)[0]?.id ?? null,
       kit: defaultKitChoice(posting.id, db),
     });
-  const cols = resolveSubmittedColumns(submitted, { postingId: posting.id, docsDir }, db);
+  const cols = resolveSubmittedColumns(submitted, { postingId: posting.id, docsDir, appliedAt }, db);
   return db.transaction((tx) => {
     const id = tx
       .insert(applications)
@@ -348,7 +366,7 @@ export function updateApplication(
     if (!app) throw new Error('지원 기록을 찾을 수 없습니다');
     const set: Partial<typeof applications.$inferInsert> = {};
     if (patch.submitted) {
-      const cols = resolveSubmittedColumns(patch.submitted, { postingId: app.postingId, prev: app, docsDir }, tx as unknown as Db);
+      const cols = resolveSubmittedColumns(patch.submitted, { postingId: app.postingId, prev: app, docsDir, appliedAt: patch.appliedAt ?? app.appliedAt }, tx as unknown as Db);
       set.submittedResume = cols.submittedResume;
       set.submittedDocs = cols.submittedDocs;
     }

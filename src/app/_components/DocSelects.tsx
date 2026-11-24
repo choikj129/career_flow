@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { DateInput } from "./DateInput";
 import {
   defaultSubmitted,
   docToSelect,
@@ -9,8 +10,8 @@ import {
 } from "@/lib/applications/submitted";
 import type { ChoiceOption, SubmittedFormData } from "@/lib/applications/submitted-options";
 
-type Field = "resume" | "career" | "portfolio";
-export type SubmittedValues = { resume: string; career: string; portfolio: string };
+type Field = "resume" | "career" | "portfolio" | "baseDate";
+export type SubmittedValues = { resume: string; career: string; portfolio: string; baseDate: string };
 
 /**
  * 제출 서류 선택 상태. 직접 고르지 않은 칸은 지원일에 맞춰 기본값을 다시 고른다(화면 문서 3.7).
@@ -27,10 +28,11 @@ export function useSubmittedValues(data: SubmittedFormData | null, appliedAt: st
         resume: encodeResumeChoice(data.current.resume),
         career: docToSelect(data.current.career),
         portfolio: docToSelect(data.current.portfolio),
+        baseDate: data.sessionBaseDate ?? "",
       };
     } else {
       const d = defaultSubmitted({ appliedAt, files: data.files, latestRevisionId: data.latestRevisionId, kit: data.kit });
-      current = { resume: encodeResumeChoice(d.resume), career: docToSelect(d.career), portfolio: docToSelect(d.portfolio) };
+      current = { resume: encodeResumeChoice(d.resume), career: docToSelect(d.career), portfolio: docToSelect(d.portfolio), baseDate: data.sessionBaseDate ?? "" };
     }
   }
   const value: SubmittedValues | null = current ? { ...current, ...picked } : null;
@@ -42,6 +44,7 @@ export function useSubmittedValues(data: SubmittedFormData | null, appliedAt: st
           resume: fix(value.resume, data.resumeOptions, "unknown"),
           career: fix(value.career, data.careerOptions, ""),
           portfolio: fix(value.portfolio, data.portfolioOptions, ""),
+          baseDate: value.baseDate,
         }
       : null;
   const set = (field: Field, v: string) => setPicked((p) => ({ ...p, [field]: v }));
@@ -61,13 +64,14 @@ export function DocSelects({
   onChange: (field: Field, v: string) => void;
   idPrefix: string;
 }) {
-  const rows: { field: Field; label: string; options: ChoiceOption[] }[] = [
+  type SelectField = "resume" | "career" | "portfolio";
+  const rows: { field: SelectField; label: string; options: ChoiceOption[] }[] = [
     { field: "resume", label: "이력서", options: data.resumeOptions },
     { field: "career", label: "경력기술서", options: data.careerOptions },
     { field: "portfolio", label: "포트폴리오", options: data.portfolioOptions },
   ];
   // 고른 선택지의 전체 이름(짧은 글과 다를 때만)을 select 아래에 줄바꿈해서 보인다
-  const full = Object.fromEntries(rows.map((r) => [r.field, r.options.find((o) => o.value === value[r.field])?.full ?? ""])) as Record<Field, string>;
+  const full = Object.fromEntries(rows.map((r) => [r.field, r.options.find((o) => o.value === value[r.field])?.full ?? ""])) as Record<SelectField, string>;
   return (
     <div data-testid="doc-selects">
       {rows.map((r) => (
@@ -90,6 +94,15 @@ export function DocSelects({
             <span className="muted small" style={{ gridColumn: 2, overflowWrap: "anywhere" }} data-testid={`doc-full-${r.field}`}>
               {full[r.field]}
             </span>
+          ) : null}
+          {r.field === "resume" && value.resume.startsWith("sess:") ? (
+            <>
+              <label htmlFor={`${idPrefix}-baseDate`} style={{ marginTop: 4 }}>바탕 이력서</label>
+              <span style={{ display: "flex", gap: "6px 10px", alignItems: "center", flexWrap: "wrap", minWidth: 0 }} data-testid="resume-base-date">
+                <DateInput id={`${idPrefix}-baseDate`} required value={value.baseDate} onChange={(e) => onChange("baseDate", e.target.value)} style={{ width: 150 }} />
+                <span className="muted small">이력서 세션이 바탕으로 쓴 이력서의 날짜</span>
+              </span>
+            </>
           ) : null}
         </div>
       ))}

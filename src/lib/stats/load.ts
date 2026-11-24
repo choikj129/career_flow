@@ -38,7 +38,7 @@ export type StatItem = {
   outcome: Outcome;
   /** submitted_resume.kind === 'base'일 때 기본 이력서 버전 번호 */
   baseVersionNo: number | null;
-  /** submitted_resume.kind === 'tailored'(작업 공간 결과 리비전 포함) */
+  /** submitted_resume.kind === 'tailored'(작업 공간 결과 리비전 포함) 또는 'session'(이력서 세션 맞춤본) */
   tailored: boolean;
   /** 프로필: 맞춤본이면 그 리비전의, 기본 서류 그대로면 기록의. 파일·모름·예전 기록은 null */
   profile: { id: string; name: string } | null;
@@ -76,8 +76,8 @@ export function loadStatItems(q: StatsQuery, now: Date = new Date(), db: Db = ge
       reached,
       outcome: classifyOutcome({ status: a.status, appliedAt: a.appliedAt, reached }, today),
       baseVersionNo: sr && sr.kind === 'base' ? (versionNoById.get(sr.versionId) ?? null) : null,
-      tailored: sr.kind === 'tailored',
-      profile: rev ? { id: rev.profileId, name: rev.profileName } : sr.kind === 'kit' ? { id: sr.profileId, name: sr.profileName } : null,
+      tailored: sr.kind === 'tailored' || sr.kind === 'session', // 이력서 세션 맞춤본도 맞춤으로 센다(D-33 a)
+      profile: rev ? { id: rev.profileId, name: rev.profileName } : sr.kind === 'kit' || sr.kind === 'session' ? { id: sr.profileId, name: sr.profileName } : null,
       kitTrack: sr.kind === 'kit' ? sr.track : null,
       docs: {
         resume: a.submittedDocs?.resume ?? null,
