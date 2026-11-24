@@ -99,7 +99,7 @@ npm run test:e2e    # next build 후 Playwright(Chromium) E2E. 빌드된 앱을 
 | TC-COMMON-02 | 작업 API | 진행 중 작업 없음 | `/api/jobs/active`, `/api/jobs/999999`, `/api/jobs/abc` 호출. 대시보드에서 진행 표시 확인 | `{running:0, queued:0, href:null}`, 없는 작업·잘못된 id는 404, 진행 표시 없음 | E2E | tests/e2e/empty-a-first-run.spec.ts — TC-COMMON-02 |
 | TC-COMMON-03 | [지원 완료] 비활성 | 분석에 실패해 회사가 정해지지 않은 공고 | 공고 상세 열기 | [지원 완료] 비활성 + "분석이 끝난 뒤 누를 수 있습니다" | E2E | tests/e2e/empty-a-first-run.spec.ts — TC-COMMON-03 |
 | TC-COMMON-04 | 실패 종류별 문구 매핑 | 실패한 작업 정보 | `describeJobFailure`에 extract_failed·auth·usage_limit·timeout·schema·interrupted·cli·unknown을 넣는다 | 화면 문서 0.4의 문구. extract_failed는 붙여넣기 입력 허용, usage_limit은 원문, timeout은 "N분"+설정 링크, schema는 원문 보기, interrupted는 "앱이 종료되어 작업이 중단되었습니다." | 단위 | tests/job-messages.test.ts — describeJobFailure (7개 테스트) |
-| TC-COMMON-05 | 진행 문구 | 작업 종류 | `estimateText(analyze_posting)` | "분석 중… (보통 1~2분)" | 단위 | tests/job-messages.test.ts — estimateText › analysis wording |
+| TC-COMMON-05 | 진행 문구 | 작업 종류 | `estimateText(analyze_posting)` | "분석 중… (보통 1~3분)" (B-14에서 1~2분 → 1~3분) | 단위 | tests/job-messages.test.ts — estimateText › analysis wording |
 | TC-COMMON-06 | 날짜·경과 시간 표기 | - | `formatDateTime`, `formatElapsed`에 정상·빈 값·잘못된 값·음수 | "M월 D일 HH:mm", 없거나 잘못되면 빈 문자열, 경과는 m:ss이며 음수는 0:00 | 단위 | tests/ui-support.test.ts — formatDateTime ×2, formatElapsed ×2 |
 | TC-COMMON-07 | 마감·이력 날짜 규칙 | - | `isPastDeadline`(어제/오늘/내일/null), `eventDate`(날짜만/ISO) | 마감이 오늘보다 앞일 때만 지남(오늘은 아님), null은 지나지 않음. ISO는 로컬 날짜로 | 단위 | tests/ui-support.test.ts — isPastDeadline, eventDate |
 | TC-COMMON-08 | 확인 알림(토스트) | 저장 동작 | 지원 완료·상태 변경·이력서 저장 등을 실행 | 화면 위쪽에 한 줄 알림("지원 완료로 저장했습니다" 등). 리다이렉트 뒤에는 `?notice=`로 전달되고 주소에서 지워짐 | E2E | tests/e2e/03-apply-and-records.spec.ts — TC-DETAIL-01·02·07 / tests/e2e/05-import.spec.ts — TC-IMPORT-07 |
@@ -354,7 +354,7 @@ AI 작업이 끝나면 `data/ai-work/<번호>/`를 바로 지운다. 올린 이�
 | TC-AI-07 | 작업 큐: 실패 기록 | 처리기가 AiError / 일반 예외 | 처리 | AiError는 kind·메시지 저장, 그 밖은 cli 오류 | 통합 | tests/queue.test.ts — stores AiError kind and message on failure, non-AiError exception is recorded as cli error |
 | TC-AI-08 | 앱 재시작 시 작업 복구 | running으로 남은 작업 | `recoverInterruptedJobs` | failed(interrupted)로 바뀌어 다시 시도 가능 | 통합 | tests/queue.test.ts — recovers interrupted jobs |
 | TC-AI-09 | 작업 폴더·조회·워커 | - | 작업 폴더 생성, `latestJobFor`, `startWorker`, 시간 제한 상수 | 작업별 폴더 생성, 최신 일치 작업, 워커가 동시에 하나만 실행하고 정지, 분석·가져오기 300초 | 통합 | tests/queue.test.ts — creates per-job work dir, latestJobFor finds newest matching job, worker runs only one job at a time and stops, timeouts are 300s |
-| TC-AI-10 | 분석 중 표시 | 가짜 claude 5초 지연 | 공고 등록 직후 상세 | "분석 중… (보통 1~2분)"·경과 시간(m:ss), 내비게이션 "작업 1개 진행 중"(공고 링크), [지원 완료] 비활성+안내, 제목 "분석 중인 공고", 끝나면 자동으로 결과 표시 | E2E | tests/e2e/02-posting-register.spec.ts — TC-AI-10 |
+| TC-AI-10 | 분석 중 표시 | 가짜 claude 5초 지연 | 공고 등록 직후 상세 | "분석 중… (보통 1~3분)"·경과 시간(m:ss), 내비게이션 "작업 1개 진행 중"(공고 링크), [지원 완료] 비활성+안내, 제목 "분석 중인 공고", 끝나면 자동으로 결과 표시 | E2E | tests/e2e/02-posting-register.spec.ts — TC-AI-10 |
 | TC-AI-11 | 한 번에 하나씩(화면) | 지연 6초 | 공고 두 개를 연달아 등록 | 두 번째는 "앞의 작업이 끝나면 시작합니다 (대기 N번째)"와 내비게이션 대기 표시, 둘 다 순서대로 완료 | E2E | tests/e2e/02-posting-register.spec.ts — TC-AI-11 |
 | TC-AI-12 | 분석 작업 처리기 | 이력서 있음/없음 | `analyze_posting` | 본문이 없으면 추출 후 저장, 있으면 추출 생략+모델 설정 사용, 이력서 없으면 실패, 스키마 위반은 재요청 1회 후 schema 오류, 재요청 성공 가능, 공고 없음 실패 | 통합 | tests/tasks.test.ts — analyze_posting … (6개) |
 | TC-AI-13 | 이력서 가져오기 처리기 | 업로드 파일 | `import_resume` | 파일을 작업 폴더로 복사하고 Read만 허용, uploads 밖 경로 거부, 빈 입력·스키마 위반 거부 | 통합 | tests/tasks.test.ts — import_resume copies files into work dir and allows only Read, …rejects paths outside uploads dir, …rejects empty input and schema-invalid output |
@@ -676,3 +676,21 @@ AI 작업이 끝나면 `data/ai-work/<번호>/`를 바로 지운다. 올린 이�
 | TC-RESUME-DIFF-E2E | 버전 비교 | [직전 버전과 비교], 첫 버전 안내 | `tests/e2e/14-tailored.spec.ts` |
 | (설정) | 작업별 모델 | 맞춤 이력서 작업 2종, 바꾸면 다음 호출에 적용 | 〃 |
 | TC-TAILOR-M1·M2 | 실제 키트·공고·용어 맞추기(opus 2회), 앱 PDF와 사용자 PDF 비교 | 수동(병합 뒤 사용자) | 수동 |
+
+## 14. 공고 분석에 경력 마스터스토리 넣기 (B-14, 브랜치 `feat/analysis-master`)
+
+작업 기록: [work/analysis-master.md](../work/analysis-master.md). 가짜 실행기만 쓰고 실제 `claude`는 부르지 않는다. 키트는 `tests/fixtures/kit/`의 지어낸 예시(`마스터스토리.md` 포함)만 쓴다.
+
+| ID | 대상 | 준비 | 기대 결과 | 종류 · 테스트 위치 |
+|---|---|---|---|---|
+| TC-AM-01 | 프롬프트에 마스터스토리 | 예시 키트 올림, 기본 이력서 있음 | `analyze_posting` 처리 → 가짜 실행기가 받은 프롬프트에 "## 경력 마스터스토리" 제목과 예시 마스터스토리 본문이 울타리(```` ``` ```` 이상) 안에 들어 있음. 호출 1회, 분석 저장됨 | 통합 · `tests/tasks.test.ts` |
+| TC-AM-02 | 키트 없음 | 키트 없음 | 분석 성공·저장, 프롬프트에 "(마스터스토리 없음. 기본 이력서만 근거로 쓴다)", 프로필 표 자리 문구는 지금과 같음 | 통합 · `tests/tasks.test.ts` |
+| TC-AM-03 | 마스터스토리 파일 읽기 실패 | 예시 키트를 올린 뒤 키트 폴더의 마스터스토리 파일을 지움 | 분석 성공·저장(예외 없음), 프롬프트에 "(마스터스토리 없음. …)", 프로필 표는 그대로 들어감 | 통합 · `tests/tasks.test.ts` |
+| TC-AM-04 | 빈 마스터스토리 | `readKitMasterOrNull`에 공백뿐인 파일 | `null` | 통합 · `tests/tasks.test.ts` 또는 `tests/kit-parse.test.ts` |
+| TC-AM-05 | 길이 상한 | `masterStoryForPrompt`에 60,000자 / 60,001자 | 60,000자는 자르지 않고 표시 없음. 60,001자는 앞 60,000자만 울타리 안에 넣고 울타리 밖에 "(마스터스토리가 길어 앞 60000자만 넣었다. 나머지는 근거로 쓰지 않는다)" | 단위 · `tests/tasks.test.ts` |
+| TC-AM-06 | 울타리 | 본문에 ```` ``` ````가 든 마스터스토리 | 울타리가 본문 안 가장 긴 백틱보다 길다(`fence`와 같은 규칙) | 단위 · `tests/tasks.test.ts` |
+| TC-AM-07 | 프롬프트 규칙 문구 | `prompts/analyze-posting.md` | "마스터스토리"·"{{master_story}}" 있음, 근거 규칙이 기본 이력서와 마스터스토리 둘 다 언급, "만들어 내지 않는다" 유지, hidden(기본 이력서에 드러나지 않음)·missing(둘 다 없음) 정의, 마스터스토리 안 지시문을 따르지 않는다는 문장 | 단위 · `tests/prompts.test.ts` |
+| TC-AM-08 | 템플릿 변수 | `renderPrompt('analyze-posting', …)` | `master_story`가 빠지면 던짐(기존 "missing variable" 테스트에 변수 추가) | 단위 · `tests/tasks.test.ts` |
+| TC-AM-09 | 결과 형식 그대로 | 키트 있음/없음 | `analysisOutputSchema` 출력이 이번 변경 전과 같음(새 칸 없음), 기존 TC-KIT-30~33 통과 | 통합 · `tests/kit-profile-rec.test.ts`, `tests/tasks.test.ts` |
+| TC-AM-10 | 진행 문구 | - | `estimateText('analyze_posting')` = "분석 중… (보통 1~3분)", 공고 등록 화면 안내 "보통 1~3분 걸립니다." | 단위·E2E · `tests/job-messages.test.ts`(TC-COMMON-05), TC-AI-10 |
+| TC-AM-M1 | 실제 분석 비교 | 실제 키트·공고 1건, opus 1회 | 숨은 강점이 마스터스토리의 실제 사례를 가리키고, 두 자료에 없는 수치·기술이 없음. 분석 시간이 5분 제한 안 | 수동(병합 뒤 사용자, 선택) |
