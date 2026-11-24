@@ -744,4 +744,21 @@ AI 작업이 끝나면 `data/ai-work/<번호>/`를 바로 지운다. 올린 이�
 | TC-SR-19 | 지원 완료 그대로 | 맞춤본 없는 공고 / 이전 맞춤본 있는 공고 | 제출 서류 기본값이 추천 1순위 프로필의 기본 서류 / 최신 맞춤 리비전(변경 전과 같음) | E2E · `tests/e2e/18-session-request.spec.ts` |
 | TC-SR-M1 | 실제 이력서 세션 | 실제 공고 1건 | 복사한 요청문을 이력서 세션에 붙여 넣어 PDF를 만들 수 있고, 빠진 정보가 없는지 사용자가 확인 | 수동(병합 뒤 사용자) |
 
+**D-33 a: 이력서 세션 맞춤본 기록 (같은 브랜치)**
+
+| ID | 대상 | 준비 | 기대 결과 | 종류 · 테스트 위치 |
+|---|---|---|---|---|
+| TC-SR-20 | 요청문의 키트 줄·끝 문장 | `buildSessionRequest`에 kit `{label:'키트 14', uploadedOn:'2026-11-23'}` | `## 쓸 프로필` 마지막 줄 "- 앱의 키트: 키트 14 (2026-11-23 올림)", `## 요청` 마지막 줄에 "바탕 이력서 2026-11-23" 예시 문장 | 단위 · `tests/session-request.test.ts` |
+| TC-SR-21 | 선택 값 인코딩 | `encodeResumeChoice`/`decodeResumeChoice`에 `{kind:'session', kitId:14, track:'백엔드', profileId:'B4'}`, 깨진 값(`sess:`, `sess:x:B4:백엔드`, 빈 프로필) | 왕복이 같음(`sess:14:B4:백엔드`). 깨진 값은 `null`. 날짜는 선택 값에 들어가지 않는다 | 단위 · `tests/submitted.test.ts` |
+| TC-SR-22 | 칸 변환 | `toColumns`에 session 선택 + baseDate '2026-11-23' + kitProfile | `submittedResume = {kind:'session', kitId, track, profileId, profileName, baseDate:'2026-11-23'}`, `submittedDocs.resume = null`. `currentSubmitted`로 되읽으면 같은 선택과 날짜 | 단위 · 〃 |
+| TC-SR-23 | 라벨 | `resumeLabel` short/long, `resumeDisplay` | short "세션 맞춤 · B4 · 2026-11-23", long "이력서 세션 맞춤본 · B4 오너십 (2026-11-23 이력서 기반)". display는 long 라벨과 같고 href null | 단위 · 〃 |
+| TC-SR-24 | 저장 검사 | 지원 완료 저장: 키트에 없는 프로필 / 날짜 '2026-13-01' / 날짜가 지원일 다음 날 / 지원일과 같은 날 / 수정 때 같은 값 그대로(키트가 바뀌었어도) | 앞의 셋은 한국어 오류("서류 키트에 없는 프로필입니다", "바탕 이력서 날짜를 확인하세요", "바탕 이력서 날짜는 지원일보다 늦을 수 없습니다")와 저장 0건. 같은 날은 저장. 수정에서 같은 키트·프로필이면 기록된 프로필 이름 그대로 두고 날짜만 바꿀 수 있음 | 통합 · `tests/applications.test.ts` 또는 `tests/submitted.test.ts` |
+| TC-SR-25 | 선택지·날짜 처음 값 | 예시 키트(올린 시각 고정) / 수정 창에서 지금 기록이 session / 지금 키트에 없는 프로필의 session 기록 | 이력서 선택지 순서가 맞춤 리비전 → "이력서 세션 맞춤본 · {id}"(모든 프로필) → 기본 서류 → 파일 → 모름. `sessionBaseDate` 처음 값 = 키트 올린 날(로컬 날짜) / 기록된 날짜 / 그 값이 "(이전 키트)"를 붙인 선택지로 맨 앞에 | 통합 · `tests/submitted-options.test.ts` |
+| TC-SR-26 | 기본값 그대로 | 맞춤본 없는 공고(요청 복사를 했든 안 했든) | `defaultSubmitted` 결과가 변경 전과 같음(추천 1순위 프로필의 기본 서류) | 단위 · `tests/submitted.test.ts` |
+| TC-SR-27 | 통계·대시보드 | session 기록 2건(프로필 B4), kit 기록 1건(B4), tailored 1건(B3) | `loadStatItems`의 `tailored`가 session에서 true, `profile` = B4, `kitTrack` null. `tailoredCompare`의 시작일이 session과 tailored 중 이른 지원일. `byProfile` B4는 지원 3·그중 맞춤 2. 서류 버전별 이력서 "맞춤 이력서" 묶음에 3건. 대시보드 이력서별 "맞춤 이력서" 묶음에 session 기록이 들어감 | 단위·통합 · `tests/stats.test.ts`, `tests/dashboard.test.ts` |
+| TC-SR-28 | 옛 기록 그대로 | tailored·kit(프로필 있음/없음)·file·imported·base 기록 | 라벨·통계·수정 창 처음 값이 변경 전과 같음(기존 테스트 통과) | 단위 · 기존 테스트 |
+| TC-SR-29 | 화면: 지원 완료 | 키트 있는 공고 → [지원 완료] | 이력서 칸에서 "이력서 세션 맞춤본 · B4"를 고르면 "바탕 이력서" 날짜 줄(처음 값 키트 올린 날)이 보이고, 다른 선택지면 사라짐. 날짜를 고쳐 저장하면 지원 기록 탭 요약·제출 서류 줄에 "이력서 세션 맞춤본 · B4 오너십 (2026-11-20 이력서 기반)", [보기] 없음. 지원일보다 늦은 날짜는 오류 문구, 저장 안 됨 | E2E · `tests/e2e/18-session-request.spec.ts` |
+| TC-SR-30 | 화면: 수정 창·대시보드·통계 | 위 기록 | 수정 창 처음 값이 그 선택지와 날짜. 대시보드 표의 이력서 칸 "세션 맞춤 · B4 · 2026-11-20", 이력서별 "맞춤 이력서" 묶음. `/stats` 맞춤 이력서 효과의 "맞춤 이력서" 줄에 1건 | E2E · 〃 |
+| TC-SR-31 | 화면: 폭 | 지원 완료 창·수정 창 폭 1024·1240·1440 | 긴 선택지 글자·날짜 줄이 창 밖으로 나가지 않음, 한글 줄바꿈 깨짐 없음 | E2E · 〃 |
+
 - 기존 E2E 중 숨긴 화면을 누르는 것(`14-tailored.spec.ts`의 프로필 고르기·용어 맞추기·다듬기·작업 공간 요청·배치·체크리스트, `16-apply-docs.spec.ts`의 상자 펼침, `helpers.ts`의 상자 열기, TC-AM-19의 링크·상자 태그)은 화면 경로가 없어진다. 그 E2E는 `test.skip`에 이유("2026-11-24 화면에서 숨김, session-request")를 남기거나 새 화면 기준으로 고친다. 숨긴 기능의 Vitest(리비전·작업·TC-HANDOFF)는 그대로 둔다. 숨긴 화면용 E2E를 새로 만들지 않는다.

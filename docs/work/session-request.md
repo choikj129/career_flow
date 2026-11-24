@@ -4,7 +4,7 @@
 - 배경: 기본은 추천 프로필 PDF로 지원(간단한 지원 흐름). 공고 맞춤 이력서는 선택이고, 만들 때는 AI가 필요하다. 사용자는 이 제작을 앱이 아닌 이력서 세션(이력서 프로젝트의 Claude Code)에서 하기로 했다(D-31 c와 같은 방향: 지원 폴더·PDF는 이력서 세션 몫, 앱은 분석·프로필 추천·기록).
 - PM이 제시하고 사용자가 고른 안: 맞춤 이력서 탭의 "공고에 맞춰 고치기" 상자 안 조립·용어 맞추기·다듬기 대신 [이력서 세션 요청 복사] 버튼. 누르면 이력서 세션에 붙여넣을 글이 복사된다: 회사·포지션·공고 본문, 추천 프로필, 맞춤 이력서 추천도와 이유, 숨은 강점 목록. 앱의 맞춤 기능 코드는 지우지 않고 화면에서만 숨긴다. 이력서 세션에서 만든 PDF는 [지원 완료]에서 제출 서류로 기록(지금처럼).
 - 브랜치: `feat/session-request` (폴더 `C:\project\career_flow-session-request`)
-- 상태: 검토 대기 (설계 2026-11-24)
+- 상태: 개발 대기(승인됨)
 - 관련 결정: D-31 c, D-32, B-14(analysis-master), 간단한 지원 흐름(simple-apply)
 
 ## 1. 설계 (product-planner)
@@ -22,7 +22,7 @@
 - 코드 삭제. `ProfilePicker`·`TailoredControls`의 조각(용어 맞추기·다듬기·HandoffPanel·결과 올리기 등), `src/lib/tailored/*`, 작업 처리기, 라우트(`/api/tailored/...`)는 그대로 둔다. `TailoredTab`에서 쓰지 않게 될 뿐이다.
 - 요청문 내려받기(.md) 라우트, 메모 칸, 지원 폴더 이름 제안. 클립보드 실패 때는 읽기 전용 칸으로 대신한다.
 - 이력서 세션 결과를 앱에 올리는 기능(숨긴 "결과 올리기"를 다시 꺼내지 않는다).
-- [지원 완료] 제출 서류의 새 선택지(D-33 초안, 아래). 이번에는 지금 선택지 그대로.
+- (취소됨) [지원 완료] 제출 서류의 새 선택지 → 사용자 결정 D-33 a로 이번 작업에 넣는다(아래 "D-33 a" 절).
 - DB·스키마·분석 프롬프트 변경. 분석 탭 변경(“맞춤 이력서 탭으로 →” 링크는 그대로).
 
 ### 확인한 사실 (근거)
@@ -61,6 +61,8 @@ export type SessionRequestInput = {
   missing: string[];
   /** 파일 이름의 회사 자리(회사, 없으면 직무) */
   fileCompany: string;
+  /** D-33 a: 지금 쓰는 키트 이름(kitDisplayName)과 올린 날(로컬 YYYY-MM-DD) */
+  kit: { label: string; uploadedOn: string };
 };
 export function buildSessionRequest(i: SessionRequestInput): string;
 ```
@@ -109,7 +111,7 @@ export async function sessionRequestTextAction(postingId: number, profileId: str
 
 **4) 흐름**
 
-공고 등록 → 분석 → 맞춤 이력서 탭: 추천 프로필 PDF 받기(기본) / 맞춤이 필요하면 프로필 고르고 [이력서 세션 요청 복사] → 이력서 세션에 붙여 넣어 PDF 만듦 → [지원 완료] 제출 서류는 지금 선택지에서 고름(이력서 세션 PDF는 바탕 프로필의 "기본 서류"를 고르고 메모, D-33 결정 전까지).
+공고 등록 → 분석 → 맞춤 이력서 탭: 추천 프로필 PDF 받기(기본) / 맞춤이 필요하면 프로필 고르고 [이력서 세션 요청 복사] → 이력서 세션에 붙여 넣어 PDF를 만들고 바탕 이력서 날짜를 받음 → [지원 완료] 이력서 칸에서 "이력서 세션 맞춤본 · {프로필}" + 바탕 이력서 날짜(D-33 a).
 
 ### 요청문 예시 (지어낸 값)
 
@@ -130,6 +132,7 @@ export async function sessionRequestTextAction(postingId: number, profileId: str
 - 추천 기준: AI 추천 (공고 분석 11/24 14:02 · 키트 14)
 - 다음 후보: B1 범용 55%, B2 대용량 40%, B4 오너십 10%
 - 추가 조정 추천: Kafka·메시지 큐·비동기·이벤트
+- 앱의 키트: 키트 14 (2026-11-23 올림)
 
 ## 맞춤 이력서 추천도
 
@@ -150,6 +153,7 @@ export async function sessionRequestTextAction(postingId: number, profileId: str
 - 기본 서류·마스터스토리에 없는 경력·수치·기술은 쓰지 않습니다. "부족한 것"은 채우지 않습니다.
 - 숨은 강점은 마스터스토리에 있는 사실만 앞으로 꺼냅니다.
 - PDF 파일 이름: {이름}_이력서_가나다랩.pdf, {이름}_경력기술서_가나다랩.pdf
+- 마지막에 어느 날짜의 이력서를 바탕으로 만들었는지 한 줄로 알려 주세요(예: 바탕 이력서 2026-11-23).
 
 ## 공고 본문
 
@@ -165,7 +169,8 @@ export async function sessionRequestTextAction(postingId: number, profileId: str
 - `docs/spec/screens.md` 3.4: 탭 구성, 지원 서류 카드 그림·맞춤 이력서 줄, 새 절 "이력서 세션 요청"·"이전 맞춤본", "공고에 맞춰 고치기"·"작업 공간 요청"·상황별 표시에 숨김 표시. 3.7 이력서 세션 PDF 기록 방법 한 줄. 8 작업별 모델 6종.
 - `docs/spec/product.md` 7.5 첫 문단(이력서 세션 요청), 7.5 "작업 공간에 요청" 숨김 표시, 7.11 한 줄.
 - `docs/design/design.md` 맞춤 이력서 탭 배치 주석 한 줄.
-- `docs/test/test-cases.md` 15장 TC-SR-01~19, M1.
+- `docs/test/test-cases.md` 15장 TC-SR-01~19, M1, D-33 a TC-SR-20~31.
+- D-33 a: `docs/spec/product.md` 7.4·7.5·7.10, `docs/spec/screens.md` 1(대시보드 표·이력서별)·3.4(요청문 키트 줄·끝 문장)·3.7·3.9·3.10·5.5·10.3.
 - 계획 문서(`docs/plans/phase-3-tailored-resume.md`)는 고치지 않았다. 3단계는 끝난 계획이라 이 작업 기록과 화면 문서가 기준이다.
 
 ### 테스트 케이스
@@ -176,9 +181,54 @@ TC-SR-01~19, TC-SR-M1 (`docs/test/test-cases.md` 15장). 요약:
 - E2E(12~19): 요청 칸·복사·프로필 바꿔 복사, 숨긴 것 없음, 이전 맞춤본, 상황별, 복사 실패, 폭 3종, 설정 2줄 숨김, 지원 완료 기본값 그대로.
 - 기존 E2E 중 숨긴 화면을 누르는 것은 `test.skip`(이유 적음) 또는 새 기준으로 고친다(15장 끝 문단). TC-AM-18·19, TC-TAILOR-E2E-02~06·08·09·12·14 해당. TC-TAILOR-E2E-08(지원 완료 기본값 맞춤 리비전)은 리비전을 시드로 넣어 TC-SR-19로 옮긴다.
 
-### 정할 것 초안
+### D-33 a: 이력서 세션 맞춤본 기록 (2026-11-24 사용자 결정, 이번 작업에 포함)
 
-**D-33 (초안) 이력서 세션에서 만든 맞춤 PDF를 지원 기록에 어떻게 남길까** — 이번 작업을 막지 않는다. 다음 작업 후보.
+사용자 조건: "a로 진행 대신 몇년 몇월 며칠 이력서 기반으로 만들었다는 건 표기" → 바탕 이력서 날짜(YYYY-MM-DD)를 함께 저장하고 표시한다. 화면 상세는 [screens.md 3.7](../spec/screens.md) "이력서 세션 맞춤본", 기획은 [product.md 7.4](../spec/product.md).
+
+**판단한 것**
+- 날짜 처음 값 = **선택지의 키트(지금 쓰는 키트, `getUsableKit`)를 올린 날**의 로컬 날짜(`eventDate(kit.createdAt)`, `src/lib/domain/dates.ts:33`). 이유: 선택지 목록이 이미 지금 키트 기준이고(`submitted-options.ts:59,73-78`), 분석 때의 키트와 다르면 프로필 목록도 맞지 않는다.
+- **날짜는 고칠 수 있게 한다**(작은 날짜 입력). 이력서 세션의 서류가 앱 키트보다 새로울 수 있다. 이력서 세션 맞춤본을 고를 때만 보이므로 평소 입력은 늘지 않는다.
+- **요청문에 키트 줄과 끝 문장을 넣는다**: `- 앱의 키트: 키트 14 (2026-11-23 올림)`, "마지막에 어느 날짜의 이력서를 바탕으로 만들었는지 한 줄로 알려 주세요(예: 바탕 이력서 2026-11-23)." 이력서 세션이 알려 준 날짜를 [지원 완료]에 적는다.
+- **기본값은 바꾸지 않는다.** 요청 복사를 누른 공고도 같다. 복사는 저장하지 않으므로 알려면 새 저장이 필요하고(범위 밖), 복사했다고 그 PDF로 냈다는 보장도 없다.
+- 검사: 날짜가 올바르고 지원일보다 늦지 않다. 공고 없는 기록(수정 창)에도 이 선택지가 있다.
+
+**데이터** (DB 열·표 변경과 마이그레이션 없음. JSON 칸의 값 종류만 하나 늘림)
+
+```ts
+// src/lib/domain/types.ts
+export type SubmittedResume =
+  | ... // 기존 그대로
+  | { kind: 'session'; kitId: number; track: string; profileId: string; profileName: string; baseDate: string }; // D-33 a
+
+// src/lib/applications/submitted.ts
+export type ResumeChoice = ... | { kind: 'session'; kitId: number; track: string; profileId: string };
+// 선택 값(select value)에는 날짜를 넣지 않는다: 'sess:{kitId}:{profileId}:{track}' (kitp와 같은 파싱)
+export type SubmittedInput = { resume: ResumeChoice; career: string | null; portfolio: string | null; sessionBaseDate?: string | null };
+```
+
+- `encodeResumeChoice`/`decodeResumeChoice`: `sess:` 추가.
+- `currentSubmitted`: session이면 `{ resume: {kind:'session', kitId, track, profileId}, sessionBaseDate: sr.baseDate, ... }`.
+- `toColumns(input, ctx)`: session이면 `ctx.kitProfile`과 `input.sessionBaseDate`가 있어야 한다. `submittedDocs.resume = null`.
+- `resumeLabel`: short `세션 맞춤 · {profileId} · {baseDate}`, long `이력서 세션 맞춤본 · {profileId} {profileName} ({baseDate} 이력서 기반)`.
+- `resumeDisplay`: `{ label: long 라벨, href: null }`.
+- `defaultSubmitted`: 바꾸지 않는다.
+- `resolveSubmittedColumns`(`src/lib/applications/repo.ts:44-`): session은 kit와 같은 프로필 검사를 한다(이전 기록과 키트·직무·프로필이 같으면 기록된 프로필 이름 그대로). 날짜는 `validDate`와 `<= appliedAt` 검사. 오류 문구는 screens.md 3.7.
+- `loadSubmittedFormData`(`submitted-options.ts`): 맞춤 리비전 다음, 기본 서류 앞에 `이력서 세션 맞춤본 · {id}`(full `이력서 세션 맞춤본 · {id} {name}`)를 키트의 모든 프로필에 넣는다. 지금 값이 session인데 선택지에 없으면 `(이전 키트)`를 붙여 맨 앞에 둔다. 반환에 `sessionBaseDate: string | null`을 더한다(지금 값이 session이면 그 날짜, 아니면 키트 올린 날, 키트가 없으면 null).
+- 서버 액션(지원 완료·기록 수정)의 폼 값에 `resumeBaseDate`를 더해 `SubmittedInput.sessionBaseDate`로 넘긴다.
+- 통계 `src/lib/stats/load.ts:79-81`: `tailored: sr.kind === 'tailored' || sr.kind === 'session'`, profile은 session이면 기록의 `{profileId, profileName}`, kitTrack은 null. aggregate는 바꾸지 않는다(`tailored` 플래그를 쓴다).
+- 대시보드 `src/lib/search/dashboard.ts:137`: `tailored`에 session을 포함한다(이력서별 "맞춤 이력서" 묶음). 라벨은 `resumeLabel` short.
+- 그 밖에 `SubmittedResume.kind`로 switch하는 곳은 default로 빠지지 않게 session을 처리한다.
+
+**화면**
+- `DocSelects.tsx`: 이력서 값이 `sess:`로 시작할 때만 이력서 줄 아래에 `바탕 이력서` + `DateInput` 줄을 둔다(`data-testid="resume-base-date"`). `useSubmittedValues`에 `baseDate` 상태를 더한다. 처음 값은 `data.sessionBaseDate`, 바꾸면 picked로 둔다.
+- `ApplyForm.tsx`, `ApplicationEditModal.tsx`: 날짜 값을 액션에 넘긴다.
+- 지원 기록 탭 요약·제출 서류 줄, 대시보드 표, 통계는 위 라벨과 플래그를 따른다.
+
+**테스트**: TC-SR-20~31(`docs/test/test-cases.md` 15장 "D-33 a").
+
+### 정할 것 초안 (기록용. D-33은 a로 결정됨, decisions.md는 메인 세션이 고침)
+
+**D-33 (초안) 이력서 세션에서 만든 맞춤 PDF를 지원 기록에 어떻게 남길까** — 2026-11-24 a로 결정, 바탕 이력서 날짜 표기 조건이 붙음.
 
 - 배경: [지원 완료]의 이력서 선택지는 앱 맞춤본·프로필 기본 서류·이력서 파일·모름뿐이다(`submitted-options.ts:66-82`). 이력서 세션 PDF로 내면 "기본 서류 · 프로필"을 고르게 되어, 통계 "맞춤 이력서 효과"(7.10)가 그 지원을 "맞춤 안 함"으로 센다. 칸·표는 그대로 두고 저장 값 종류(`SubmittedResume.kind`)를 하나 늘리면 되지만, 기록의 뜻과 통계 셈이 바뀌므로 묻는다.
 - 선택지
@@ -203,6 +253,7 @@ TC-SR-01~19, TC-SR-M1 (`docs/test/test-cases.md` 15장). 요약:
 
 | 날짜 | 결과 | 고칠 점 |
 |---|---|---|
+| 2026-11-24 | 승인 + D-33 a | "승인. a로 진행 대신 몇년 몇월 며칠 이력서 기반으로 만들었다는 건 표기" → D-33 a를 이번 작업에 함께 넣는다. 제출 서류의 이력서 세션 맞춤본 기록에 바탕 이력서 날짜를 표시 |
 
 ## 3. 개발·검증 회차
 
