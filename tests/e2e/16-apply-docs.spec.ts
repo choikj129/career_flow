@@ -38,6 +38,10 @@ test.describe('지원 서류 카드', () => {
     // 이 키트의 모든 프로필이 직무별로 묶여 있다
     await expect(page.getByTestId('apply-profile').locator('optgroup')).toHaveCount(2);
     await expect(page.getByTestId('apply-profile').locator('option')).toHaveCount(4);
+    // 선택지에도 추천도가 보인다(AI가 매긴 직무의 프로필만)
+    await expect(page.getByTestId('apply-profile').locator('option[value="B2"]')).toHaveText('B2 성능 95% (추천)');
+    await expect(page.getByTestId('apply-profile').locator('option[value="B1"]')).toHaveText(/^B1 \S+ \d+%$/);
+    await expect(page.getByTestId('apply-profile').locator('option[value="D1"]')).not.toHaveText(/%/);
     const box = page.getByTestId('fix-box');
     await expect(box).toBeVisible();
     expect(await box.evaluate((el) => (el as HTMLDetailsElement).open)).toBe(false);
@@ -73,8 +77,13 @@ test.describe('지원 서류 카드', () => {
     const md2 = await request.get(`${b1.replace('/B1/', '/B2/')}&format=md`);
     expect(await md2.text()).toContain('성능과 안정성에 집중하는 백엔드 개발자'); // B2 자기소개 후보
 
-    await page.getByTestId('apply-docs').locator('summary', { hasText: '미리보기' }).click();
+    const previewBtn = page.getByTestId('apply-docs').locator('summary', { hasText: '미리보기' });
+    await previewBtn.click();
     await expect(page.getByRole('link', { name: '이력서 미리보기' })).toHaveAttribute('href', /profile\/B1\/resume\?postingId=\d+&format=html&inline=1/);
+    // 펼친 메뉴가 [미리보기] 버튼을 가리지 않고 그 아래에 뜬다
+    const btnBox = (await previewBtn.boundingBox())!;
+    const menuBox = (await page.getByTestId('apply-docs').locator('details.menu-pop > div').boundingBox())!;
+    expect(menuBox.y).toBeGreaterThanOrEqual(btnBox.y + btnBox.height);
 
     // 몇 번 받아도 맞춤본이 생기지 않는다
     await page.reload();
