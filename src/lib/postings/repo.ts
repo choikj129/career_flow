@@ -13,8 +13,16 @@ export type Analysis = typeof analyses.$inferSelect;
 
 const now = () => new Date().toISOString();
 
+export const MAX_COMPANY_NAME_LENGTH = 100;
+export const MAX_POSITION_LENGTH = 200;
+
+function checkLengths(company: string | null, position: string | null): void {
+  if (company && company.length > MAX_COMPANY_NAME_LENGTH) throw new Error(`회사명은 ${MAX_COMPANY_NAME_LENGTH}자 이하로 입력하세요`);
+  if (position && position.length > MAX_POSITION_LENGTH) throw new Error(`포지션은 ${MAX_POSITION_LENGTH}자 이하로 입력하세요`);
+}
+
 export function registerPosting(
-  input: { url?: string; pastedText?: string; siteNote?: string },
+  input: { url?: string; pastedText?: string; siteNote?: string; companyName?: string; positionTitle?: string },
   db: Db = getDb(),
 ): { postingId: number; existing: boolean; jobId?: number } {
   const url = input.url?.trim() || undefined;
@@ -30,6 +38,10 @@ export function registerPosting(
     if (existing) return { postingId: existing.id, existing: true };
   }
   const siteNote = input.siteNote?.trim() || null;
+  const companyName = input.companyName?.trim() || null;
+  const positionTitle = input.positionTitle?.trim() || null;
+  checkLengths(companyName, positionTitle);
+  const companyId = companyName ? findOrCreateCompany({ displayName: companyName }, db) : null;
   const row = db
     .insert(postings)
     .values({
@@ -37,6 +49,8 @@ export function registerPosting(
       canonicalUrl,
       site: url ? detectSite(url) : 'other',
       siteNote,
+      companyId,
+      positionTitle,
       rawText: pastedText ?? null,
       rawTextSource: pastedText ? ('pasted' as const) : null,
       fetchedAt: pastedText ? now() : null,
@@ -91,7 +105,8 @@ export function saveAnalysis(
       .run();
     tx.update(postings)
       .set({
-        positionTitle: result.posting.positionTitle,
+        // 사용자가 넣은(또는 먼저 채워진) 포지션은 다시 분석해도 바꾸지 않는다.
+        positionTitle: posting.positionTitle ?? result.posting.positionTitle,
         deadline: result.posting.deadline,
         extracted: result.posting,
         companyId,
@@ -254,6 +269,23 @@ export function setPostingCompany(postingId: number, companyId: number, db: Db =
     // 이 공고로 지원한 기록이 있으면 회사도 함께 바꾼다(중복 지원 검사가 어긋나지 않도록).
     tx.update(applications).set({ companyId }).where(eq(applications.postingId, postingId)).run();
   });
+}
+
+/** 상세 화면 [수정]: 회사 이름(없으면 만든다)과 포지션을 고친다. 이 공고로 지원한 기록의 회사도 함께 바뀐다. */
+export function updatePostingInfo(
+  postingId: number,
+  input: { companyName: string; positionTitle: string },
+  db: Db = getDb(),
+): void {
+  const companyName = input.companyName.trim();
+  const positionTitle = input.positionTitle.trim();
+  if (!companyName) throw new Error('회사명을 입력하세요');
+  if (!positionTitle) throw new Error('포지션을 입력하세요');
+  checkLengths(companyName, positionTitle);
+  if (!getPosting(postingId, db)) throw new Error('공고를 찾을 수 없습니다');
+  const companyId = findOrCreateCompany({ displayName: companyName }, db);
+  setPostingCompany(postingId, companyId, db);
+  db.update(postings).set({ positionTitle }).where(eq(postings.id, postingId)).run();
 }
 
 /** 지원 기록이 있거나 작업이 실행 중이면 거부. 대기 중 작업은 취소하고 분석은 함께 지운다. */

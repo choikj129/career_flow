@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { connection } from "next/server";
 import { isPastDeadline, todayLocal } from "@/lib/domain/dates";
 import { listAnalyzedNotApplied, listUnanalyzedPostings } from "@/lib/postings/repo";
+import { DeleteRowButton } from "./DeleteRowButton";
 import { ClickableRow } from "../../_components/ClickableRow";
 import { Fit } from "../../_components/Fit";
 import { SiteBadge } from "../../_components/SiteBadge";
@@ -52,6 +53,7 @@ async function AnalyzedTable() {
             <th className="num">적합도</th>
             <th>마감일</th>
             <th>분석일</th>
+            <th aria-label="삭제"></th>
           </tr>
         </thead>
         <tbody>
@@ -76,6 +78,7 @@ async function AnalyzedTable() {
               </td>
               <td className="faint">—</td>
               <td>{p.createdAt.slice(0, 10)}</td>
+              <DeleteRowButton postingId={p.postingId} label={p.url ? p.url.replace(/^https?:\/\//, "").slice(0, 40) : "본문만 등록한 공고"} />
             </ClickableRow>
           ))}
           {analyzed.map((r) => {
@@ -92,6 +95,7 @@ async function AnalyzedTable() {
                 </td>
                 <td>{r.deadline ? (past ? `${r.deadline} 마감` : r.deadline) : "상시"}</td>
                 <td>{r.analyzedAt.slice(0, 10)}</td>
+                <DeleteRowButton postingId={r.postingId} label={`${r.companyName ?? "회사 미상"} ${r.positionTitle ?? ""}`.trim()} />
               </ClickableRow>
             );
           })}
