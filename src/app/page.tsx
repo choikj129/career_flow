@@ -150,6 +150,9 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
       {!searching && totalRecords > 0 && (
         <div className="summary">
           <span>
+            이번 주 지원<b>{stats.appliedThisWeek}</b>
+          </span>
+          <span>
             이번 달 지원<b>{stats.appliedThisMonth}</b>
           </span>
           {stats.reachedCounts.document_passed > 0 && (

@@ -8,6 +8,7 @@ test.describe('대시보드', () => {
   test('TC-DASH-01 전체 보기: 요약 줄과 표 열, 총 건수', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByRole('heading', { name: '지원 기록' })).toBeVisible();
+    await expect(page.getByText('이번 주 지원')).toBeVisible();
     await expect(page.getByText('이번 달 지원')).toBeVisible();
     await expect(page.getByText(/분석한 공고 \d+건 보기/)).toBeVisible();
     for (const h of ['회사', '포지션', '사이트', '지원일', '상태', '제출한 이력서', '적합도']) {
