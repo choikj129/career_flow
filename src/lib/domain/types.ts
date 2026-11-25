@@ -32,10 +32,11 @@ export const STATUS_LABELS: Record<ApplicationStatus, string> = {
 
 export type JobType = 'analyze_posting' | 'import_resume' | 'import_applications' | 'tailor_resume' | 'revise_tailored';
 
-/** 지원 기록의 제출 이력서. 맞춤본(tailored)·기본 서류 그대로(kit)·이력서 파일(file)·가져온 기록(imported)·예전 [지원 완료](base). */
+/** 지원 기록의 제출 이력서. 맞춤본(tailored)·기본 서류 그대로(kit)·이력서 세션 맞춤본(session)·이력서 파일(file)·가져온 기록(imported)·예전 [지원 완료](base). */
 export type SubmittedResume =
   | { kind: 'tailored'; tailoredRevisionId: number }
   | { kind: 'kit'; kitId: number; track: string; profileId: string; profileName: string }
+  | { kind: 'session'; kitId: number; track: string; profileId: string; profileName: string; baseDate: string } // D-33 a: 이력서 세션에서 만든 맞춤본(파일은 저장하지 않는다). baseDate는 바탕 이력서 날짜(YYYY-MM-DD)
   | { kind: 'file' }
   | { kind: 'imported' }
   | { kind: 'base'; versionId: number };

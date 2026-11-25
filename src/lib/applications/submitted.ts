@@ -6,12 +6,19 @@ import type { SubmittedResume } from '@/lib/domain/types';
 export type ResumeChoice =
   | { kind: 'tailored'; tailoredRevisionId: number }
   | { kind: 'kit'; kitId: number; track: string; profileId?: string } // 기본 서류. profileId가 없으면 그 직무의 기본 프로필(예전 값)
+  | { kind: 'session'; kitId: number; track: string; profileId: string } // D-33 a. 날짜는 선택 값에 넣지 않는다(SubmittedInput.sessionBaseDate)
   | { kind: 'file'; fileName: string }
   | { kind: 'unknown' }
   | { kind: 'base'; versionId: number }; // 예전 기록 유지 전용. 새로 고를 수 없다
 
 /** 이력서 칸 + 경력기술서·포트폴리오 값(파일 이름 | DOC_NONE | null=모름) */
-export type SubmittedInput = { resume: ResumeChoice; career: string | null; portfolio: string | null };
+export type SubmittedInput = {
+  resume: ResumeChoice;
+  career: string | null;
+  portfolio: string | null;
+  /** 이력서 세션 맞춤본의 바탕 이력서 날짜(YYYY-MM-DD). resume이 session일 때만 쓴다 */
+  sessionBaseDate?: string | null;
+};
 
 export function encodeResumeChoice(c: ResumeChoice): string {
   switch (c.kind) {
@@ -19,6 +26,8 @@ export function encodeResumeChoice(c: ResumeChoice): string {
       return `tailored:${c.tailoredRevisionId}`;
     case 'kit':
       return c.profileId ? `kitp:${c.kitId}:${c.profileId}:${c.track}` : `kit:${c.kitId}:${c.track}`;
+    case 'session':
+      return `sess:${c.kitId}:${c.profileId}:${c.track}`;
     case 'file':
       return `file:${c.fileName}`;
     case 'unknown':
@@ -52,14 +61,15 @@ export function decodeResumeChoice(s: string): ResumeChoice | null {
     const track = rest.slice(j + 1);
     return kitId == null || !track ? null : { kind: 'kit', kitId, track };
   }
-  if (head === 'kitp') {
+  if (head === 'kitp' || head === 'sess') {
     const j = rest.indexOf(':');
     const k = j < 0 ? -1 : rest.indexOf(':', j + 1);
     if (k < 0) return null;
     const kitId = posInt(rest.slice(0, j));
     const profileId = rest.slice(j + 1, k);
     const track = rest.slice(k + 1);
-    return kitId == null || !profileId || !track ? null : { kind: 'kit', kitId, track, profileId };
+    if (kitId == null || !profileId || !track) return null;
+    return head === 'sess' ? { kind: 'session', kitId, track, profileId } : { kind: 'kit', kitId, track, profileId };
   }
   return null;
 }
@@ -73,6 +83,8 @@ export function currentSubmitted(sr: SubmittedResume, docs: SubmittedDocs | null
       return { resume: { kind: 'tailored', tailoredRevisionId: sr.tailoredRevisionId }, career, portfolio };
     case 'kit':
       return { resume: { kind: 'kit', kitId: sr.kitId, track: sr.track, profileId: sr.profileId }, career, portfolio };
+    case 'session':
+      return { resume: { kind: 'session', kitId: sr.kitId, track: sr.track, profileId: sr.profileId }, career, portfolio, sessionBaseDate: sr.baseDate };
     case 'base':
       return { resume: { kind: 'base', versionId: sr.versionId }, career, portfolio };
     default: {
@@ -128,6 +140,10 @@ export function toColumns(
       if (!ctx.kitProfile) throw new Error('기본 서류의 프로필을 찾을 수 없습니다');
       submittedResume = { kind: 'kit', kitId: r.kitId, track: r.track, ...ctx.kitProfile };
       break;
+    case 'session':
+      if (!ctx.kitProfile || !input.sessionBaseDate?.trim()) throw new Error('바탕 이력서 날짜를 확인하세요');
+      submittedResume = { kind: 'session', kitId: r.kitId, track: r.track, ...ctx.kitProfile, baseDate: input.sessionBaseDate.trim() };
+      break;
     case 'base':
       submittedResume = { kind: 'base', versionId: r.versionId };
       break;
@@ -143,7 +159,7 @@ export function toColumns(
 }
 
 /**
- * short: '맞춤 r2 · B3' | '기본 서류 백엔드 · B1' | '이력서 2026-11-02' | '기본 v3' | null
+ * short: '맞춤 r2 · B3' | '세션 맞춤 · B4 · 2026-11-23' | '기본 서류 백엔드 · B1' | '이력서 2026-11-02' | '기본 v3' | null
  * long: '맞춤 이력서 r2 (B3 정합성)' | '기본 서류 백엔드 (B1 범용)' | '이력서 2026-11-02' | '기본 이력서 v3' | null
  * 맞춤본의 번호·프로필은 리비전에서 읽어 names로 넘긴다(기록에는 리비전 id만 있다).
  */
@@ -162,6 +178,8 @@ export function resumeLabel(
     }
     case 'kit':
       return long ? `기본 서류 ${sr.track} (${sr.profileId} ${sr.profileName})` : `기본 서류 ${sr.track} · ${sr.profileId}`;
+    case 'session':
+      return long ? `이력서 세션 맞춤본 · ${sr.profileId} ${sr.profileName} (${sr.baseDate} 이력서 기반)` : `세션 맞춤 · ${sr.profileId} · ${sr.baseDate}`;
     case 'base':
       return names.versionNo != null ? `${long ? '기본 이력서' : '기본'} v${names.versionNo}` : long ? '기본 이력서' : '기본';
     default: {
@@ -192,6 +210,8 @@ export function resumeDisplay(
       };
     case 'kit':
       return { label: `기본 서류 ${sr.track}`, href: `/api/kit/${sr.kitId}/profile/${encodeURIComponent(sr.profileId)}/resume?inline=1` };
+    case 'session':
+      return { label: `이력서 세션 맞춤본 · ${sr.profileId} ${sr.profileName} (${sr.baseDate} 이력서 기반)`, href: null }; // 앱에 파일이 없다
     case 'base':
       return { label: `${names.versionNo != null ? `기본 이력서 v${names.versionNo}` : '기본 이력서'} (예전 기록)`, href: null };
     default:

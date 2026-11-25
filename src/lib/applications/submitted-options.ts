@@ -1,5 +1,6 @@
 import type { Db } from '@/lib/db/client';
 import { getDb } from '@/lib/db/client';
+import { eventDate } from '@/lib/domain/dates';
 import { DOC_NONE, docLabel, docValueText, type DocFile } from '@/lib/documents/files';
 import { listDocFiles } from '@/lib/documents/folder';
 import { getUsableKit } from '@/lib/kit/repo';
@@ -25,6 +26,8 @@ export type SubmittedFormData = {
   /** 수정 창일 때 지금 기록 값. 지원 완료 창이면 null */
   current: SubmittedInput | null;
   noFiles: boolean;
+  /** 이력서 세션 맞춤본을 고를 때 "바탕 이력서" 날짜의 처음 값(D-33 a): 지금 기록이 그 값이면 기록된 날짜, 아니면 지금 키트를 올린 날, 키트가 없으면 null */
+  sessionBaseDate: string | null;
 };
 
 function docOptions(kind: 'career' | 'portfolio', files: DocFile[], current: string | null): ChoiceOption[] {
@@ -70,10 +73,13 @@ export function loadSubmittedFormData(
     add(encodeResumeChoice({ kind: 'tailored', tailoredRevisionId: r.id }), `맞춤 이력서 r${r.revNo} · ${r.profileId}`, `맞춤 이력서 r${r.revNo} · ${r.profileId} ${r.profileName}`);
   }
   if (kit) {
-    for (const t of kit.parsed.tracks) {
-      for (const p of kit.parsed.profiles.filter((x) => x.track === t.name)) {
-        add(encodeResumeChoice({ kind: 'kit', kitId: kit.id, track: t.name, profileId: p.id }), `기본 서류 ${t.name} · ${p.id}`, `기본 서류 ${t.name} · ${p.id} ${p.name}`);
-      }
+    // 이력서 세션 맞춤본 전부 → 기본 서류 전부(D-33 a)
+    const profiles = kit.parsed.tracks.flatMap((t) => kit.parsed.profiles.filter((x) => x.track === t.name).map((p) => ({ t, p })));
+    for (const { t, p } of profiles) {
+      add(encodeResumeChoice({ kind: 'session', kitId: kit.id, track: t.name, profileId: p.id }), `이력서 세션 맞춤본 · ${p.id}`, `이력서 세션 맞춤본 · ${p.id} ${p.name}`);
+    }
+    for (const { t, p } of profiles) {
+      add(encodeResumeChoice({ kind: 'kit', kitId: kit.id, track: t.name, profileId: p.id }), `기본 서류 ${t.name} · ${p.id}`, `기본 서류 ${t.name} · ${p.id} ${p.name}`);
     }
   }
   for (const f of files.filter((x) => x.kind === 'resume')) {
@@ -91,6 +97,9 @@ export function loadSubmittedFormData(
       if (current.resume.kind === 'base') {
         const no = getResumeVersion(current.resume.versionId, db)?.versionNo;
         label = `${no != null ? `기본 이력서 v${no}` : '기본 이력서'} (예전 기록)`;
+      } else if (sr.kind === 'session') {
+        label = `이력서 세션 맞춤본 · ${sr.profileId} (이전 키트)`;
+        full = `이력서 세션 맞춤본 · ${sr.profileId} ${sr.profileName} (이전 키트)`;
       } else if (current.resume.kind === 'file') {
         label = `${docLabel(current.resume.fileName)} (파일 없음)`;
       } else {
@@ -110,5 +119,6 @@ export function loadSubmittedFormData(
     kit: postingId != null ? defaultKitChoice(postingId, db) : null,
     current,
     noFiles: files.length === 0,
+    sessionBaseDate: current?.sessionBaseDate ?? (kit ? eventDate(kit.createdAt) : null),
   };
 }

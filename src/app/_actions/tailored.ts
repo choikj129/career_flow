@@ -3,6 +3,8 @@
 import { z } from 'zod';
 import { normalizeNewlines } from '@/lib/kit/md-doc';
 import { buildHandoffMdForRevision, HANDOFF_NOTE_MAX } from '@/lib/tailored/handoff-data';
+import { buildSessionRequestMd } from '@/lib/tailored/session-request-data';
+import { getPosting } from '@/lib/postings/repo';
 import {
   addExternalRevision,
   createRecipeRevision,
@@ -77,6 +79,19 @@ export async function handoffTextAction(revisionId: number, note: string): Promi
     return text ? { ok: true, text } : { ok: false, error: '맞춤본을 찾을 수 없습니다' };
   } catch (e) {
     return { ok: false, error: e instanceof z.ZodError ? (e.issues[0]?.message ?? '입력을 확인해 주세요') : e instanceof Error ? e.message : String(e) };
+  }
+}
+
+/** [이력서 세션 요청 복사]: 공고·분석·고른 프로필로 요청문을 만들어 돌려준다. 저장하지 않고 claude를 부르지 않는다 */
+export async function sessionRequestTextAction(postingId: number, profileId: string): Promise<HandoffTextResult> {
+  try {
+    const v = z.object({ postingId: id, profileId: z.string().min(1).max(50) }).parse({ postingId, profileId });
+    const posting = getPosting(v.postingId);
+    if (posting && !posting.rawText?.trim()) return { ok: false, error: '공고 본문이 없어 요청문을 만들 수 없습니다' };
+    const text = buildSessionRequestMd(v.postingId, v.profileId);
+    return text ? { ok: true, text } : { ok: false, error: '요청문을 만들 수 없습니다' };
+  } catch (e) {
+    return { ok: false, error: e instanceof z.ZodError ? '요청문을 만들 수 없습니다' : e instanceof Error ? e.message : String(e) };
   }
 }
 

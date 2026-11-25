@@ -75,6 +75,10 @@ describe('loadSubmittedFormData (TC-SUBMIT-08)', () => {
     expect(d.resumeOptions.map((o) => o.value)).toEqual([
       `tailored:${r2.id}`,
       `tailored:${r1.id}`,
+      expect.stringMatching(/^sess:\d+:B1:백엔드$/), // D-33 a: 이력서 세션 맞춤본이 맞춤 리비전 다음, 기본 서류 앞에 온다
+      expect.stringMatching(/^sess:\d+:B2:백엔드$/),
+      expect.stringMatching(/^sess:\d+:D1:데이터$/),
+      expect.stringMatching(/^sess:\d+:D2:데이터$/),
       expect.stringMatching(/^kitp:\d+:B1:백엔드$/),
       expect.stringMatching(/^kitp:\d+:B2:백엔드$/),
       expect.stringMatching(/^kitp:\d+:D1:데이터$/),
@@ -85,12 +89,12 @@ describe('loadSubmittedFormData (TC-SUBMIT-08)', () => {
     ]);
     expect(d.resumeOptions[0].label).toBe('맞춤 이력서 r2 · B2');
     expect(d.resumeOptions[0].full).toBe('맞춤 이력서 r2 · B2 성능');
-    expect(d.resumeOptions[2].label).toBe('기본 서류 백엔드 · B1');
-    expect(d.resumeOptions[2].full).toBe('기본 서류 백엔드 · B1 범용');
-    expect(d.resumeOptions[3].label).toBe('기본 서류 백엔드 · B2');
-    expect(d.resumeOptions[3].full).toBe('기본 서류 백엔드 · B2 성능');
-    expect(d.resumeOptions[5].label).toBe('기본 서류 데이터 · D2');
-    expect(d.resumeOptions[6].label).toBe('이력서 2026-11-02');
+    expect(d.resumeOptions[6].label).toBe('기본 서류 백엔드 · B1');
+    expect(d.resumeOptions[6].full).toBe('기본 서류 백엔드 · B1 범용');
+    expect(d.resumeOptions[7].label).toBe('기본 서류 백엔드 · B2');
+    expect(d.resumeOptions[7].full).toBe('기본 서류 백엔드 · B2 성능');
+    expect(d.resumeOptions[9].label).toBe('기본 서류 데이터 · D2');
+    expect(d.resumeOptions[10].label).toBe('이력서 2026-11-02');
     expect(d.latestRevisionId).toBe(r2.id);
     expect(d.kit).toBeNull(); // 공고 분석에 추천이 없고 직무가 둘이라 고르지 않는다
     expect(d.current).toBeNull();

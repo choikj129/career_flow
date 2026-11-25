@@ -134,7 +134,7 @@ export function searchApplications(
             : null
           : resumeLabel(sr, a.submittedDocs, { revNo: rev?.revNo, profile: rev?.profileId, profileName: rev?.profileName, versionNo }, 'short'),
       resumeBaseVersionNo: versionNo,
-      tailored: sr.kind === 'tailored',
+      tailored: sr.kind === 'tailored' || sr.kind === 'session', // 이력서 세션 맞춤본도 "맞춤 이력서" 묶음(D-33 a)
       resumeKitTrack: sr.kind === 'kit' ? sr.track : null,
       resumeDocFile,
       reached: [...reachedOf(a)],
