@@ -37,7 +37,9 @@ export async function registerPostingAction(_prev: RegisterState, formData: Form
   } catch (e) {
     return { error: e instanceof Error ? e.message : String(e) };
   }
-  const notice = result.existing ? `?notice=${encodeURIComponent('이미 등록된 공고입니다')}` : '';
+  const typed = String(formData.get('companyName') ?? '').trim() || String(formData.get('positionTitle') ?? '').trim();
+  const msg = typed ? '이미 등록된 공고입니다. 회사명·포지션은 [수정]으로 고치세요' : '이미 등록된 공고입니다';
+  const notice = result.existing ? `?notice=${encodeURIComponent(msg)}` : '';
   redirect(`/postings/${result.postingId}${notice}`);
 }
 

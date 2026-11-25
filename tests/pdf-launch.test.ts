@@ -1,10 +1,12 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { Browser } from 'playwright';
 import { launchPdfBrowser } from '@/lib/pdf/render';
 
 const fakeBrowser = {} as Browser;
 
 describe('launchPdfBrowser (PDF용 브라우저 대체 실행)', () => {
+  afterEach(() => vi.restoreAllMocks());
+
   it('TC-PE-06 기본 Chromium이 되면 그것만 쓴다', async () => {
     const tried: Array<string | undefined> = [];
     const b = await launchPdfBrowser(async (o) => {

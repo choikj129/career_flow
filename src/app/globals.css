@@ -581,7 +581,7 @@ textarea.in-sm { height: auto; min-height: 64px; padding: 8px 10px; }
 
 .posting-names { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .posting-names > div { min-width: 0; }
-.row-del { text-align: right; white-space: nowrap; }
+.row-del { text-align: right; white-space: nowrap; padding-left: 4px; padding-right: 12px; }
 .row-del .btn.quiet { height: auto; font-size: 13px; font-weight: 500; color: var(--sub); }
 .p-co .btn.quiet.edit-info { margin-left: 2px; }
 .p-co { flex-wrap: wrap; }

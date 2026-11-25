@@ -77,7 +77,7 @@ async function AnalyzedTable() {
                 )}
               </td>
               <td className="faint">—</td>
-              <td>{p.createdAt.slice(0, 10)}</td>
+              <td className="nw">{p.createdAt.slice(0, 10)}</td>
               <DeleteRowButton postingId={p.postingId} label={p.url ? p.url.replace(/^https?:\/\//, "").slice(0, 40) : "본문만 등록한 공고"} />
             </ClickableRow>
           ))}
@@ -93,8 +93,17 @@ async function AnalyzedTable() {
                 <td className="num">
                   <Fit score={r.fitScore} />
                 </td>
-                <td>{r.deadline ? (past ? `${r.deadline} 마감` : r.deadline) : "상시"}</td>
-                <td>{r.analyzedAt.slice(0, 10)}</td>
+                <td>
+                  {r.deadline ? (
+                    <>
+                      <span className="nw">{r.deadline}</span>
+                      {past ? " 마감" : ""}
+                    </>
+                  ) : (
+                    "상시"
+                  )}
+                </td>
+                <td className="nw">{r.analyzedAt.slice(0, 10)}</td>
                 <DeleteRowButton postingId={r.postingId} label={`${r.companyName ?? "회사 미상"} ${r.positionTitle ?? ""}`.trim()} />
               </ClickableRow>
             );

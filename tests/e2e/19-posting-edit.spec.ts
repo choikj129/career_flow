@@ -82,7 +82,7 @@ test.describe('분석한 공고 목록 삭제', () => {
 
   for (const width of [1024, 1240, 1440]) {
     test(`TC-PE-14 폭 ${width}: 등록 폼·목록·수정 창이 넘치지 않고 한글이 keep-all이다`, async ({ page }) => {
-      const id = await registerWith(page, `W${width}`, `폭확인회사${width}`, '폭 확인 포지션');
+      const id = await registerWith(page, `W${width}`, `가나다라마바사 인공지능 데이터플랫폼 주식회사(유한책임)${width}`, '백엔드 개발자 (결제·정산 플랫폼, 경력 3년 이상, 과제·코딩테스트 포함)');
       await waitAnalyzed(page);
       await page.setViewportSize({ width, height: 900 });
       const noOverflow = () => page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth);
@@ -91,14 +91,33 @@ test.describe('분석한 공고 목록 삭제', () => {
       expect(await page.locator('#companyName').evaluate((el) => getComputedStyle(el.closest('label') ?? document.body).wordBreak)).toBe('keep-all');
       await page.goto('/postings/analyzed');
       expect(await noOverflow()).toBe(true);
-      const cell = page.locator('tr.row-link').filter({ hasText: `폭확인회사${width}` }).locator('td').first();
+      // 날짜 칸(마감일·분석일)은 한 줄이어야 한다. 표가 화면에 그려진 뒤 글자가 놓인 줄 수를 센다.
+      await expect(page.locator('tr.row-link').filter({ hasText: `데이터플랫폼 주식회사(유한책임)${width}` })).toBeVisible();
+      const dateLines = await page.locator('tbody tr.row-link td.nw, tbody tr.row-link td span.nw').evaluateAll((els) =>
+        els.map((el) => {
+          // 글자가 놓인 줄 수만 센다(칸·요소 테두리 상자는 제외)
+          const tops: number[] = [];
+          const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT);
+          let node = walker.nextNode();
+          while (node) {
+            const range = document.createRange();
+            range.selectNodeContents(node);
+            Array.from(range.getClientRects()).forEach((rc) => tops.push(Math.round(rc.top)));
+            node = walker.nextNode();
+          }
+          return new Set(tops).size;
+        }),
+      );
+      expect(dateLines.length).toBeGreaterThan(0);
+      expect(dateLines, `날짜 칸 줄 수 ${JSON.stringify(dateLines)}`).toEqual(dateLines.map(() => 1));
+      const cell = page.locator('tr.row-link').filter({ hasText: `데이터플랫폼 주식회사(유한책임)${width}` }).locator('td').first();
       expect(await cell.evaluate((el) => getComputedStyle(el).wordBreak)).toBe('keep-all');
       await page.goto(`/postings/${id}`);
       await page.locator('.p-co').getByRole('button', { name: '수정', exact: true }).click();
       expect(await noOverflow()).toBe(true);
       const box = await page.getByRole('dialog').locator('.modal').boundingBox();
       expect(box!.x + box!.width).toBeLessThanOrEqual(width);
-      await expect(page.getByRole('dialog').getByLabel('회사명')).toHaveValue(`폭확인회사${width}`);
+      await expect(page.getByRole('dialog').getByLabel('회사명')).toHaveValue(`가나다라마바사 인공지능 데이터플랫폼 주식회사(유한책임)${width}`);
     });
   }
 });
