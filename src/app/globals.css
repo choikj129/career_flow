@@ -578,3 +578,10 @@ textarea.in-sm { height: auto; min-height: 64px; padding: 8px 10px; }
 .menu-pop > summary { list-style: none; margin: 0; cursor: pointer; display: inline-flex; align-items: center; height: 30px; padding: 0 10px; border: 1px solid var(--line); border-radius: var(--r-sm); background: var(--surface); font-weight: 600; font-size: 13px; white-space: nowrap; }
 .menu-pop > summary::-webkit-details-marker { display: none; }
 .menu-pop[open] > div { position: absolute; z-index: 5; left: 0; top: 34px; min-width: 160px; padding: 8px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-sm); box-shadow: var(--shadow); display: grid; gap: 4px; }
+
+.posting-names { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.posting-names > div { min-width: 0; }
+.row-del { text-align: right; white-space: nowrap; padding-left: 4px; padding-right: 12px; }
+.row-del .btn.quiet { height: auto; font-size: 13px; font-weight: 500; color: var(--sub); }
+.p-co .btn.quiet.edit-info { margin-left: 2px; }
+.p-co { flex-wrap: wrap; }

@@ -36,6 +36,35 @@ export function NewPostingForm({ hasResume, siteNotes }: { hasResume: boolean; s
       </p>
       <p className="hint">일부 사이트는 자동으로 읽지 못해 본문 붙여넣기가 필요할 수 있습니다.</p>
 
+      <div className="posting-names" style={{ marginTop: 18 }}>
+        <div>
+          <label className="label" htmlFor="companyName">
+            회사명 <span className="muted" style={{ fontWeight: 400 }}>(선택)</span>
+          </label>
+          <input
+            className="field-input"
+            id="companyName"
+            name="companyName"
+            maxLength={100}
+            placeholder="비워 두면 분석이 채웁니다"
+            autoComplete="off"
+          />
+        </div>
+        <div>
+          <label className="label" htmlFor="positionTitle">
+            포지션 <span className="muted" style={{ fontWeight: 400 }}>(선택)</span>
+          </label>
+          <input
+            className="field-input"
+            id="positionTitle"
+            name="positionTitle"
+            maxLength={200}
+            placeholder="비워 두면 분석이 채웁니다"
+            autoComplete="off"
+          />
+        </div>
+      </div>
+
       {showNote && (
         <div style={{ marginTop: 18 }}>
           <label className="label" htmlFor="siteNote">

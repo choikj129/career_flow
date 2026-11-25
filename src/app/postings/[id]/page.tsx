@@ -32,6 +32,7 @@ import { TailoredTab } from "./TailoredTab";
 import { listRevisionLabels } from "@/lib/tailored/repo";
 import { ApplyForm } from "./ApplyForm";
 import { CompanyLink } from "./CompanyLink";
+import { EditPostingInfo } from "./EditPostingInfo";
 import { DeletePostingButton } from "./DeletePostingButton";
 import { NotesForm } from "./NotesForm";
 import { PasteForm } from "./PasteForm";
@@ -112,6 +113,12 @@ async function PostingDetail({
         <div>
           <div className="p-co">
             {company?.displayName ?? "분석 후 표시"}
+            <EditPostingInfo
+              postingId={postingId}
+              companyName={company?.displayName ?? ""}
+              positionTitle={posting.positionTitle ?? ""}
+              hasApplication={application != null}
+            />
             {company && (
               <CompanyLink postingId={postingId} company={{ ...company, ...getCompanyUsage(company.id) }} />
             )}
