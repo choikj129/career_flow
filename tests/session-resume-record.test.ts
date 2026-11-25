@@ -126,7 +126,8 @@ describe('save and edit', () => {
     expect(() => apply(sess('B2', '2026-11-21'))).toThrow('바탕 이력서 날짜는 지원일보다 늦을 수 없습니다');
     expect(db.select().from(applications).all()).toHaveLength(0);
 
-    const id = apply(sess('B2', '2026-11-20')); // 지원일과 같은 날은 저장
+    expect(() => apply(sess('B2', '2026-11-1 9'))).toThrow('바탕 이력서 날짜를 확인하세요');
+    const id = apply(sess('B2', ' 2026-11-20 ')); // 지원일과 같은 날은 저장, 앞뒤 공백은 지우고 저장
     expect(getApplication(id, db)!.submittedResume).toEqual({ kind: 'session', kitId, track: '백엔드', profileId: 'B2', profileName: '성능', baseDate: '2026-11-20' });
     expect(getApplication(id, db)!.submittedDocs?.resume).toBeNull();
 
@@ -134,6 +135,8 @@ describe('save and edit', () => {
       .set({ submittedResume: { kind: 'session', kitId, track: '백엔드', profileId: 'B2', profileName: '예전이름', baseDate: '2026-11-20' } })
       .where(eq(applications.id, id))
       .run();
+    expect(() => updateApplication(id, { appliedAt: '2026-11-05' }, db)).toThrow('바탕 이력서 날짜는 지원일보다 늦을 수 없습니다'); // 지원일만 고쳐도 막는다
+    updateApplication(id, { appliedAt: '2026-11-20' }, db);
     updateApplication(id, { submitted: sess('B2', '2026-11-10') }, db, dir);
     expect(getApplication(id, db)!.submittedResume).toMatchObject({ profileName: '예전이름', baseDate: '2026-11-10' });
     expect(() => updateApplication(id, { submitted: sess('B2', '2026-11-25') }, db, dir)).toThrow('바탕 이력서 날짜는 지원일보다 늦을 수 없습니다');

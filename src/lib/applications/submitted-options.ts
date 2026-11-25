@@ -73,17 +73,13 @@ export function loadSubmittedFormData(
     add(encodeResumeChoice({ kind: 'tailored', tailoredRevisionId: r.id }), `맞춤 이력서 r${r.revNo} · ${r.profileId}`, `맞춤 이력서 r${r.revNo} · ${r.profileId} ${r.profileName}`);
   }
   if (kit) {
-    for (const t of kit.parsed.tracks) {
-      for (const p of kit.parsed.profiles.filter((x) => x.track === t.name)) {
-        add(encodeResumeChoice({ kind: 'session', kitId: kit.id, track: t.name, profileId: p.id }), `이력서 세션 맞춤본 · ${p.id}`, `이력서 세션 맞춤본 · ${p.id} ${p.name}`);
-      }
+    // 이력서 세션 맞춤본 전부 → 기본 서류 전부(D-33 a)
+    const profiles = kit.parsed.tracks.flatMap((t) => kit.parsed.profiles.filter((x) => x.track === t.name).map((p) => ({ t, p })));
+    for (const { t, p } of profiles) {
+      add(encodeResumeChoice({ kind: 'session', kitId: kit.id, track: t.name, profileId: p.id }), `이력서 세션 맞춤본 · ${p.id}`, `이력서 세션 맞춤본 · ${p.id} ${p.name}`);
     }
-  }
-  if (kit) {
-    for (const t of kit.parsed.tracks) {
-      for (const p of kit.parsed.profiles.filter((x) => x.track === t.name)) {
-        add(encodeResumeChoice({ kind: 'kit', kitId: kit.id, track: t.name, profileId: p.id }), `기본 서류 ${t.name} · ${p.id}`, `기본 서류 ${t.name} · ${p.id} ${p.name}`);
-      }
+    for (const { t, p } of profiles) {
+      add(encodeResumeChoice({ kind: 'kit', kitId: kit.id, track: t.name, profileId: p.id }), `기본 서류 ${t.name} · ${p.id}`, `기본 서류 ${t.name} · ${p.id} ${p.name}`);
     }
   }
   for (const f of files.filter((x) => x.kind === 'resume')) {

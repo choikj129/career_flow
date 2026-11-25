@@ -85,8 +85,8 @@ function resolveSubmittedColumns(
         if (!profile) throw new Error('서류 키트에 없는 프로필입니다');
         kitProfile = { profileId: profile.id, profileName: profile.name };
       }
-      const d = input.sessionBaseDate;
-      if (!d || !validDate(d)) throw new Error('바탕 이력서 날짜를 확인하세요');
+      const d = input.sessionBaseDate?.trim();
+      if (!d || !/^\d{4}-\d{2}-\d{2}$/.test(d) || !validDate(d)) throw new Error('바탕 이력서 날짜를 확인하세요');
       if (d > ctx.appliedAt) throw new Error('바탕 이력서 날짜는 지원일보다 늦을 수 없습니다');
       break;
     }
@@ -365,6 +365,10 @@ export function updateApplication(
     const app = tx.select().from(applications).where(eq(applications.id, id)).get();
     if (!app) throw new Error('지원 기록을 찾을 수 없습니다');
     const set: Partial<typeof applications.$inferInsert> = {};
+    // 지원일만 고칠 때: 이력서 세션 맞춤본의 바탕 이력서 날짜가 새 지원일보다 늦어지면 막는다
+    if (!patch.submitted && patch.appliedAt !== undefined && app.submittedResume.kind === 'session' && app.submittedResume.baseDate > patch.appliedAt) {
+      throw new Error('바탕 이력서 날짜는 지원일보다 늦을 수 없습니다');
+    }
     if (patch.submitted) {
       const cols = resolveSubmittedColumns(patch.submitted, { postingId: app.postingId, prev: app, docsDir, appliedAt: patch.appliedAt ?? app.appliedAt }, tx as unknown as Db);
       set.submittedResume = cols.submittedResume;

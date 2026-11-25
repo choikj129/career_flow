@@ -141,8 +141,8 @@ export function toColumns(
       submittedResume = { kind: 'kit', kitId: r.kitId, track: r.track, ...ctx.kitProfile };
       break;
     case 'session':
-      if (!ctx.kitProfile || !input.sessionBaseDate) throw new Error('바탕 이력서 날짜를 확인하세요');
-      submittedResume = { kind: 'session', kitId: r.kitId, track: r.track, ...ctx.kitProfile, baseDate: input.sessionBaseDate };
+      if (!ctx.kitProfile || !input.sessionBaseDate?.trim()) throw new Error('바탕 이력서 날짜를 확인하세요');
+      submittedResume = { kind: 'session', kitId: r.kitId, track: r.track, ...ctx.kitProfile, baseDate: input.sessionBaseDate.trim() };
       break;
     case 'base':
       submittedResume = { kind: 'base', versionId: r.versionId };

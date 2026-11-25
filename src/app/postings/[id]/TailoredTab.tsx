@@ -56,6 +56,7 @@ export function TailoredTab({ postingId }: { postingId: number }) {
     <div className="tl" data-testid="tailored-tab">
       {v.staleKitNote && <div className="notice info" style={{ marginTop: 0 }}><span>{v.staleKitNote}</span></div>}
       {v.tailorJob && <JobStatus jobId={v.tailorJob.id} type={v.tailorJob.type} initial={v.tailorJob} />}
+      {v.analysisJob && <JobStatus jobId={v.analysisJob.id} type="analyze_posting" initial={v.analysisJob} />}
 
       <ApplyDocsCard postingId={postingId} docs={v.applyDocs} hasText={v.hasText} analyzing={analyzing} />
 

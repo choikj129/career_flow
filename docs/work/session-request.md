@@ -49,7 +49,7 @@ export type SessionRequestInput = {
   postingText: string;
   basisLabel: string;         // Picker.basisLabel 그대로
   chosen: { id: string; name: string; track: string; percent: number | null };
-  /** 같은 직무의 1순위. chosen과 같으면 null */
+  /** 카드 처음 값(AI 추천 직무의 1순위, 추천이 없으면 추천 직무의 기본 프로필). chosen과 같으면 null. 다른 직무를 골라도 이 값이 괄호에 붙는다(TC-SR-09) */
   topIfDifferent: { id: string; name: string; percent: number | null } | null;
   /** chosen의 직무에서 chosen을 뺀 추천 순 2~4번째, 최대 3개 */
   nextCandidates: { id: string; name: string; percent: number | null }[];
@@ -259,7 +259,8 @@ export type SubmittedInput = { resume: ResumeChoice; career: string | null; port
 
 | 회차 | 개발 커밋 범위 | 검증 결과 | 남은 필수 항목 | 비고 |
 |---|---|---|---|---|
-| 1 | b9cf2d6..HEAD | | | 1) 요청문·데이터·액션 b9cf2d6, 2) 화면·E2E 정리 919c57d, 3) D-33 a(제출 서류 session, 바탕 이력서 날짜, 통계·대시보드). Vitest 685 통과, E2E 196 통과 + 11 skip. 숨긴 화면 E2E 11건은 skip(이유 적음), 맞춤본이 필요한 E2E는 `tests/e2e/seed-revision.ts`로 시드. 이전 맞춤본 목록 옆 코드(경고·바뀐 곳·자동 검사 조각)는 `HiddenRevisionParts.tsx`로 옮겨 남김 |
+| 1 | b9cf2d6..6305ae2 | 수정 필요 (2026-11-25): 화면 수정 필요(E2E 전체 191 통과·1 실패 TC-SR-15·11 skip 타당), 로직 통과, 품질 통과 | 필수 1: 맞춤 이력서 탭 "분석 중" 줄이 분석 완료 뒤 새로고침 없이 사라지지 않음(TC-SR-15, 갱신이 Nav에만 의존하는 타이밍 경쟁). 권장: 바탕 이력서 날짜 trim/엄격 형식, test-cases 15장 TC-SR-21~27 파일 이름·TC-SR-27 예시, 설계 글 "같은 직무의 1순위" 표현을 구현(카드 처음 값)에 맞춤, 숨긴 코드 백로그(PM). 사소: appliedAt만 수정 시 baseDate 재검증, 이전 맞춤본 카드 위 여백, submitted-options의 if(kit) 반복 합치기, loadTailorView 전체 호출 | 1) 요청문·데이터·액션 b9cf2d6, 2) 화면·E2E 정리 919c57d, 3) D-33 a(제출 서류 session, 바탕 이력서 날짜, 통계·대시보드). Vitest 685 통과, E2E 196 통과 + 11 skip. 숨긴 화면 E2E 11건은 skip(이유 적음), 맞춤본이 필요한 E2E는 `tests/e2e/seed-revision.ts`로 시드. 이전 맞춤본 목록 옆 코드(경고·바뀐 곳·자동 검사 조각)는 `HiddenRevisionParts.tsx`로 옮겨 남김 |
+| 2 | 6305ae2..HEAD | | |  Vitest 685, E2E 199 통과·11 skip(전체 처음부터).  필수 1 고침(분석 작업 JobStatus를 맞춤 이력서 탭에 붙여 끝나면 새로고침). 권장 2~4: 바탕 날짜 trim+엄격 형식(공백 테스트), test-cases 15장 대응 열, 설계 글 1순위 표현. 사소 5~7: 지원일만 고칠 때 session 바탕 날짜 재검증 추가(수정 창은 서류를 건드리지 않으면 submitted를 보내지 않아 필요했음), 이전 맞춤본 summary 여백 0, submitted-options 순회 합침 |
 
 ## 4. 결정 요청
 
