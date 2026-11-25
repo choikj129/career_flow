@@ -330,3 +330,38 @@ test('TC-PAST-76 resumeLabel ignores none in other kinds; resume file label stay
   const g = groupDashboardRows([r], 'resume', TODAY);
   expect(g.map((x) => x.key)).toEqual(['doc:이력서_20261102.pdf']);
 });
+
+test('getDashboardStats appliedThisWeek: Mon-Sun local week up to today, excludes last Sunday and future', () => {
+  const db = makeTestDb();
+  bulkCreateApplications(
+    [
+      row('A', 'applied', 'wanted', '2026-11-22'), // 지난주 일요일
+      row('B', 'applied', 'wanted', '2026-11-23'), // 이번 주 월요일
+      row('C', 'applied', 'wanted', '2026-11-25'), // 오늘(수)
+      row('D', 'applied', 'wanted', '2026-11-27'), // 미래
+    ],
+    db,
+  );
+  const s = getDashboardStats(new Date(2026, 10, 25), db);
+  expect(s.appliedThisWeek).toBe(2);
+  expect(s.appliedThisMonth).toBe(4);
+});
+
+test('appliedThisWeek on Monday and Sunday boundaries', () => {
+  const db = makeTestDb();
+  bulkCreateApplications([row('A', 'applied', 'wanted', '2026-11-23'), row('B', 'applied', 'wanted', '2026-11-29')], db);
+  expect(getDashboardStats(new Date(2026, 10, 23), db).appliedThisWeek).toBe(1); // 월요일: 월요일 것만
+  expect(getDashboardStats(new Date(2026, 10, 29), db).appliedThisWeek).toBe(2); // 일요일: 월~일 모두
+});
+
+test('appliedThisWeek differs from month: week starts in previous month', () => {
+  const db = makeTestDb();
+  bulkCreateApplications(
+    [row('A', 'applied', 'wanted', '2026-11-30'), row('B', 'applied', 'wanted', '2026-12-01'), row('C', 'applied', 'wanted', '2026-11-29')],
+    db,
+  );
+  // 2026-12-02(수): 이번 주는 11/30(월)~
+  const s = getDashboardStats(new Date(2026, 11, 2), db);
+  expect(s.appliedThisWeek).toBe(2);
+  expect(s.appliedThisMonth).toBe(1);
+});

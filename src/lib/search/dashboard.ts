@@ -1,7 +1,7 @@
 import { and, desc, eq, gte, like, lte } from 'drizzle-orm';
 import { getDb, type Db } from '@/lib/db/client';
 import { analyses, applications, companies, companyKeys, resumeVersions } from '@/lib/db/schema';
-import { monthLocal } from '@/lib/domain/dates';
+import { monthLocal, todayLocal, weekStartLocal } from '@/lib/domain/dates';
 import { listReachedHistory, listRecordExtras } from '@/lib/applications/repo';
 import { applicationOrder } from '@/lib/applications/sort';
 import { matchesStatusFilter, reachedStages, type ReachedStage } from '@/lib/applications/stages';
@@ -206,6 +206,8 @@ export function getDashboardStats(
   reachedById: Map<number, ApplicationStatus[]> = listReachedHistory(db),
 ): {
   appliedThisMonth: number;
+  /** 이번 주(월~일, 로컬) 월요일부터 오늘까지의 지원 수. 미래 지원일은 세지 않는다 */
+  appliedThisWeek: number;
   byStatus: Record<ApplicationStatus, number>;
   bySite: Record<SiteId, number>;
   analyzedNotApplied: number;
@@ -213,17 +215,22 @@ export function getDashboardStats(
   reachedCounts: Record<ReachedStage, number>;
 } {
   const month = monthLocal(now);
+  const weekStart = weekStartLocal(now);
+  const today = todayLocal(now);
   const byStatus = Object.fromEntries(APPLICATION_STATUSES.map((s) => [s, 0])) as Record<ApplicationStatus, number>;
   const bySite = Object.fromEntries(SITE_IDS.map((s) => [s, 0])) as Record<SiteId, number>;
   const reachedCounts: Record<ReachedStage, number> = { document_passed: 0, assignment: 0, interview: 0, final_passed: 0 };
   let appliedThisMonth = 0;
+  let appliedThisWeek = 0;
   for (const a of db.select().from(applications).all()) {
     byStatus[a.status] += 1;
     for (const r of reachedStages(a.status, reachedById.get(a.id) ?? [])) reachedCounts[r] += 1;
     bySite[a.site] += 1;
     if (a.appliedAt.startsWith(month)) appliedThisMonth += 1;
+    const day = a.appliedAt.slice(0, 10);
+    if (day >= weekStart && day <= today) appliedThisWeek += 1;
   }
-  return { appliedThisMonth, byStatus, bySite, analyzedNotApplied: listAnalyzedNotApplied(db).length, reachedCounts };
+  return { appliedThisMonth, appliedThisWeek, byStatus, bySite, analyzedNotApplied: listAnalyzedNotApplied(db).length, reachedCounts };
 }
 
 export type RecordExtra = ReturnType<typeof listRecordExtras> extends Map<number, infer V> ? V : never;

@@ -90,3 +90,10 @@ export function daysBetween(from: string, to: string): number {
 export function weekdayMon0(date: string): number {
   return (new Date(utcDay(date)).getUTCDay() + 6) % 7;
 }
+
+/** 로컬 날짜 기준 이번 주 월요일의 YYYY-MM-DD(월~일 한 주) */
+export function weekStartLocal(now: Date = new Date()): string {
+  const today = todayLocal(now);
+  const d = new Date(utcDay(today) - weekdayMon0(today) * 86_400_000);
+  return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+}

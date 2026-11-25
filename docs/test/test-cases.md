@@ -152,6 +152,7 @@ npm run test:e2e    # next build 후 Playwright(Chromium) E2E. 빌드된 앱을 
 | TC-DASH-35 | 필터·정렬 | 여러 상태·사이트 | 상태·사이트 필터 | 필터 적용, 지원일 최신순 | 통합 | tests/search.test.ts — filters by status and site, sorted by appliedAt desc |
 | TC-DASH-36 | 행 데이터 | 분석·맞춤 이력서 정보가 있는 지원 | `DashboardRow` 조회 | 적합도, 기준 이력서 라벨("기본 v1"), 출처 이름이 담김 | 통합 | tests/search.test.ts — DashboardRow carries fit score and base resume label / tests/ui-repos.test.ts — DashboardRow.siteNote |
 | TC-DASH-37 | 요약 통계 | 이번 달/지난 달 지원 혼합 | `getDashboardStats` | 이번 달 지원 수, 상태별·사이트별 개수, 분석만 한 공고 수 | 통합 | tests/search.test.ts — getDashboardStats counts this month and analyzed-not-applied |
+| TC-DASH-37b | 이번 주 지원 수 | 월·일 경계, 지난주 일요일, 미래 지원일, 주가 전달에서 시작 | `getDashboardStats` | 월~일(로컬) 중 오늘까지만 센다. 지난주 일요일·미래 제외, 이번 달 수와 다를 수 있다. 화면 요약 줄에 "이번 주 지원" | 통합 · E2E | tests/search.test.ts — appliedThisWeek, tests/e2e/01-dashboard.spec.ts |
 | TC-DASH-38 | 묶음 계산 | - | `groupDashboardRows` 사이트·상태·이력서 | 사이트 고정 순서+서류 통과율(서류합격 이상 / 결과가 나온 지원), 상태는 항상 6열, 이력서는 "모름"이 마지막 | 통합 | tests/search.test.ts — groupDashboardRows by site/status/resume (3개) |
 
 ### NEW · 공고 등록 `/postings/new`
