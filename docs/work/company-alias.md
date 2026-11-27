@@ -2,7 +2,7 @@
 
 - 요청 (2026-11-27): "sionic AI 이런 애들을 사이오닉으로 검색해도 나오게 할 수 없나" → PM이 수동 별칭 추가(Sionic AI에 "사이오닉 AI" 넣음)와 자동 방법을 안내 → 사용자: "만들기"
 - 브랜치: `feat/company-alias` (폴더 `C:\project\career_flow-company-alias`)
-- 상태: 개발 중
+- 상태: 완료 (2026-11-27 main 병합)
 - 관련 결정: D-04(회사 연결·별칭), B-14(분석 결과 형식)
 
 ## 1. 설계 (PM, 작은 기능)
@@ -28,10 +28,10 @@
 
 | 회차 | 개발 커밋 범위 | 검증 결과 | 남은 필수 항목 | 비고 |
 |---|---|---|---|---|
-| 1 | main..feat/company-alias (커밋 1개) | | | 기존 테스트 픽스처(tasks·kit-profile-rec·fake-claude-e2e)에 `companyAliases: []` 추가(CLI 스키마 필수라서) |
+| 1 | main..e22dc2a | 통과: 화면 변경 없는 작은 로직 변경이라 검증 담당 없이 PM이 diff 확인(스키마 CLI 필수·저장 optional, saveAnalysis 뒤 별칭 추가·실패 무시·최대 3개·50자), 개발 쪽 npm test 727·E2E 전체 228 통과 | 0 | 기존 테스트 픽스처(tasks·kit-profile-rec·fake-claude-e2e)에 `companyAliases: []` 추가(CLI 스키마 필수라서) |
 
 ## 7. 결과
 
-- 병합 커밋:
-- 최종 검사:
-- 사용자가 직접 확인할 것:
+- 병합: 2026-11-27 main
+- 최종 검사: npm test 727 / test:e2e 228 (11 skip) / lint / 타입 / 빌드 실패 0
+- 사용자가 직접 확인할 것: 영어 이름 회사 공고를 분석(또는 다시 분석)한 뒤 한글로 검색해 나오는지
