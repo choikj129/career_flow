@@ -103,10 +103,14 @@ export async function recentApplicationsAction(postingId: number): Promise<Recen
 export type SubmittedFormResult = { ok: true; data: SubmittedFormData } | { ok: false; error: string };
 
 /** [지원 완료]·[기록 수정] 창이 열릴 때 제출 서류 선택지를 읽는다 */
-export async function submittedFormDataAction(input: { postingId: number } | { applicationId: number }): Promise<SubmittedFormResult> {
+export async function submittedFormDataAction(
+  input: { postingId: number } | { applicationId: number },
+  copiedProfileId?: string | null,
+): Promise<SubmittedFormResult> {
   try {
     const v = z.union([z.object({ postingId: z.number().int() }), z.object({ applicationId: z.number().int() })]).parse(input);
-    return { ok: true, data: loadSubmittedFormData(v) };
+    const copied = z.string().max(50).nullish().parse(copiedProfileId);
+    return { ok: true, data: loadSubmittedFormData(v, undefined, undefined, copied) };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : String(e) };
   }

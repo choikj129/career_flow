@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { sessionRequestTextAction } from "@/app/_actions/tailored";
 import { RetryButton } from "./RetryButton";
+import { markSessionRequestCopied } from "@/lib/applications/folder-notice";
 import { applyDocUrl } from "@/lib/tailored/apply-docs-url";
 import type { ApplyDocs } from "@/lib/tailored/view";
 
@@ -39,6 +40,7 @@ export function ApplyDocsCard({ postingId, docs, hasText, analyzing }: { posting
       try {
         await navigator.clipboard.writeText(r.text);
         setCopied(true);
+        markSessionRequestCopied(postingId, profileId);
         if (timer.current) clearTimeout(timer.current);
         timer.current = setTimeout(() => setCopied(false), 2000);
       } catch {

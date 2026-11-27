@@ -72,7 +72,7 @@ type Row = CheckedRow & {
   touched: Partial<Record<DocKind, boolean>>;
 };
 
-const FIELD_NAME: Record<RowField, string> = { companyName: "회사명", positionTitle: "포지션", appliedAt: "지원일(YYYY-MM-DD)" };
+const FIELD_NAME: Record<RowField, string> = { companyName: "회사명", positionTitle: "포지션", appliedAt: "지원일" };
 
 /** 검토 단계: 고치고, 지울 행을 빼고, 체크한 행만 등록한다. docs/spec/screens.md 6.2 */
 export function ImportReviewTable({

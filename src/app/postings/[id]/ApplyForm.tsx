@@ -9,6 +9,7 @@ import { statusText } from "@/app/_components/StatusBadge";
 import type { RecentApplication } from "@/lib/applications/repo";
 import { Modal } from "@/app/_components/Modal";
 import { useAction } from "@/app/_components/useAction";
+import { notifyFolderNotice, readSessionRequestCopiedProfile } from "@/lib/applications/folder-notice";
 import { todayLocal } from "@/lib/domain/dates";
 import { SITE_IDS, SITE_LABELS, type SiteId } from "@/lib/domain/types";
 import { DateInput } from "@/app/_components/DateInput";
@@ -55,7 +56,7 @@ export function ApplyForm({
     setChecking(true);
     setError(null);
     try {
-      const [r, f] = await Promise.all([recentApplicationsAction(postingId), submittedFormDataAction({ postingId })]);
+      const [r, f] = await Promise.all([recentApplicationsAction(postingId), submittedFormDataAction({ postingId }, readSessionRequestCopiedProfile(postingId))]);
       setForm(f.ok ? f.data : null); // 읽지 못해도 폼은 연다(서버가 기본값으로 저장한다)
       if (r.ok && r.records.length > 0) setRecent(r.records);
       else openForm(); // 기록이 없거나 확인에 실패해도 폼은 연다(저장은 서버가 다시 검사한다)
@@ -131,7 +132,10 @@ export function ApplyForm({
                     notes,
                     submitted: submittedValues.value ?? undefined,
                   }),
-                () => setOpen(false),
+                () => {
+                  setOpen(false);
+                  notifyFolderNotice(postingId, submittedValues.value?.resume);
+                },
                 () => {
                   // 저장 실패: 고쳐서 다시 저장할 수 있게 푼다
                   submittedRef.current = false;

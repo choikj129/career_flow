@@ -16,7 +16,7 @@ export type ChoiceOption = { value: string; label: string; full?: string };
 
 export type SubmittedFormData = {
   resumeOptions: ChoiceOption[];
-  /** 경력기술서·포트폴리오 선택지. 값 ''는 모름 */
+  /** 경력기술서·포트폴리오 선택지. 값 ''는 모름(수정 창에만 있다) */
   careerOptions: ChoiceOption[];
   portfolioOptions: ChoiceOption[];
   /** 지원일에 따라 기본값을 다시 고를 때 쓴다(클라이언트의 defaultSubmitted 입력) */
@@ -30,9 +30,9 @@ export type SubmittedFormData = {
   sessionBaseDate: string | null;
 };
 
-function docOptions(kind: 'career' | 'portfolio', files: DocFile[], current: string | null): ChoiceOption[] {
+function docOptions(kind: 'career' | 'portfolio', files: DocFile[], current: string | null, withUnknown: boolean): ChoiceOption[] {
   const out: ChoiceOption[] = [
-    { value: '', label: '모름' },
+    ...(withUnknown ? [{ value: '', label: '모름' }] : []),
     { value: DOC_NONE, label: '없음' },
     ...files.filter((f) => f.kind === kind).map((f) => ({ value: f.fileName, label: f.date })),
   ];
@@ -51,6 +51,8 @@ export function loadSubmittedFormData(
   input: { postingId: number } | { applicationId: number },
   db: Db = getDb(),
   docsDir?: string,
+  /** 이 공고에서 [이력서 세션 요청 복사]로 고른 프로필 id(브라우저가 기억한 값). 키트에 없으면 무시한다 */
+  copiedProfileId?: string | null,
 ): SubmittedFormData {
   const app = 'applicationId' in input ? getApplication(input.applicationId, db) : undefined;
   if ('applicationId' in input && !app) throw new Error('지원 기록을 찾을 수 없습니다');
@@ -60,6 +62,8 @@ export function loadSubmittedFormData(
   const files = listDocFiles(docsDir).files;
   const revisions = postingId != null ? listRevisionsForPosting(postingId, db) : [];
   const kit = getUsableKit(db);
+  // 새 기록([지원 완료])에서는 지난 이력서 파일과 모름을 고르지 않는다. 수정 창은 지난 기록 때문에 둘 다 유지한다
+  const isApply = !app;
 
   const resumeOptions: ChoiceOption[] = [];
   const seen = new Set<string>();
@@ -73,19 +77,32 @@ export function loadSubmittedFormData(
     add(encodeResumeChoice({ kind: 'tailored', tailoredRevisionId: r.id }), `맞춤 이력서 r${r.revNo} · ${r.profileId}`, `맞춤 이력서 r${r.revNo} · ${r.profileId} ${r.profileName}`);
   }
   if (kit) {
-    // 이력서 세션 맞춤본 전부 → 기본 서류 전부(D-33 a)
     const profiles = kit.parsed.tracks.flatMap((t) => kit.parsed.profiles.filter((x) => x.track === t.name).map((p) => ({ t, p })));
-    for (const { t, p } of profiles) {
-      add(encodeResumeChoice({ kind: 'session', kitId: kit.id, track: t.name, profileId: p.id }), `이력서 세션 맞춤본 · ${p.id}`, `이력서 세션 맞춤본 · ${p.id} ${p.name}`);
+    // 이력서 세션 맞춤본은 한 줄. 프로필은 복사 때 고른 것 → 분석 추천 1순위 → 직무 기본 프로필 순(기록 수정에서 이미 session이면 그 프로필)
+    const find = (id: string | null | undefined) => profiles.find((x) => x.p.id === id);
+    const cur = current?.resume.kind === 'session' && current.resume.kitId === kit.id ? current.resume : null;
+    const kc = postingId != null ? defaultKitChoice(postingId, db) : null;
+    const track = kit.parsed.tracks.find((t) => t.name === kc?.track) ?? kit.parsed.tracks[0];
+    const pick =
+      (cur && profiles.find((x) => x.t.name === cur.track && x.p.id === cur.profileId)) ||
+      (!app ? find(copiedProfileId) : undefined) ||
+      find(kc?.profileId) ||
+      profiles.find((x) => x.t.name === track?.name && (x.p.id === track?.defaultProfileId || x.p.isDefault)) ||
+      profiles[0];
+    if (pick) {
+      add(encodeResumeChoice({ kind: 'session', kitId: kit.id, track: pick.t.name, profileId: pick.p.id }), '이력서 세션 맞춤본', `${pick.p.id} ${pick.p.name}`);
     }
     for (const { t, p } of profiles) {
       add(encodeResumeChoice({ kind: 'kit', kitId: kit.id, track: t.name, profileId: p.id }), `기본 서류 ${t.name} · ${p.id}`, `기본 서류 ${t.name} · ${p.id} ${p.name}`);
     }
   }
-  for (const f of files.filter((x) => x.kind === 'resume')) {
-    add(encodeResumeChoice({ kind: 'file', fileName: f.fileName }), docLabel(f.fileName));
+  if (!isApply) {
+    for (const f of files.filter((x) => x.kind === 'resume')) {
+      add(encodeResumeChoice({ kind: 'file', fileName: f.fileName }), docLabel(f.fileName));
+    }
   }
-  add('unknown', '모름');
+  // 새 기록에서도 고를 것이 하나도 없으면(키트·맞춤본 없음) 모름만 둔다
+  if (!isApply || resumeOptions.length === 0) add('unknown', '모름');
 
   // 지금 기록의 값이 위 선택지에 없으면(예전 기록·옛 키트·없어진 파일) 그 값을 선택지로 더한다
   if (current) {
@@ -112,8 +129,8 @@ export function loadSubmittedFormData(
 
   return {
     resumeOptions,
-    careerOptions: docOptions('career', files, current?.career ?? null),
-    portfolioOptions: docOptions('portfolio', files, current?.portfolio ?? null),
+    careerOptions: docOptions('career', files, current?.career ?? null, !isApply),
+    portfolioOptions: docOptions('portfolio', files, current?.portfolio ?? null, !isApply),
     files,
     latestRevisionId: revisions[0]?.id ?? null,
     kit: postingId != null ? defaultKitChoice(postingId, db) : null,

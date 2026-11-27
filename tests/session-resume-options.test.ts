@@ -53,28 +53,41 @@ function setup() {
 }
 
 describe('session options (TC-SR-25)', () => {
-  test('order: revisions, session profiles, base documents, files, unknown; base date starts at the kit upload day', () => {
+  test('order: revisions, one session line, base documents (no files, no unknown); base date starts at the kit upload day', () => {
     const { db, postingId, kitId, dir } = setup();
     const rev = createRecipeRevision(postingId, { track: '백엔드', profileId: 'B1', adjustmentIds: [] }, db);
     const d = loadSubmittedFormData({ postingId }, db, dir);
     expect(d.resumeOptions.map((o) => o.value)).toEqual([
       `tailored:${rev.id}`,
       `sess:${kitId}:B1:백엔드`,
-      `sess:${kitId}:B2:백엔드`,
-      `sess:${kitId}:D1:데이터`,
-      `sess:${kitId}:D2:데이터`,
       `kitp:${kitId}:B1:백엔드`,
       `kitp:${kitId}:B2:백엔드`,
       `kitp:${kitId}:D1:데이터`,
       `kitp:${kitId}:D2:데이터`,
-      'file:이력서_20261102.pdf',
-      'unknown',
     ]);
-    const s = d.resumeOptions[2];
-    expect(s.label).toBe('이력서 세션 맞춤본 · B2');
-    expect(s.full).toBe('이력서 세션 맞춤본 · B2 성능');
+    const s = d.resumeOptions[1];
+    expect(s.label).toBe('이력서 세션 맞춤본');
+    expect(s.full).toBe('B1 범용');
     expect(d.sessionBaseDate).toBe('2026-11-20');
     expect(d.sessionBaseDate).toBe(eventDate(new Date(2026, 10, 20, 15, 30).toISOString()));
+  });
+
+  test('session profile order: copied profile, then analysis top, then track default', () => {
+    const { db, postingId, kitId, dir } = setup();
+    const line = (copied?: string | null) => loadSubmittedFormData({ postingId }, db, dir, copied).resumeOptions.find((o) => o.value.startsWith('sess:'))!;
+    expect(line().value).toBe(`sess:${kitId}:B1:백엔드`);
+    expect(line('D2').value).toBe(`sess:${kitId}:D2:데이터`);
+    expect(line('D2').full).toMatch(/^D2 /);
+    expect(line('ZZ').value).toBe(`sess:${kitId}:B1:백엔드`); // 키트에 없는 프로필은 무시
+    saveAnalysis(
+      postingId,
+      saveResumeVersion(emptyResume(), undefined, db).id,
+      { ...ANALYSIS, profileRecommendation: { track: '데이터', trackReason: '', profiles: [{ id: 'D2', fitPercent: 80, keywords: [], reason: '' }], adjustments: [], kitId } },
+      registerPosting({ pastedText: '재분석 가상' }, db).jobId!,
+      db,
+    );
+    expect(line().value).toBe(`sess:${kitId}:D2:데이터`);
+    expect(line('B2').value).toBe(`sess:${kitId}:B2:백엔드`); // 복사 때 고른 것이 먼저
   });
 
   test('editing a session record starts at the recorded value and date', () => {
