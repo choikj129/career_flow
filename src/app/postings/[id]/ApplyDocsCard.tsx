@@ -40,7 +40,7 @@ export function ApplyDocsCard({ postingId, docs, hasText, analyzing }: { posting
       try {
         await navigator.clipboard.writeText(r.text);
         setCopied(true);
-        markSessionRequestCopied(postingId);
+        markSessionRequestCopied(postingId, profileId);
         if (timer.current) clearTimeout(timer.current);
         timer.current = setTimeout(() => setCopied(false), 2000);
       } catch {

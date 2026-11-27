@@ -249,6 +249,38 @@ test.describe.serial('지난 기록 직접 입력', () => {
     expect(problems).toEqual([]);
   });
 
+  for (const width of [1024, 1240, 1440]) {
+    test(`TC-PAST-E2E-11 폭 ${width}: 필요한 칸 오류 글이 잘리거나 삭제 버튼에 가려지지 않는다`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 800 });
+      await openManual(page, '원티드');
+      const r = rows(page).first();
+      const check = async (text: string) => {
+        const flag = r.locator('.flag.need');
+        await expect(flag).toHaveText(text);
+        const bad = await flag.evaluate((el) => {
+          const out: string[] = [];
+          const f = el as HTMLElement;
+          if (f.scrollWidth > f.clientWidth + 1) out.push(`가로로 잘림 ${f.scrollWidth}>${f.clientWidth}`);
+          const fr = f.getBoundingClientRect();
+          const del = f.closest('tr')!.querySelector('.icon-btn') as HTMLElement;
+          const dr = del.getBoundingClientRect();
+          const overlap = fr.left < dr.right && fr.right > dr.left && fr.top < dr.bottom && fr.bottom > dr.top;
+          if (overlap) out.push('삭제 버튼과 겹침');
+          const td = f.closest('td')!.getBoundingClientRect();
+          if (fr.right > td.right + 1) out.push('칸 밖으로 나감');
+          if (document.documentElement.scrollWidth > document.documentElement.clientWidth) out.push('페이지 가로 스크롤');
+          return out;
+        });
+        expect(bad, text).toEqual([]);
+      };
+      await check('회사명 필요');
+      await r.getByLabel('회사').fill('가상회사');
+      await check('포지션 필요');
+      await r.getByLabel('포지션').fill('백엔드');
+      await check('지원일 필요');
+    });
+  }
+
   test('TC-PAST-E2E-10 대시보드·공고 상세의 지원일은 한 줄로 보인다', async ({ page }) => {
     await page.setViewportSize({ width: 1024, height: 800 });
     await page.goto('/');

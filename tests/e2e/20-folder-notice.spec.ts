@@ -58,6 +58,8 @@ test.describe('지원 폴더 안 씀 알림', () => {
     await expect(box).toBeVisible();
     await expect(box).toContainText(NOTICE);
     await expect(box).toContainText(String.raw`지원\폴더알림가상`);
+    await expect(box).toContainText('쓰지 않으니 지워 주세요.');
+    await expect(box).not.toContainText('세션에 지워 달라고');
     await box.getByRole('button', { name: '닫기' }).click();
     await expect(box).toHaveCount(0);
     expect(await page.evaluate((id) => localStorage.getItem(`cf:session-request-copied:${id}`), copied)).toBeNull();
@@ -108,6 +110,63 @@ test.describe('지원 폴더 안 씀 알림', () => {
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
       const b = await box.boundingBox();
       expect(b!.x + b!.width).toBeLessThanOrEqual(width);
+    });
+  }
+});
+
+// apply-tidy(2026-11-27): 새 기록 창의 선택지 정리
+test.describe('지원 완료 창 선택지 정리', () => {
+  test('TC-AT-01 새 기록 창: 지난 이력서 파일·모름이 없고 세션 맞춤본은 한 줄, 프로필 줄이 보인다', async ({ page }) => {
+    const id = await registerByPaste(page, posting('폴더선택지가상'));
+    await waitAnalyzed(page);
+    await page.goto(tab(id));
+    await page.getByRole('button', { name: '지원 완료', exact: true }).click();
+    const dlg = page.getByRole('dialog');
+    const resume = dlg.locator('#ap-doc-resume');
+    await expect(resume).toBeVisible();
+    const labels = await resume.locator('option').allTextContents();
+    expect(labels.filter((l) => l.startsWith('이력서 세션 맞춤본'))).toEqual(['이력서 세션 맞춤본']);
+    expect(labels).not.toContain('모름');
+    expect(labels.some((l) => /^이력서 20\d\d-/.test(l))).toBe(false);
+    expect(labels.some((l) => l.startsWith('기본 서류'))).toBe(true);
+    for (const f of ['career', 'portfolio']) {
+      expect(await dlg.locator(`#ap-doc-${f} option`).allTextContents()).not.toContain('모름');
+    }
+    await resume.selectOption({ label: '이력서 세션 맞춤본' });
+    await expect(dlg.getByTestId('doc-full-resume')).toHaveText(/^[A-Z]\d+ \S/);
+  });
+
+  test('TC-AT-02 복사 때 고른 프로필로 기록되고 지원 기록에 보인다', async ({ page, context }) => {
+    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+    const id = await registerByPaste(page, posting('폴더프로필가상'));
+    await waitAnalyzed(page);
+    await page.goto(tab(id));
+    await page.getByTestId('apply-profile').selectOption('B1');
+    await page.getByTestId('session-request-copy').click();
+    await expect(page.getByTestId('session-request-copied')).toBeVisible();
+    await page.getByRole('button', { name: '지원 완료', exact: true }).click();
+    const dlg = page.getByRole('dialog');
+    await dlg.locator('#ap-doc-resume').selectOption({ label: '이력서 세션 맞춤본' });
+    await expect(dlg.getByTestId('doc-full-resume')).toContainText('B1 ');
+    await dlg.locator('#ap-doc-baseDate').fill('2026-11-01');
+    await dlg.getByRole('button', { name: '저장' }).click();
+    await toast(page, '지원 완료로 저장했습니다');
+    await page.goto(`/postings/${id}?tab=record`);
+    await expect(page.getByTestId('resume-line')).toContainText('이력서 세션 맞춤본 · B1');
+  });
+
+  for (const width of [1024, 1240, 1440]) {
+    test(`TC-AT-03 폭 ${width}: 새 기록 창이 넘치지 않고 keep-all`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      const id = await registerByPaste(page, posting(`폴더폭선택${width}가상`));
+      await waitAnalyzed(page);
+      await page.goto(tab(id));
+      await page.getByRole('button', { name: '지원 완료', exact: true }).click();
+      const dlg = page.getByRole('dialog');
+      await dlg.locator('#ap-doc-resume').selectOption({ label: '이력서 세션 맞춤본' });
+      await expect(dlg.getByTestId('doc-full-resume')).toBeVisible();
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth)).toBe(true);
+      expect(await dlg.getByTestId('doc-full-resume').evaluate((el) => getComputedStyle(el).wordBreak)).toBe('keep-all');
     });
   }
 });

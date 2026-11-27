@@ -75,35 +75,27 @@ describe('loadSubmittedFormData (TC-SUBMIT-08)', () => {
     expect(d.resumeOptions.map((o) => o.value)).toEqual([
       `tailored:${r2.id}`,
       `tailored:${r1.id}`,
-      expect.stringMatching(/^sess:\d+:B1:백엔드$/), // D-33 a: 이력서 세션 맞춤본이 맞춤 리비전 다음, 기본 서류 앞에 온다
-      expect.stringMatching(/^sess:\d+:B2:백엔드$/),
-      expect.stringMatching(/^sess:\d+:D1:데이터$/),
-      expect.stringMatching(/^sess:\d+:D2:데이터$/),
+      expect.stringMatching(/^sess:\d+:B1:백엔드$/), // D-33 a: 이력서 세션 맞춤본(한 줄)이 맞춤 리비전 다음, 기본 서류 앞에 온다
       expect.stringMatching(/^kitp:\d+:B1:백엔드$/),
       expect.stringMatching(/^kitp:\d+:B2:백엔드$/),
       expect.stringMatching(/^kitp:\d+:D1:데이터$/),
       expect.stringMatching(/^kitp:\d+:D2:데이터$/),
-      'file:이력서_20261102.pdf',
-      'file:이력서_20260901.pdf',
-      'unknown',
-    ]);
+    ]); // 새 기록에는 지난 이력서 파일·모름이 없다
     expect(d.resumeOptions[0].label).toBe('맞춤 이력서 r2 · B2');
     expect(d.resumeOptions[0].full).toBe('맞춤 이력서 r2 · B2 성능');
-    expect(d.resumeOptions[6].label).toBe('기본 서류 백엔드 · B1');
-    expect(d.resumeOptions[6].full).toBe('기본 서류 백엔드 · B1 범용');
-    expect(d.resumeOptions[7].label).toBe('기본 서류 백엔드 · B2');
-    expect(d.resumeOptions[7].full).toBe('기본 서류 백엔드 · B2 성능');
-    expect(d.resumeOptions[9].label).toBe('기본 서류 데이터 · D2');
-    expect(d.resumeOptions[10].label).toBe('이력서 2026-11-02');
+    expect(d.resumeOptions[3].label).toBe('기본 서류 백엔드 · B1');
+    expect(d.resumeOptions[3].full).toBe('기본 서류 백엔드 · B1 범용');
+    expect(d.resumeOptions[4].label).toBe('기본 서류 백엔드 · B2');
+    expect(d.resumeOptions[4].full).toBe('기본 서류 백엔드 · B2 성능');
+    expect(d.resumeOptions[6].label).toBe('기본 서류 데이터 · D2');
     expect(d.latestRevisionId).toBe(r2.id);
     expect(d.kit).toBeNull(); // 공고 분석에 추천이 없고 직무가 둘이라 고르지 않는다
     expect(d.current).toBeNull();
     expect(d.careerOptions).toEqual([
-      { value: '', label: '모름' },
       { value: 'none', label: '없음' },
       { value: '경력기술서_20261020.pdf', label: '2026-10-20' },
-    ]);
-    expect(d.portfolioOptions.map((o) => o.value)).toEqual(['', 'none']);
+    ]); // 새 기록: 경력기술서·포트폴리오에도 모름이 없다
+    expect(d.portfolioOptions.map((o) => o.value)).toEqual(['none']);
     expect(d.noFiles).toBe(false);
   });
 
@@ -170,6 +162,8 @@ describe('loadSubmittedFormData (TC-SUBMIT-08)', () => {
       .run();
     d = loadSubmittedFormData({ applicationId: appId }, db, dir);
     expect(d.resumeOptions[0]).toEqual({ value: 'file:이력서_20250101.pdf', label: '이력서 2025-01-01 (파일 없음)' });
+    expect(d.resumeOptions.some((o) => o.value === 'unknown')).toBe(true); // 수정 창은 모름 유지
+    expect(d.careerOptions[0]).toEqual({ value: '', label: '모름' });
     expect(d.careerOptions.at(-1)).toEqual({ value: '경력기술서_20250101.pdf', label: '2025-01-01 (파일 없음)' });
     expect(d.current?.career).toBe('경력기술서_20250101.pdf');
 
