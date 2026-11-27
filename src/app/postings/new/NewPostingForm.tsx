@@ -6,11 +6,20 @@ import { registerPostingAction, type RegisterState } from "@/app/_actions/postin
 import { detectSite } from "@/lib/domain/normalize";
 
 /** 공고 등록 폼. 링크 또는 본문 중 하나는 필요하다. docs/spec/screens.md 2장 */
-export function NewPostingForm({ hasResume, siteNotes }: { hasResume: boolean; siteNotes: string[] }) {
+export function NewPostingForm({
+  hasResume,
+  siteNotes,
+  initial,
+}: {
+  hasResume: boolean;
+  siteNotes: string[];
+  /** 북마크 버튼으로 받은 값으로 처음 칸을 채운다(/postings/receive). */
+  initial?: { url: string; text: string; siteNote: string };
+}) {
   const [state, action, pending] = useActionState<RegisterState, FormData>(registerPostingAction, null);
-  const [url, setUrl] = useState("");
-  const [text, setText] = useState("");
-  const [note, setNote] = useState("");
+  const [url, setUrl] = useState(initial?.url ?? "");
+  const [text, setText] = useState(initial?.text ?? "");
+  const [note, setNote] = useState(initial?.siteNote ?? "");
 
   const trimmedUrl = url.trim();
   // 4개 사이트가 아닌 주소이거나, 링크 없이 본문만 넣으면 출처 이름 칸을 보인다.
@@ -87,7 +96,7 @@ export function NewPostingForm({ hasResume, siteNotes }: { hasResume: boolean; s
         </div>
       )}
 
-      <details>
+      <details open={initial?.text ? true : undefined}>
         <summary>링크로 안 열리면 공고 본문 붙여넣기</summary>
         <textarea
           className="field-area"

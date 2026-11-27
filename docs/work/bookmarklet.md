@@ -229,11 +229,13 @@ E2E (Playwright, 가짜 claude, `tests/e2e/20-bookmarklet.spec.ts`)
 
 | 날짜 | 결과 | 고칠 점 |
 |---|---|---|
+| 2026-11-27 | 승인 ("북마크 승인함") | 없음 |
 
 ## 3. 개발·검증 회차
 
 | 회차 | 개발 커밋 범위 | 검증 결과 | 남은 필수 항목 | 비고 |
 |---|---|---|---|---|
+| 1 | feat/bookmarklet (feat: bookmarklet…) | | | 구현 전체(TC-BM-01~20). 설계와 다른 점: 북마크 버튼 코드는 form 안의 submit 버튼만 제외(폼 밖 기본형 button은 누름) |
 
 ## 4. 결정 요청
 
