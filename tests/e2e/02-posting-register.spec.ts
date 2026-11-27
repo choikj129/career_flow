@@ -132,7 +132,6 @@ test.describe('공고 등록 화면', () => {
     const alert = page.locator('.fail-card');
     await expect(alert).toContainText('분석에 실패했습니다');
     await expect(alert).toContainText('공고 본문을 읽지 못했습니다. 공고 페이지 내용을 복사해 붙여넣어 주세요.');
-    await expect(alert).not.toContainText('사이트 로그인'); // 기타 사이트는 로그인 안내 없음
     await alert.getByLabel('공고 본문').fill(body(['회사명: 붙여넣은회사', '적합도: 66']));
     await alert.getByRole('button', { name: '이 내용으로 분석' }).click();
     await waitAnalyzed(page);

@@ -7,13 +7,11 @@ import { getOrCreateBookmarkletToken } from "@/lib/bookmarklet/token";
 import { latestBackupAt } from "@/lib/backup";
 import { config } from "@/lib/config";
 import { formatDateTime } from "@/lib/domain/dates";
-import { isBrowserBusy } from "@/lib/extract/browser";
 import { getModelFor, getSetting } from "@/lib/settings";
 import { ClaudeStatus } from "./ClaudeStatus";
 import { ModelSelects } from "./ModelSelects";
 import { summarizeUploads, uploadsInUse } from "@/lib/uploads/cleanup";
 import { UploadsCleanup } from "./UploadsCleanup";
-import { SiteLoginButtons } from "./SiteLoginButtons";
 import { BookmarkletCard } from "./BookmarkletCard";
 
 /** 설정 화면을 연 주소(평소 http://127.0.0.1:3939)를 북마크 버튼의 앱 주소로 쓴다. 이상한 Host 값은 쓰지 않는다. */
@@ -83,14 +81,6 @@ async function SettingsBody() {
       </div>
 
       <BookmarkletCard code={bookmarkletCode} createdAt={bm.createdAt.slice(0, 10)} />
-
-      <div className="card form-card">
-        <h2>사이트 로그인</h2>
-        <p className="muted small" style={{ margin: 0 }}>
-          로그인이 필요한 공고를 읽을 때 쓰는 브라우저입니다. 열린 창에서 직접 로그인한 뒤 창을 닫으세요. 앱은 비밀번호를 저장하지 않습니다.
-        </p>
-        <SiteLoginButtons busy={isBrowserBusy()} />
-      </div>
 
       <div className="card form-card">
         <h2>데이터</h2>

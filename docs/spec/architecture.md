@@ -96,7 +96,7 @@ src/lib/
 │  └─ sources.ts             출처 링크 정리
 ├─ sync/repo.ts              사이트 반영 체크리스트·누적 규칙
 ├─ extract/
-│  ├─ browser.ts             영구 프로필 브라우저, 전역 잠금, 사이트 로그인 창
+│  ├─ browser.ts             일반(비지속) 브라우저 실행, 전역 잠금(링크로 읽기·PDF가 함께 씀)
 │  └─ extract-posting.ts     공고 본문 추출
 ├─ pdf/
 │  ├─ fonts.ts               Pretendard 글꼴 CSS (base64)
@@ -158,7 +158,7 @@ src/app/
 │  ├─ resume.ts              이력서 가져오기·저장, 희망 조건
 │  ├─ import.ts              지원 내역 추출·일괄 등록·직접 입력 중복 확인
 │  ├─ documents.ts           메모의 제출 서류 이관
-│  ├─ settings.ts            모델·시간 제한, 로그인 확인, 사이트 로그인 창, 백업, 데이터 폴더 열기
+│  ├─ settings.ts            모델·시간 제한, 로그인 확인, 백업, 데이터 폴더 열기
 │  ├─ tailored.ts            맞춤 이력서 조립·용어 맞추기·다듬기 (3단계)
 │  ├─ interview.ts           면접 준비 생성·추가 요청        (4단계)
 │  └─ sync.ts                사이트 반영 완료·다시 만들기    (5단계)
@@ -287,7 +287,6 @@ data/                       git 제외. 위치는 CAREER_FLOW_DATA_DIR로 바꿀
 ├─ documents/               제출 서류 PDF 복사본 (resume/이력서_YYYYMMDD.pdf, career/경력기술서_…, portfolio/포트폴리오_…). 앱이 만든 맞춤본 PDF는 여기에 저장하지 않는다(D-25)
 ├─ kit/<id>/                서류 키트 사본(가이드·작성 규칙·마스터스토리·기본 서류 md·스타일). 올릴 때마다 새 id (3단계, D-27)
 ├─ ai-work/<jobId>/         작업별 Claude Code 작업 폴더 (입력 파일)
-├─ browser-profile/         Playwright 영구 프로필 (사이트 로그인 유지)
 └─ backups/                 DB 백업 (자동 30개, 수동 10개)
 ```
 

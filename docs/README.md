@@ -32,7 +32,7 @@ AI 작업(공고 분석, 이력서 정리 등)은 모두 PC에 설치된 **Claud
 
 - Next.js 16 (App Router, 서버 액션), React 19, TypeScript
 - SQLite + Drizzle ORM (`better-sqlite3`), zod
-- Playwright (PDF 만들기, 로그인 창), Vitest + Playwright E2E
+- Playwright (PDF 만들기, 링크로 읽기), Vitest + Playwright E2E
 - AI: Claude Code CLI(`claude -p --output-format json --json-schema …`), 작업 큐로 한 번에 하나씩 실행
 
 ## 실행

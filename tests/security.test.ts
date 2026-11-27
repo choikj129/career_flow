@@ -94,8 +94,8 @@ describe('API 키 미사용', () => {
 });
 
 describe('명령 실행 방식', () => {
-  test('TC-AI-25 child_process는 claude-cli.ts와 로그인 창(browser.ts)에서만 쓰고 셸을 거치지 않는다', () => {
-    const allowed = ['src/lib/ai/claude-cli.ts', 'src/lib/extract/browser.ts'];
+  test('TC-AI-25 child_process는 claude-cli.ts에서만 쓰고 셸을 거치지 않는다', () => {
+    const allowed = ['src/lib/ai/claude-cli.ts'];
     const users = srcFiles().filter((f) => /child_process/.test(readFileSync(f, 'utf8'))).map(rel).sort();
     expect(users).toEqual(allowed);
     for (const f of allowed) {

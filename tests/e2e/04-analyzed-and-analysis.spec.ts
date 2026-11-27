@@ -48,11 +48,10 @@ test.describe('분석한 공고', () => {
 });
 
 test.describe('공고 상세: 실패 표시', () => {
-  test('TC-DETAIL-11 본문 추출 실패(원티드): 안내, 로그인 링크, 붙여넣기 입력창, 탭의 "!" 표시', async ({ page }) => {
+  test('TC-DETAIL-11 본문 추출 실패(원티드): 안내, 붙여넣기 입력창, 탭의 "!" 표시', async ({ page }) => {
     await page.goto('/postings/8');
     const card = page.locator('.fail-card');
     await expect(card).toContainText('공고 본문을 읽지 못했습니다. 공고 페이지 내용을 복사해 붙여넣어 주세요.');
-    await expect(card.getByRole('link', { name: '설정 → 사이트 로그인' })).toHaveAttribute('href', '/settings');
     await expect(card.getByLabel('공고 본문')).toBeVisible();
     await expect(card.getByRole('button', { name: '이 내용으로 분석' })).toBeDisabled(); // 빈 입력
     await expect(page.getByRole('tab', { name: /분석/ }).locator('.dot-flag')).toHaveText('!');

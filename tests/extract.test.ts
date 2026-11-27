@@ -4,11 +4,9 @@ import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 import { extractPostingText, looksBlocked, MIN_POSTING_TEXT_LENGTH } from '@/lib/extract/extract-posting';
 import { isBrowserBusy, withBrowser } from '@/lib/extract/browser';
 import { startFixtureServer, type FixtureServer } from './helpers/http-fixture';
-import { makeTmpDir } from './helpers/tmp';
 
 const FULL = resolve(__dirname, 'fixtures/posting-full.html');
 const EMPTY = resolve(__dirname, 'fixtures/posting-empty.html');
-const tmpProfile = () => makeTmpDir('cf-profile-');
 
 let fx: FixtureServer;
 beforeAll(async () => {
@@ -21,7 +19,7 @@ afterAll(() => fx.close());
 
 describe('extractPostingText', () => {
   test('extracts JS-rendered text from page', async () => {
-    const r = await extractPostingText(fx.url('/full'), { profileDir: tmpProfile() });
+    const r = await extractPostingText(fx.url('/full'));
     expect(r.text).toContain('자격요건');
     expect(r.text.length).toBeGreaterThanOrEqual(MIN_POSTING_TEXT_LENGTH);
     expect(r.title).toContain('서버 개발자');
@@ -29,13 +27,13 @@ describe('extractPostingText', () => {
 
   test('fails on too-short text', async () => {
     await expect(
-      extractPostingText(fx.url('/empty'), { profileDir: tmpProfile() }),
+      extractPostingText(fx.url('/empty')),
     ).rejects.toMatchObject({ kind: 'extract_failed' });
   }, 60_000);
 
   test('TC-NEW-12 http(s)가 아닌 주소는 브라우저를 열기 전에 거부한다', async () => {
     for (const u of ['file:///C:/Windows/win.ini', 'javascript:alert(1)', 'ftp://example.com/a']) {
-      await expect(extractPostingText(u, { profileDir: tmpProfile() }), u).rejects.toMatchObject({
+      await expect(extractPostingText(u), u).rejects.toMatchObject({
         kind: 'extract_failed',
         message: expect.stringContaining('올바른 공고 주소가 아닙니다'),
       });
@@ -44,7 +42,7 @@ describe('extractPostingText', () => {
 
   test('fails on unreachable url as extract_failed', async () => {
     await expect(
-      extractPostingText('http://127.0.0.1:1/none', { profileDir: tmpProfile(), timeoutMs: 5000 }),
+      extractPostingText('http://127.0.0.1:1/none', { timeoutMs: 5000 }),
     ).rejects.toMatchObject({ kind: 'extract_failed' });
   }, 60_000);
 });
@@ -53,14 +51,11 @@ describe('withBrowser', () => {
   test('serializes concurrent browser use', async () => {
     const spans: { start: number; end: number }[] = [];
     const run = () =>
-      withBrowser(
-        async () => {
-          const start = Date.now();
-          await new Promise((r) => setTimeout(r, 100));
-          spans.push({ start, end: Date.now() });
-        },
-        { profileDir: tmpProfile() },
-      );
+      withBrowser(async () => {
+        const start = Date.now();
+        await new Promise((r) => setTimeout(r, 100));
+        spans.push({ start, end: Date.now() });
+      });
     const p1 = run();
     const p2 = run();
     expect(isBrowserBusy()).toBe(true);

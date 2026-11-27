@@ -2,11 +2,9 @@
 
 import { z } from 'zod';
 import { checkClaudeHealth } from '@/lib/ai/health';
-import { isBrowserBusy, openSiteLogin } from '@/lib/extract/browser';
 import { clearUploads } from '@/lib/uploads/cleanup';
 import { formatBytes } from '@/lib/uploads/check';
 import { setModelFor, setSetting, MODEL_CHOICES } from '@/lib/settings';
-import type { SiteId } from '@/lib/domain/types';
 import { run } from './run';
 import type { ActionResult } from './types';
 
@@ -38,20 +36,6 @@ export async function setModelAction(type: string, model: string): Promise<Actio
     const v = ModelSetting.parse({ type, model });
     setModelFor(v.type, v.model);
   }, '모델을 저장했습니다');
-}
-
-const LOGIN_SITES = ['remember', 'wanted', 'groupby', 'jobkorea'] as const;
-
-export async function openSiteLoginAction(site: string): Promise<ActionResult> {
-  const id = z.enum(LOGIN_SITES).safeParse(site);
-  if (!id.success) return { ok: false, error: '로그인 창을 열 수 없는 사이트입니다.' };
-  if (isBrowserBusy()) return { ok: false, error: '브라우저를 사용 중입니다. 분석 작업이 끝난 뒤 시도하세요.' };
-  try {
-    await openSiteLogin(id.data as SiteId);
-  } catch (e) {
-    return { ok: false, error: e instanceof Error ? e.message : String(e) };
-  }
-  return { ok: true, notice: '브라우저 창이 열렸습니다. 로그인한 뒤 창을 닫으세요' };
 }
 
 /** 올린 이력서·캡처 원본을 지운다. 이미 저장한 이력서와 지원 기록은 그대로다. */
