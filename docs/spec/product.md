@@ -142,6 +142,7 @@
 - 같은 URL을 다시 등록하면 새로 만들지 않고 기존 공고로 이동한다. [제안]
 - 잘못 등록한 공고는 삭제할 수 있다. 단, 지원 기록이 없는 공고만이며 분석·맞춤 이력서·면접 준비도 함께 지운다. [결정 D-02]
 - 본문 추출은 앱이 Playwright로 페이지를 열어 수행한다(8장). 추출된 본문 텍스트와 원본 URL·추출 시각을 **반드시 저장**한다.
+- **북마크 버튼 "Career Flow로 보내기"** (2026-11-27, 작업 기록 [work/bookmarklet.md](../work/bookmarklet.md)): 사용자가 Chrome 북마크바에 넣어 두고 공고 페이지에서 누른다. 그 페이지의 접힌 "더 보기"를 펼치고 화면 글자·주소·제목을 모아 앱의 새 탭(`/postings/receive`)으로 넘기면, 앱이 **확인 없이 등록하고 분석을 시작**한다(본문 출처 "북마크 버튼"). 앱은 사이트에 접속하지 않는다. 설정에서 만든 확인 값이 버튼에 들어 있을 때만 바로 등록하고, 없거나 틀리면 등록 폼을 채워 보여 주기만 한다(다른 사이트가 앱에 공고를 넣고 분석을 일으키지 못하게). 글자가 300자 미만이면 확인 폼으로 보낸다. 같은 링크 공고가 있으면 기존 공고로 가고, 그 공고에 본문이 없을 때만 받은 본문을 넣고 다시 분석한다.
 
 **분석 (등록 즉시 자동 실행)** [사용자 결정]
 - 입력: 공고 본문 + 기본 이력서(최신 버전) + 희망 조건. 서류 키트가 있으면 키트의 프로필 표, **프로필별 뼈대**(자기소개 전문, 그 프로필 순서의 핵심 역량·주요 성과·경력 장 제목, 기본 프로필 대비 앞으로 뺀 것 한 줄, 직무별 개인 프로젝트 이름), **경력 마스터스토리 전문**도 함께 넣는다(B-14·D-32, 2026-11-24). 호출은 그대로 1회다.
@@ -317,6 +318,7 @@
 - 사이트별 본문 영역 선택 규칙을 두되, 실패하면 페이지 전체 텍스트를 쓰고 Claude가 분석 단계에서 공고 부분만 골라낸다.
 - 추출 실패(로그인 벽, 차단, 빈 본문) → 화면에 "본문을 붙여넣어 주세요" 입력창을 띄운다.
 - 사이트 상대로 반복 요청하지 않는다: 공고 1건당 사용자 요청 시 1회만 연다.
+- 셋째 경로: 북마크 버튼(7.3). 사용자 브라우저에서 이미 연 화면의 글자를 받으므로 자동 읽기를 막는 사이트에도 쓸 수 있다. 앱의 추출과 달리 사이트에 따로 접속하지 않는다.
 
 ## 9. AI 실행 계층 (Claude Code CLI)
 
@@ -367,7 +369,7 @@
 | `resume_versions` | id, version_no, content(JSON: 7.1 구조), source_files, created_at, note |
 | `preferences` | 희망 조건(JSON), updated_at |
 | `companies` | id, display_name, legal_name, aliases(JSON), normalized_keys, created_at |
-| `postings` | id, company_id, url(유일), site, site_note(기타일 때 출처 이름), position_title, raw_text, extracted(JSON: 공고 정보), fetched_at, deadline, status, created_at |
+| `postings` | id, company_id, url(유일), site, site_note(기타일 때 출처 이름), position_title, raw_text, raw_text_source(자동 추출/직접 붙여넣기/북마크 버튼), extracted(JSON: 공고 정보), fetched_at, deadline, status, created_at |
 | `analyses` | id, posting_id, resume_version_id, result(JSON), fit_score, created_at, job_id |
 | `applications` | id, posting_id(없을 수 있음: 가져온 기록), company_id, position_title, site, site_note, applied_at, submitted_resume(JSON 종류: `tailored`+리비전 id / `kit`+키트 id·직무·프로필(기본 서류 그대로) / `file`(이력서는 submitted_docs) / `imported` / `base`+버전 id(3단계 전 기록)), submitted_docs(JSON: 종류별 서류 파일 이름, 경력기술서·포트폴리오는 `"none"`=없음 가능, 값 없음=모름, 7.9), applied_datetime(정렬 전용 한국 시간 일시, 화면에 안 보임, D-17), status, notes |
 | `status_events` | id, application_id, status, at, note |

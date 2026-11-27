@@ -62,6 +62,11 @@ src/lib/
 │  └─ repo.ts                키트 올리기·버전 보관, 같은 내용 확인, 키트 기록
 ├─ companies/repo.ts         회사·별칭·매칭·합치기
 ├─ postings/repo.ts          공고 등록·조회·분석 결과 저장
+├─ postings/receive.ts       북마크 버튼으로 받은 공고 등록(확인 값 검사, 본문 정리, 같은 링크 처리)
+├─ bookmarklet/
+│  ├─ token.ts               북마크 버튼 확인 값 만들기·바꾸기·검사 (설정 키-값)
+│  ├─ code.ts                북마크 버튼 코드 만들기 (순수)
+│  └─ payload.ts             받은 주소 `#cf=` 읽기 (순수, 클라이언트에서도 씀)
 ├─ applications/repo.ts      지원 기록·상태 이력·중복 조회·일괄 등록·제출 이력서, 거친 단계 이력 읽기(listReachedHistory)
 ├─ applications/submitted.ts 제출 서류 선택 값·기본값·칸 변환·라벨·제출 서류 표시 줄 (순수, 클라이언트에서도 씀, 3단계)
 ├─ applications/submitted-options.ts [지원 완료]·[기록 수정] 창의 제출 서류 선택지 읽기 (서버, 3단계)
@@ -149,6 +154,7 @@ src/app/
 ├─ _actions/                 서버 액션 — 영역별 파일, lib 함수를 부르는 얇은 래퍼
 │  ├─ applications.ts        지원 완료, 상태 변경, 메모
 │  ├─ postings.ts            공고 등록, 본문 붙여넣기, 다시 분석, 회사 연결·별칭
+│  ├─ bookmarklet.ts         북마크 버튼으로 받은 공고 등록, 확인 값 새로 만들기
 │  ├─ resume.ts              이력서 가져오기·저장, 희망 조건
 │  ├─ import.ts              지원 내역 추출·일괄 등록·직접 입력 중복 확인
 │  ├─ documents.ts           메모의 제출 서류 이관
@@ -166,6 +172,7 @@ src/app/
 │  └─ tailored/[revisionId]/handoff/route.ts   작업 공간 요청문 md 받기(POST, 메모는 본문) (3단계)
 ├─ postings/
 │  ├─ new/page.tsx           공고 등록
+│  ├─ receive/page.tsx       공고 받기 (북마크 버튼이 연 탭, ReceiveBookmarklet.tsx 클라이언트)
 │  ├─ analyzed/page.tsx      분석한 공고
 │  └─ [id]/
 │     ├─ page.tsx            공고 상세 (상단 + 탭)

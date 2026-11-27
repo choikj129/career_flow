@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>가상 북마크 공고 - 가상스튜디오</title>
+</head>
+<body>
+<header><a href="#">홈</a></header>
+<main>
+  <h1>가상스튜디오 백엔드 개발자</h1>
+  <p>가상스튜디오는 가상의 결제 서비스를 만드는 회사입니다. 이 문단은 처음부터 보입니다. 주요 업무는 결제 서버 개발과 운영이며, 자격 요건은 서버 개발 3년 이상입니다. 우대 사항은 대용량 트래픽 경험입니다. 근무 위치는 가상 시 가상 구입니다. 함께 성장할 동료를 찾습니다. 지원 방법은 아래 안내를 따르세요. 채용 절차는 서류, 과제, 면접 순서입니다. 복지는 점심 지원과 도서 구입비 지원입니다. 자세한 내용은 다음 단락을 확인하세요.</p>
+  <div id="more" style="display:none">숨은문단: 우대 사항에는 가상 메시지 큐 운영 경험이 있습니다. 이 문단은 더 보기를 눌러야 보입니다.</div>
+  <button type="button" id="open-more" onclick="document.getElementById('more').style.display='block'">상세 정보 더 보기</button>
+  <form onsubmit="event.preventDefault();document.getElementById('flag').textContent='제출됨'">
+    <button type="submit">더보기</button>
+  </form>
+  <p id="flag"></p>
+  <a href="other.html">다른 공고 더보기</a>
+</main>
+</body>
+</html>

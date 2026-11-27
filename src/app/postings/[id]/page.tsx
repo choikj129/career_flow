@@ -396,7 +396,9 @@ function RawTab({ posting }: { posting: NonNullable<ReturnType<typeof getPosting
       ? "자동으로 읽음"
       : posting.rawTextSource === "pasted"
         ? "직접 붙여넣음"
-        : "아직 읽지 않음";
+        : posting.rawTextSource === "bookmarklet"
+          ? "북마크 버튼으로 가져옴"
+          : "아직 읽지 않음";
   const read = posting.fetchedAt ? `${formatDateTime(posting.fetchedAt)} ${how}` : how;
   return (
     <>

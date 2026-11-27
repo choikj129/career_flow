@@ -22,7 +22,14 @@ function checkLengths(company: string | null, position: string | null): void {
 }
 
 export function registerPosting(
-  input: { url?: string; pastedText?: string; siteNote?: string; companyName?: string; positionTitle?: string },
+  input: {
+    url?: string;
+    pastedText?: string;
+    siteNote?: string;
+    companyName?: string;
+    positionTitle?: string;
+    textSource?: 'pasted' | 'bookmarklet';
+  },
   db: Db = getDb(),
 ): { postingId: number; existing: boolean; jobId?: number } {
   const url = input.url?.trim() || undefined;
@@ -52,7 +59,7 @@ export function registerPosting(
       companyId,
       positionTitle,
       rawText: pastedText ?? null,
-      rawTextSource: pastedText ? ('pasted' as const) : null,
+      rawTextSource: pastedText ? (input.textSource ?? 'pasted') : null,
       fetchedAt: pastedText ? now() : null,
       createdAt: now(),
     })
@@ -66,7 +73,7 @@ export function setPostingText(
   postingId: number,
   text: string,
   db: Db = getDb(),
-  source: 'extracted' | 'pasted' = 'pasted',
+  source: 'extracted' | 'pasted' | 'bookmarklet' = 'pasted',
 ): void {
   db.update(postings)
     .set({ rawText: text, rawTextSource: source, fetchedAt: now() })

@@ -56,7 +56,7 @@ export const postings = sqliteTable('postings', {
   siteNote: text('site_note'),
   positionTitle: text('position_title'),
   rawText: text('raw_text'),
-  rawTextSource: text('raw_text_source').$type<'extracted' | 'pasted'>(),
+  rawTextSource: text('raw_text_source').$type<'extracted' | 'pasted' | 'bookmarklet'>(),
   fetchedAt: text('fetched_at'),
   extracted: text('extracted', { mode: 'json' }),
   deadline: text('deadline'),

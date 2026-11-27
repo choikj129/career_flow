@@ -1,6 +1,9 @@
 import { Suspense } from "react";
+import { headers } from "next/headers";
 import { connection } from "next/server";
 import { checkClaudeHealth } from "@/lib/ai/health";
+import { buildBookmarkletCode } from "@/lib/bookmarklet/code";
+import { getOrCreateBookmarkletToken } from "@/lib/bookmarklet/token";
 import { latestBackupAt } from "@/lib/backup";
 import { config } from "@/lib/config";
 import { formatDateTime } from "@/lib/domain/dates";
@@ -11,6 +14,12 @@ import { ModelSelects } from "./ModelSelects";
 import { summarizeUploads, uploadsInUse } from "@/lib/uploads/cleanup";
 import { UploadsCleanup } from "./UploadsCleanup";
 import { SiteLoginButtons } from "./SiteLoginButtons";
+import { BookmarkletCard } from "./BookmarkletCard";
+
+/** 설정 화면을 연 주소(평소 http://127.0.0.1:3939)를 북마크 버튼의 앱 주소로 쓴다. 이상한 Host 값은 쓰지 않는다. */
+function appOriginFrom(host: string | null): string {
+  return host && /^[A-Za-z0-9.-]+(:\d{1,5})?$/.test(host) ? `http://${host}` : "http://127.0.0.1:3939";
+}
 
 export default function SettingsPage() {
   return (
@@ -43,6 +52,11 @@ async function SettingsBody() {
   const backup = latestBackupAt();
   const uploads = summarizeUploads();
   const uploadsBusy = uploadsInUse();
+  const bm = getOrCreateBookmarkletToken();
+  const bookmarkletCode = buildBookmarkletCode({
+    token: bm.token,
+    appOrigin: appOriginFrom((await headers()).get("host")),
+  });
   const models = {
     analyze_posting: getModelFor("analyze_posting"),
     import_resume: getModelFor("import_resume"),
@@ -67,6 +81,8 @@ async function SettingsBody() {
         <p className="muted small" style={{ margin: "0 0 8px" }}>바꾸면 바로 저장됩니다.</p>
         <ModelSelects models={models} />
       </div>
+
+      <BookmarkletCard code={bookmarkletCode} createdAt={bm.createdAt.slice(0, 10)} />
 
       <div className="card form-card">
         <h2>사이트 로그인</h2>
