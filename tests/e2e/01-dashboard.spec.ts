@@ -132,9 +132,13 @@ test.describe('대시보드', () => {
     await expect(page.locator('.kcard')).toHaveCount(2);
   });
 
-  test('TC-DASH-16 공고 있는 행을 누르면 공고 상세로 이동', async ({ page }) => {
+  test('TC-DASH-16 공고 있는 행을 누르면 펼쳐지고, [공고 보기 →]로 공고 상세에 간다', async ({ page }) => {
     await page.goto('/');
     await rowOf(page, '한빛커머스').click();
+    await expect(page).not.toHaveURL(/\/postings\//);
+    const panel = page.locator('.rec-panel').first();
+    await expect(panel.getByText('상태 이력')).toBeVisible();
+    await panel.getByRole('link', { name: '공고 보기 →' }).click();
     await expect(page).toHaveURL(/\/postings\/2$/);
   });
 

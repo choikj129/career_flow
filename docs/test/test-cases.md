@@ -133,7 +133,7 @@ npm run test:e2e    # next build 후 Playwright(Chromium) E2E. 빌드된 앱을 
 | TC-DASH-13 | 보드 끌어놓기 | 상태별 보기 | 카드를 다른 열로 끌어놓고 [취소] | 상태 변경 창이 열려 새 상태가 미리 선택되고, 취소하면 그대로(저장해야 바뀜) | E2E | tests/e2e/01-dashboard.spec.ts — TC-DASH-13 |
 | TC-DASH-14 | 이력서별 보기 | 기본 v1 기준 지원 3건 + 가져온 기록 | [이력서별] 탭 | "기본 v1 기준 · 기본 3, 맞춤 0", 마지막은 "제출 이력서 모름 · 가져온 기록" | E2E | tests/e2e/01-dashboard.spec.ts — TC-DASH-14 |
 | TC-DASH-15 | 검색은 모든 보기에 적용 | - | 사이트별·상태별 보기에서 "토스" 검색 | 두 보기 모두 2건만 | E2E | tests/e2e/01-dashboard.spec.ts — TC-DASH-15 |
-| TC-DASH-16 | 행 클릭(공고 있음) | - | 한빛커머스 행 클릭 | `/postings/2`로 이동 | E2E | tests/e2e/01-dashboard.spec.ts — TC-DASH-16 |
+| TC-DASH-16 | 행 클릭(공고 있음) | - | 한빛커머스 행 클릭 → [공고 보기 →] | 그 자리에서 펼쳐지고(상태 이력 표시), 링크로 `/postings/2`에 이동 | E2E | tests/e2e/01-dashboard.spec.ts — TC-DASH-16 |
 | TC-DASH-17 | 행 펼침·상태 변경(기록만) | 가져온 기록 코어뱅크 | 행 클릭 → 면접 선택(차수 1) → 메모 → [저장] | "상태를 바꿨습니다" 알림, 표에 "면접 1차" 반영 | E2E | tests/e2e/01-dashboard.spec.ts — TC-DASH-17 |
 | TC-DASH-18 | 면접 차수 기본값 | 이미 면접 1차인 기록 | 펼쳐서 면접 선택 | 차수 기본값 2(기존 + 1) | E2E | tests/e2e/01-dashboard.spec.ts — TC-DASH-18 |
 | TC-DASH-19 | "분석한 공고 N건 보기" | - | 링크 클릭 | `/postings/analyzed`로 이동 | E2E | tests/e2e/01-dashboard.spec.ts — TC-DASH-19 |
@@ -141,6 +141,10 @@ npm run test:e2e    # next build 후 Playwright(Chromium) E2E. 빌드된 앱을 
 | TC-DASH-21 | 기록 수정(기록만) | 가져온 기록 | 펼침 → [기록 수정] → 회사명 변경 → 저장 | "지원 기록을 고쳤습니다", 새 이름으로 검색됨, 출처 이름 기본값 유지 | E2E | tests/e2e/03-apply-and-records.spec.ts — TC-DASH-21 |
 | TC-DASH-22 | 기록 삭제(기록만) | 가져온 기록 | 펼침 → [기록 삭제] → [취소] → 다시 [삭제] | 취소하면 남고, 삭제하면 "지원 기록을 삭제했습니다" 후 목록에서 사라짐 | E2E | tests/e2e/03-apply-and-records.spec.ts — TC-DASH-22 |
 | TC-DASH-24 | 상태 이력 수정 | 기록만 행(최종합격 1건) | 상태 변경으로 불합격 추가 → 이력 [수정]으로 날짜·메모 변경 → 다시 [수정]으로 상태를 서류합격으로 | "상태 이력을 고쳤습니다", 이력에 새 날짜·메모, 행의 현재 상태가 가장 늦은 이력의 상태로 바뀜. 단위: tests/status-event-edit.test.ts | E2E+단위 | tests/e2e/03-apply-and-records.spec.ts — TC-DASH-24 |
+| TC-DS-01 | 표에서 공고 있는 행 상태 변경 | 지원 완료한 공고 | 행 클릭 → 서류합격 선택 → [저장] | [공고 보기 →] 있고 [기록 삭제] 없음, 행에 "서류합격", 공고 상세 상태도 서류합격 | E2E | tests/e2e/03-apply-and-records.spec.ts — TC-DS-01 |
+| TC-DS-02 | 상태별 보드의 공고 있는 카드 | 같은 공고 | 카드 클릭 → 과제·코딩테스트 → 저장, 다시 카드 → [공고 보기 →] | 창에 "기록만" 문구 없음, 카드가 과제 열로 이동, 링크로 공고 상세 이동 | E2E | tests/e2e/03-apply-and-records.spec.ts — TC-DS-02 |
+| TC-DS-03 | 패널 폭 | 같은 공고 | 1024·1240·1440 폭에서 펼침 | keep-all, 가로 넘침 없음 | E2E | tests/e2e/03-apply-and-records.spec.ts — TC-DS-03 |
+| TC-DS-04 | 공고 있는 행도 상세를 모아 읽음 | 공고 있는 지원 3건·30건 | `loadDashboard` | 질의 횟수가 같고(행 수에 비례하지 않음), 모든 행에 이력이 있음 | 단위 | tests/dashboard-queries.test.ts — rows with a posting also get extras |
 | TC-DASH-25 | 상태 이력 삭제 | TC-DASH-24 다음 | 이력 [삭제] → [취소] → 다시 [삭제] | 취소하면 남고, 삭제하면 "상태 이력을 삭제했습니다", 현재 상태가 남은 이력 기준(최종합격)으로 돌아감, 하나 남으면 [삭제] 비활성 | E2E+단위 | tests/e2e/03-apply-and-records.spec.ts — TC-DASH-25 |
 | TC-DASH-26 | 이력 수정 폼 폭 | 폭 1024·1240·1440 | 이력 [수정] 열기 | 가로 넘침·잘림 없음 | E2E | tests/e2e/03-apply-and-records.spec.ts — TC-DASH-26 |
 | TC-DASH-23 | 빈 상태 | 지원 기록 0건, 기본 이력서 없음 | `/` 열기 | "아직 지원 기록이 없습니다." + [공고 등록] + "이미 지원한 내역이 있다면 → 가져오기" + 이력서 안내 줄, 요약 줄 없음 | E2E | tests/e2e/empty-a-first-run.spec.ts — TC-DASH-23 |

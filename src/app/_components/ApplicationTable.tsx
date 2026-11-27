@@ -1,7 +1,6 @@
 "use client";
 
 import { Fragment, useState } from "react";
-import { useRouter } from "next/navigation";
 import type { DashboardRow } from "@/lib/search/dashboard";
 import { Fit } from "./Fit";
 import { RecordPanel, type RecordDetail } from "./RecordPanel";
@@ -15,7 +14,7 @@ export function ResumeTag({ label }: { label: string | null }) {
 
 /**
  * 지원 목록 표.
- * 공고가 있는 행을 누르면 공고 상세로, 기록만 있는 행은 그 자리에서 펼쳐 상태 변경 등을 한다.
+ * 행을 누르면 그 자리에서 펼쳐 상태 변경 등을 한다. 공고가 있는 행은 패널의 [공고 보기 →]로 공고 상세에 간다.
  */
 export function ApplicationTable({
   rows,
@@ -30,13 +29,11 @@ export function ApplicationTable({
   showSite?: boolean;
   showResume?: boolean;
 }) {
-  const router = useRouter();
   const [openId, setOpenId] = useState<number | null>(null);
   const colSpan = 5 + (showSite ? 1 : 0) + (showResume ? 1 : 0);
 
   const activate = (r: DashboardRow) => {
-    if (r.postingId != null) router.push(`/postings/${r.postingId}`);
-    else setOpenId((cur) => (cur === r.applicationId ? null : r.applicationId));
+    setOpenId((cur) => (cur === r.applicationId ? null : r.applicationId));
   };
 
   return (
@@ -61,7 +58,7 @@ export function ApplicationTable({
               <tr
                 className="row-link"
                 tabIndex={0}
-                aria-expanded={r.postingId == null ? Boolean(expanded) : undefined}
+                aria-expanded={Boolean(expanded)}
                 onClick={() => activate(r)}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") activate(r);

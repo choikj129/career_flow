@@ -236,7 +236,7 @@ export function getDashboardStats(
 export type RecordExtra = ReturnType<typeof listRecordExtras> extends Map<number, infer V> ? V : never;
 
 /**
- * 대시보드 한 번 열기: 목록, 요약 통계, 공고 없는 기록의 메모·제출 서류·상태 이력.
+ * 대시보드 한 번 열기: 목록, 요약 통계, 지원 기록의 메모·제출 서류·상태 이력.
  * 조회 횟수는 기록 수와 관계없이 일정하다(상태 이력 조회를 목록과 통계가 함께 쓴다).
  */
 export function loadDashboard(
@@ -249,6 +249,6 @@ export function loadDashboard(
   const reachedById = listReachedHistory(db);
   const rows = searchApplications(q, db, reachedById);
   const stats = getDashboardStats(now, db, reachedById);
-  const extras = listRecordExtras((pick ? pick(rows) : rows).filter((r) => r.postingId == null).map((r) => r.applicationId), db);
+  const extras = listRecordExtras((pick ? pick(rows) : rows).map((r) => r.applicationId), db);
   return { rows, stats, extras };
 }
