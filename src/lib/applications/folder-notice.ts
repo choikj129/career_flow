@@ -11,10 +11,18 @@ export function shouldShowFolderNotice(copiedAt: string | null | undefined, resu
   return !resume.startsWith('sess:');
 }
 
+/** 복사 표시 값 "시각|프로필 id". 옛 값(시각만)은 프로필이 없는 것으로 본다 */
+export function parseSessionCopy(raw: string | null | undefined): { at: string; profileId: string | null } | null {
+  if (!raw) return null;
+  const i = raw.indexOf('|');
+  if (i < 0) return { at: raw, profileId: null };
+  return { at: raw.slice(0, i), profileId: raw.slice(i + 1) || null };
+}
+
 /** 복사 표시 저장(실패는 조용히 넘어간다) */
-export function markSessionRequestCopied(postingId: number, now: Date = new Date()): void {
+export function markSessionRequestCopied(postingId: number, profileId: string, now: Date = new Date()): void {
   try {
-    window.localStorage.setItem(sessionCopyKey(postingId), now.toISOString());
+    window.localStorage.setItem(sessionCopyKey(postingId), `${now.toISOString()}|${profileId}`);
   } catch {
     /* 저장소를 못 쓰면 알림이 안 뜰 뿐 */
   }
@@ -26,6 +34,11 @@ export function readSessionRequestCopied(postingId: number): string | null {
   } catch {
     return null;
   }
+}
+
+/** 복사할 때 고른 프로필 id. 표시가 없거나 옛 값이면 null */
+export function readSessionRequestCopiedProfile(postingId: number): string | null {
+  return parseSessionCopy(readSessionRequestCopied(postingId))?.profileId ?? null;
 }
 
 export function clearSessionRequestCopied(postingId: number): void {

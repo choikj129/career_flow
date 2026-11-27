@@ -206,7 +206,7 @@ test.describe('지원 완료 기본값', () => {
 
 // D-33 a: 지원 완료·기록 수정의 "이력서 세션 맞춤본"과 바탕 이력서 날짜
 test.describe('이력서 세션 맞춤본 기록 (D-33 a)', () => {
-  const SESS = '이력서 세션 맞춤본 · B2';
+  const SESS = '이력서 세션 맞춤본';
   const today = () => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -219,7 +219,7 @@ test.describe('이력서 세션 맞춤본 기록 (D-33 a)', () => {
     const resume = dlg.getByLabel('이력서', { exact: true });
     await expect(dlg.getByTestId('resume-base-date')).toHaveCount(0);
     await resume.selectOption({ label: SESS });
-    await expect(dlg.getByTestId('doc-full-resume')).toHaveText('이력서 세션 맞춤본 · B2 성능');
+    await expect(dlg.getByTestId('doc-full-resume')).toHaveText('B2 성능');
     const date = dlg.getByLabel('바탕 이력서');
     await expect(dlg.getByTestId('resume-base-date')).toBeVisible();
     await expect(date).toHaveValue(today()); // 처음 값: 지금 키트를 올린 날

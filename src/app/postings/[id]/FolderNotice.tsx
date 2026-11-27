@@ -22,7 +22,7 @@ export function FolderNotice({ postingId, companyName }: { postingId: number; co
   return (
     <div className="notice warn" role="status" data-testid="folder-notice" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
       <span>
-        이 공고는 이력서 세션 맞춤본이 아닌 서류로 냈습니다. 이력서 세션에서 만든 이 공고의 지원 폴더(지원\{companyName})는 쓰지 않으니, 이력서 세션에 지워 달라고 하세요.
+        이 공고는 이력서 세션 맞춤본이 아닌 서류로 냈습니다. 이력서 세션에서 만든 이 공고의 지원 폴더(지원\{companyName})는 쓰지 않으니 지워 주세요.
       </span>
       <button type="button" className="btn sm" data-testid="folder-notice-close" onClick={() => setShown(false)}>
         닫기

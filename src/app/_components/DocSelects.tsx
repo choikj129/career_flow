@@ -36,8 +36,9 @@ export function useSubmittedValues(data: SubmittedFormData | null, appliedAt: st
     }
   }
   const value: SubmittedValues | null = current ? { ...current, ...picked } : null;
-  // 선택지에 없는 값(예: 지원일이 바뀌어 없어진 파일)은 모름으로 둔다
-  const fix = (v: string, options: { value: string }[], fallback: string) => (options.some((o) => o.value === v) ? v : fallback);
+  // 선택지에 없는 값(예: 지원일이 바뀌어 없어진 파일, 새 기록에서 뺀 모름)은 모름으로 두고, 모름도 없으면 첫 선택지로 둔다
+  const fix = (v: string, options: { value: string }[], fallback: string) =>
+    options.some((o) => o.value === v) ? v : options.some((o) => o.value === fallback) ? fallback : (options[0]?.value ?? fallback);
   const safe =
     value && data
       ? {
