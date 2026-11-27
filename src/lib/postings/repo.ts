@@ -6,7 +6,7 @@ import { assertHttpUrl, canonicalizeUrl, detectSite } from '@/lib/domain/normali
 import type { SiteId } from '@/lib/domain/types';
 import { enqueueJob } from '@/lib/ai/queue';
 import type { AnalysisResult } from '@/lib/ai/tasks/schemas';
-import { findOrCreateCompany } from '@/lib/companies/repo';
+import { addCompanyAlias, findOrCreateCompany } from '@/lib/companies/repo';
 
 export type Posting = typeof postings.$inferSelect;
 export type Analysis = typeof analyses.$inferSelect;
@@ -121,6 +121,22 @@ export function saveAnalysis(
       .where(eq(postings.id, postingId))
       .run();
   });
+  addAnalysisAliases(companyId, result.posting.companyAliases, db);
+}
+
+const MAX_ALIASES = 3;
+const MAX_ALIAS_LENGTH = 50;
+
+/** 분석이 낸 회사 별칭을 회사에 붙인다. 실패해도 분석 저장은 성공으로 둔다. 다른 회사의 키와 같으면 addCompanyAlias가 건너뛴다. */
+function addAnalysisAliases(companyId: number, aliases: string[] | undefined, db: Db): void {
+  const list = (aliases ?? []).map((a) => a.trim()).filter((a) => a && a.length <= MAX_ALIAS_LENGTH);
+  for (const alias of list.slice(0, MAX_ALIASES)) {
+    try {
+      addCompanyAlias(companyId, alias, db);
+    } catch {
+      // 별칭은 보조 정보다
+    }
+  }
 }
 
 export function getPosting(id: number, db: Db = getDb()): Posting | undefined {

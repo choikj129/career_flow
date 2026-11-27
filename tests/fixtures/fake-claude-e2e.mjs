@@ -154,6 +154,7 @@ function analysis() {
     posting: {
       companyDisplayName: company,
       companyLegalName: field('법인명') ?? null,
+      companyAliases: [],
       positionTitle: field('포지션') ?? '서버 개발자',
       experienceRequirement: '3년 이상',
       employmentType: '정규직',
