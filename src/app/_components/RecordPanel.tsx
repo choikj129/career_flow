@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { deleteApplicationAction, updateNotesAction } from "@/app/_actions/applications";
 import type { DocKind, SubmittedDocs as Docs } from "@/lib/documents/files";
@@ -14,6 +15,8 @@ import { useAction } from "./useAction";
 
 export type RecordDetail = {
   applicationId: number;
+  postingId: number | null;
+  resume?: { label: string; href: string | null } | null;
   companyName: string;
   positionTitle: string;
   site: SiteId;
@@ -27,7 +30,7 @@ export type RecordDetail = {
   events: { id: number; status: ApplicationStatus; interviewRound: number | null; at: string; note: string | null }[];
 };
 
-/** 공고 없이 기록만 있는 지원: 상태 변경, 이력, 메모, 수정·삭제. docs/spec/screens.md 1장 */
+/** 지원 기록 패널(공고 있는 행·기록만 있는 행 공통): 상태 변경, 이력, 메모, 수정·삭제. docs/spec/screens.md 1장 */
 export function RecordPanel({
   record,
   siteNotes,
@@ -45,6 +48,11 @@ export function RecordPanel({
 
   return (
     <div className="rec-panel" onClick={(e) => e.stopPropagation()}>
+      {record.postingId != null && (
+        <div style={{ textAlign: "right" }}>
+          <Link href={`/postings/${record.postingId}`}>공고 보기 →</Link>
+        </div>
+      )}
       <div>
         <b style={{ fontSize: 13.5 }}>상태 변경</b>
         <div style={{ marginTop: 8 }}>
@@ -62,7 +70,7 @@ export function RecordPanel({
         <StatusHistory events={sortEventsAscending(record.events, record.appliedAt).reverse()} />
       </div>
 
-      <SubmittedDocs docs={record.submittedDocs} exists={record.docExists} />
+      <SubmittedDocs docs={record.submittedDocs} exists={record.docExists} resume={record.resume} />
 
       <form
         onSubmit={(e) => {
@@ -86,14 +94,16 @@ export function RecordPanel({
         <button type="button" className="btn sm" onClick={() => setEditing(true)}>
           기록 수정
         </button>
-        <button type="button" className="btn sm danger" onClick={() => setDeleting(true)}>
-          기록 삭제
-        </button>
+        {record.postingId == null && (
+          <button type="button" className="btn sm danger" onClick={() => setDeleting(true)}>
+            기록 삭제
+          </button>
+        )}
       </div>
 
       {editing && (
         <ApplicationEditModal
-          record={record}
+          record={{ ...record, postingId: record.postingId ?? undefined }}
           siteNotes={siteNotes}
           onClose={() => setEditing(false)}
         />

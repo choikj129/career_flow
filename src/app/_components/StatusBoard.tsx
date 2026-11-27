@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { ApplicationStatus } from "@/lib/domain/types";
 import type { DashboardRow } from "@/lib/search/dashboard";
@@ -32,7 +31,6 @@ export function StatusBoard({
   details: Record<number, RecordDetail>;
   siteNotes: string[];
 }) {
-  const router = useRouter();
   const [dragId, setDragId] = useState<number | null>(null);
   const [overKey, setOverKey] = useState<string | null>(null);
   const [move, setMove] = useState<{ row: DashboardRow; target: ApplicationStatus } | null>(null);
@@ -79,10 +77,7 @@ export function StatusBoard({
                 draggable
                 onDragStart={() => setDragId(r.applicationId)}
                 onDragEnd={() => setDragId(null)}
-                onClick={() => {
-                  if (r.postingId != null) router.push(`/postings/${r.postingId}`);
-                  else setRecordId(r.applicationId);
-                }}
+                onClick={() => setRecordId(r.applicationId)}
               >
                 <div className="t">
                   {r.companyName}
@@ -133,7 +128,7 @@ export function StatusBoard({
       {recordDetail && (
         <Modal
           title={`${recordDetail.companyName} · ${recordDetail.positionTitle}`}
-          description="공고 없이 기록만 있는 지원입니다."
+          description={recordDetail.postingId == null ? "공고 없이 기록만 있는 지원입니다." : undefined}
           onClose={() => setRecordId(null)}
           wide
         >

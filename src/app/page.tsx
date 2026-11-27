@@ -83,15 +83,16 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
   const hasResume = getLatestResume() != null;
   const siteNotes = listSiteNotes();
 
-  // 공고 없이 기록만 있는 행은 그 자리에서 펼쳐 쓰므로 상세를 한 번에 모아 읽어 둔다(기록 수와 관계없이 조회 횟수 일정).
+  // 모든 행은 그 자리에서 펼쳐(보드는 창) 상태를 바꾸므로 상세를 한 번에 모아 읽어 둔다(기록 수와 관계없이 조회 횟수 일정).
   const docNames = existingDocNames();
   const details: Record<number, RecordDetail> = {};
   for (const r of rows) {
-    if (r.postingId != null) continue;
     const x = extras.get(r.applicationId);
     if (!x) continue;
     details[r.applicationId] = {
       applicationId: r.applicationId,
+      postingId: r.postingId,
+      resume: r.resumeShown,
       companyName: r.companyName,
       positionTitle: r.positionTitle,
       site: r.site,
