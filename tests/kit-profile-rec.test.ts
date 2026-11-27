@@ -88,7 +88,7 @@ class FakeRunner implements AiRunner {
 
 const ANALYSIS = {
   posting: {
-    companyDisplayName: '가상상사', companyLegalName: null, positionTitle: '백엔드 개발자',
+    companyDisplayName: '가상상사', companyLegalName: null, companyAliases: [], positionTitle: '백엔드 개발자',
     experienceRequirement: null, employmentType: null, location: null, deadline: null, salary: null,
     responsibilities: [], requirements: [], preferred: [], techStack: [],
   },

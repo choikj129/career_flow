@@ -36,6 +36,7 @@ const VALID_ANALYSIS: AnalysisResult = {
   posting: {
     companyDisplayName: '카카오',
     companyLegalName: '(주)카카오',
+    companyAliases: [],
     positionTitle: '백엔드 개발자',
     experienceRequirement: '3년 이상',
     employmentType: '정규직',

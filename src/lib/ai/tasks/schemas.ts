@@ -1,8 +1,7 @@
 import { z } from 'zod';
 import { APPLICATION_STATUSES, type ApplicationStatus } from '@/lib/domain/types';
 
-const AnalysisBase = z.object({
-  posting: z.object({
+const PostingBase = z.object({
     companyDisplayName: z.string().trim().min(1),
     companyLegalName: z.string().nullable(),
     positionTitle: z.string().trim().min(1),
@@ -15,7 +14,13 @@ const AnalysisBase = z.object({
     requirements: z.array(z.string()),
     preferred: z.array(z.string()),
     techStack: z.array(z.string()),
-  }),
+});
+
+/** 회사 검색용 별칭(한글 읽기 등). CLI 출력에서는 필수(빈 배열 허용), 저장된 옛 결과에는 없을 수 있다. */
+const CompanyAliases = z.array(z.string());
+
+const AnalysisBase = z.object({
+  posting: PostingBase,
   fit: z.object({
     score: z.number().int().min(0).max(100),
     breakdown: z.array(
@@ -57,13 +62,15 @@ export type ProfileRec = Omit<z.infer<typeof ProfileRecommendationOut>, 'tailorR
 
 /** 저장·화면용. 옛 분석 결과도 읽히도록 profileRecommendation은 선택이다. kitId는 코드가 붙인다. */
 export const AnalysisResult = AnalysisBase.extend({
+  posting: PostingBase.extend({ companyAliases: CompanyAliases.optional() }),
   profileRecommendation: ProfileRecommendationOut.extend({ kitId: z.number().int(), tailorRec: TailorRecOut.optional() }).nullable().optional(),
 });
 export type AnalysisResult = z.infer<typeof AnalysisResult>;
 
 /** CLI용 출력 스키마: 키트가 있으면 profileRecommendation 칸 필수, 없으면 칸 자체를 뺀다. */
 export function analysisOutputSchema(withProfiles: boolean): z.ZodType<Omit<AnalysisResult, 'profileRecommendation'> & { profileRecommendation?: z.infer<typeof ProfileRecommendationOut> }> {
-  return (withProfiles ? AnalysisBase.extend({ profileRecommendation: ProfileRecommendationOut }) : AnalysisBase) as never;
+  const base = AnalysisBase.extend({ posting: PostingBase.extend({ companyAliases: CompanyAliases }) });
+  return (withProfiles ? base.extend({ profileRecommendation: ProfileRecommendationOut }) : base) as never;
 }
 
 export const ImportedApplications = z.object({
