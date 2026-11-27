@@ -100,6 +100,7 @@ test.describe('북마크 버튼', () => {
     await expect(page.getByRole('link', { name: '공고 등록으로' })).toHaveAttribute('href', '/postings/new');
     await expect(page.getByRole('link', { name: '설정에서 북마크 버튼 받기' })).toHaveAttribute('href', '/settings#bookmarklet');
     // 깨진 내용은 "없음"이 아니라 읽지 못했다고 알린다
+    await page.goto('/');
     await page.goto('/postings/receive#cf=%7Bbroken');
     await expect(page.getByText('받은 내용을 읽지 못했습니다')).toBeVisible();
     await expect(page.getByRole('link', { name: '공고 등록으로' })).toBeVisible();
