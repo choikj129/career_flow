@@ -92,6 +92,7 @@ async function Dashboard({ searchParams }: { searchParams: PageProps<"/">["searc
     details[r.applicationId] = {
       applicationId: r.applicationId,
       postingId: r.postingId,
+      resume: r.resumeShown,
       companyName: r.companyName,
       positionTitle: r.positionTitle,
       site: r.site,

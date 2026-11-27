@@ -16,6 +16,7 @@ import { useAction } from "./useAction";
 export type RecordDetail = {
   applicationId: number;
   postingId: number | null;
+  resume?: { label: string; href: string | null } | null;
   companyName: string;
   positionTitle: string;
   site: SiteId;
@@ -69,7 +70,7 @@ export function RecordPanel({
         <StatusHistory events={sortEventsAscending(record.events, record.appliedAt).reverse()} />
       </div>
 
-      <SubmittedDocs docs={record.submittedDocs} exists={record.docExists} />
+      <SubmittedDocs docs={record.submittedDocs} exists={record.docExists} resume={record.resume} />
 
       <form
         onSubmit={(e) => {

@@ -8,7 +8,7 @@ import { matchesStatusFilter, reachedStages, type ReachedStage } from '@/lib/app
 import { classifyOutcome } from '@/lib/stats/outcome';
 import { tally, type Tally } from '@/lib/stats/rates';
 import { docFileOf, docLabel } from '@/lib/documents/files';
-import { resumeLabel } from '@/lib/applications/submitted';
+import { resumeDisplay, resumeLabel } from '@/lib/applications/submitted';
 import { listRevisionLabels } from '@/lib/tailored/repo';
 import { normalizeCompanyName } from '@/lib/domain/normalize';
 import {
@@ -36,6 +36,8 @@ export type DashboardRow = {
   fitScore: number | null;
   resumeLabel: string | null;
   resumeBaseVersionNo: number | null;
+  /** 펼친 패널의 제출 서류 이력서 줄(공고 상세와 같은 문구). 파일·모름이면 null */
+  resumeShown?: { label: string; href: string | null } | null;
   /** 맞춤본으로 냈으면 true(작업 공간 결과 포함) */
   tailored: boolean;
   /** 기본 서류 그대로 냈으면 그 직무 이름 */
@@ -134,6 +136,7 @@ export function searchApplications(
             : null
           : resumeLabel(sr, a.submittedDocs, { revNo: rev?.revNo, profile: rev?.profileId, profileName: rev?.profileName, versionNo }, 'short'),
       resumeBaseVersionNo: versionNo,
+      resumeShown: resumeDisplay(sr, { revNo: rev?.revNo, versionNo }),
       tailored: sr.kind === 'tailored' || sr.kind === 'session', // 이력서 세션 맞춤본도 "맞춤 이력서" 묶음(D-33 a)
       resumeKitTrack: sr.kind === 'kit' ? sr.track : null,
       resumeDocFile,

@@ -373,6 +373,16 @@ test.describe('제출 서류 선택', () => {
     await toast(page, '지원 기록을 고쳤습니다');
     await expect(page.getByTestId('resume-line')).toHaveText('기본 서류 백엔드');
   });
+
+  test('TC-DS-05 대시보드 패널의 이력서 줄은 공고 상세와 같고 "모름"이 아니다', async ({ page }) => {
+    await page.goto(`/?q=${encodeURIComponent('맞춤테스트A')}`);
+    const row = page.locator('tbody tr.row-link').filter({ hasText: '맞춤테스트A' });
+    await expect(row).toContainText('기본 서류 백엔드');
+    await row.click();
+    const panel = page.locator('.rec-panel');
+    await expect(panel.getByTestId('resume-line')).toHaveText('기본 서류 백엔드');
+    await expect(panel.getByTestId('submitted-docs')).not.toContainText('이력서 모름');
+  });
 });
 
 test.describe('키트 바뀜과 배치', () => {
