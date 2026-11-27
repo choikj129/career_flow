@@ -45,6 +45,7 @@ scripts/         실행·시드          data/            실행 데이터(git �
 
 | 문서 | 내용 |
 |---|---|
+| [docs/README.md](docs/README.md) | GitHub 첫 화면 소개: 어떤 프로젝트인지, 기능, 원칙, 기술 스택, 실행 방법 (공개 저장소라 개인 정보 없이) |
 | [docs/pm/status.md](docs/pm/status.md) | **프로젝트 현황판** (PM 관리): 마일스톤 순서·크기, 백로그·위험·사용자 할 일 |
 | [docs/decisions.md](docs/decisions.md) | **정할 것·결정 기록** (사용자 검토용). 열린 질문은 여기에만 모은다 |
 | [docs/spec/product.md](docs/spec/product.md) | 기획서: 목적, 기능, AI 실행 방식, 데이터 모델, 구현 단계 |
