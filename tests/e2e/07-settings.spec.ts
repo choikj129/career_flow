@@ -14,10 +14,6 @@ test.describe.serial('설정 화면', () => {
     await expect(page.locator('.mono-path')).toHaveText(dataDir('seeded'));
     await expect(page.getByText(/최근 자동 백업:/)).toBeVisible();
     await expect(page.getByText('사용량이 조금 듭니다')).toBeVisible(); // 로그인 확인 비용 안내
-    await expect(page.getByText('앱은 비밀번호를 저장하지 않습니다.')).toBeVisible();
-    for (const s of ['리멤버', '원티드', '그룹바이', '잡코리아']) {
-      await expect(page.locator('.login-site').filter({ hasText: s }).getByRole('button', { name: '로그인 창 열기' })).toBeEnabled();
-    }
   });
 
   test('TC-SETTINGS-02 페이지를 열 때는 모델을 부르지 않고, [로그인 확인]을 눌러야 haiku로 1회 호출', async ({ page }) => {

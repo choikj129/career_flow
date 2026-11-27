@@ -196,7 +196,7 @@ npm run test:e2e    # next build 후 Playwright(Chromium) E2E. 빌드된 앱을 
 | TC-DETAIL-08 | 공고 삭제 | 지원 기록이 없는 공고 | [공고 삭제] → 확인 | 확인 창 → 대시보드로 이동 + "공고를 삭제했습니다", 다시 열면 없음 페이지 | E2E | tests/e2e/03-apply-and-records.spec.ts — TC-DETAIL-08 |
 | TC-DETAIL-09 | 작업 실행 중 공고 삭제 | 분석이 실행 중 | [공고 삭제] → 삭제 | 확인 창에 "작업이 끝난 뒤 삭제하세요" | E2E | tests/e2e/03-apply-and-records.spec.ts — TC-DETAIL-09 |
 | TC-DETAIL-10 | 지원 기록이 있는 공고 | 시드 공고 2 | 상세 열기 | [공고 삭제] 없음, 상태 "면접 2차" | E2E | tests/e2e/03-apply-and-records.spec.ts — TC-DETAIL-10 |
-| TC-DETAIL-11 | 본문 추출 실패(원티드) | 시드: 추출 실패 공고 | 공고 상세 | 안내 문구, "설정 → 사이트 로그인" 링크, 붙여넣기 입력창(빈 입력이면 버튼 비활성), 분석 탭에 "!" 표시 | E2E | tests/e2e/04-analyzed-and-analysis.spec.ts — TC-DETAIL-11 |
+| TC-DETAIL-11 | 본문 추출 실패(원티드) | 시드: 추출 실패 공고 | 공고 상세 | 안내 문구, 붙여넣기 입력창(빈 입력이면 버튼 비활성), 분석 탭에 "!" 표시 | E2E | tests/e2e/04-analyzed-and-analysis.spec.ts — TC-DETAIL-11 |
 | TC-DETAIL-12 | 로그인 실패 공고 | 시드: auth 실패 공고 | 공고 상세 | "Claude Code 로그인이 필요합니다" + [다시 시도] | E2E | tests/e2e/04-analyzed-and-analysis.spec.ts — TC-DETAIL-12 |
 | TC-DETAIL-13 | 없는 공고 id | - | `/postings/99999`, `/postings/abc` | 없음 페이지 | E2E | tests/e2e/04-analyzed-and-analysis.spec.ts — TC-DETAIL-13 |
 | TC-DETAIL-14 | 탭과 주소 | - | 원문·지원 기록 탭 이동, `?tab=raw`, `?tab=nonsense` | 선택한 탭이 `?tab=`에 남고 알 수 없는 값은 분석 탭 | E2E | tests/e2e/04-analyzed-and-analysis.spec.ts — TC-DETAIL-14 |
@@ -311,13 +311,13 @@ npm run test:e2e    # next build 후 Playwright(Chromium) E2E. 빌드된 앱을 
 
 | ID | 기능/화면 | 전제 | 절차 | 기대 결과 | 종류 | 자동화 위치 |
 |---|---|---|---|---|---|---|
-| TC-SETTINGS-01 | 설정 화면 구성 | - | `/settings` | 설치됨·버전, 데이터 폴더 경로, 최근 백업, 로그인 확인 비용 안내, "앱은 비밀번호를 저장하지 않습니다.", 사이트 로그인 4개 버튼 | E2E | tests/e2e/07-settings.spec.ts — TC-SETTINGS-01 |
+| TC-SETTINGS-01 | 설정 화면 구성 | - | `/settings` | 설치됨·버전, 데이터 폴더 경로, 최근 백업, 로그인 확인 비용 안내 | E2E | tests/e2e/07-settings.spec.ts — TC-SETTINGS-01 |
 | TC-SETTINGS-02 | [로그인 확인] | 가짜 claude 정상 | 페이지 열기 → [로그인 확인] → 새로고침 | 열 때는 모델 호출 없음(`--version`만), 버튼을 누르면 haiku·도구 없음 1회 호출, "로그인되어 있습니다." 마지막 확인 결과 유지 | E2E | tests/e2e/07-settings.spec.ts — TC-SETTINGS-02 |
 | TC-SETTINGS-03 | 로그인 안 됨 | 가짜 claude 인증 오류 | [로그인 확인] | "로그인이 필요합니다. 터미널에서 `claude`를 실행해 로그인하세요." | E2E | tests/e2e/07-settings.spec.ts — TC-SETTINGS-03 |
 | TC-SETTINGS-04 | 기본 모델(D-05) | 새 DB | 모델 선택 확인 | 공고 분석 opus, 이력서·지원 내역 가져오기 sonnet | E2E | tests/e2e/07-settings.spec.ts — TC-SETTINGS-04 |
 | TC-SETTINGS-05 | 모델 변경 | - | 공고 분석 모델을 haiku로 → 새로고침 → 재분석 | "모델을 저장했습니다", 유지, 다음 분석이 `--model haiku`로 실행 | E2E | tests/e2e/07-settings.spec.ts — TC-SETTINGS-05 |
 | TC-SETTINGS-06 | 분석 호출 옵션 | - | 분석 후 가짜 claude가 받은 인자 확인 | 도구 없음, `-p --safe-mode --permission-mode dontAsk --permission-prompts none --output-format json`, `--bare` 없음, 이력서·공고 내용은 인자에 없음(표준입력) | E2E | tests/e2e/07-settings.spec.ts — TC-SETTINGS-06 |
-| TC-SETTINGS-10 | [로그인 창 열기] | 로그인이 필요한 사이트 | 사이트별 버튼 클릭 → 브라우저 창에서 직접 로그인 → 창 닫기 | 화면 있는 브라우저가 열리고 앱은 비밀번호를 저장하지 않음. 추출 중이면 버튼 비활성+"분석 작업이 끝난 뒤 시도하세요." | 수동 | 수동 — 실제 사이트 로그인 창을 띄우고 사람이 로그인해야 하며 자격 증명은 자동 입력하지 않는다 |
+| TC-SETTINGS-10 | (삭제됨 2026-11-27) [로그인 창 열기] | - | 로그인 창 기능을 없앴다(북마크 버튼으로 대체) | - | - | 삭제됨 |
 | TC-SETTINGS-11 | 설치 확인 | - | `checkClaudeHealth` 설치·미설치·로그인 확인(성공/인증/한도/기타) | 버전만(모델 호출 없음) / 미설치 안내 / 성공=로그인됨(haiku·도구 없음) / 인증 오류=터미널 로그인 안내 / 한도=로그인됨+한도 안내 / 기타=알 수 없음 | 단위 | tests/claude-health.test.ts — checkClaudeHealth (6개) |
 | TC-SETTINGS-14 | 올린 파일 정리 막힘(D-09) | 가져오기 작업이 진행 중(가짜 claude 지연 6초) | 이미지 하나로 가져오기 시작 → 설정 열기 | [올린 파일 정리] 비활성 + "가져오기 작업이 진행 중이라 지금은 정리할 수 없습니다." 작업이 끝나면 다시 활성 | E2E | tests/e2e/11-uploads-cleanup.spec.ts — TC-SETTINGS-14 |
 | TC-SETTINGS-15 | 올린 파일 정리(D-09) | uploads에 파일이 있음 | 설정의 "올린 파일 N개 · 크기" 확인 → [올린 파일 정리] → 확인 창 → [취소] → 다시 → [지우기] | 확인 창에 "올린 이력서·캡처 원본 N개(…)를 지웁니다. 이미 저장한 이력서와 지원 기록은 그대로입니다." 취소하면 그대로, 지우면 알림과 0개, 버튼 비활성, 대시보드의 지원 기록은 그대로 | E2E | tests/e2e/11-uploads-cleanup.spec.ts — TC-SETTINGS-15 |
@@ -365,7 +365,7 @@ AI 작업이 끝나면 `data/ai-work/<번호>/`를 바로 지운다. 올린 이�
 | TC-AI-22 | 인증 파일 미접근 | - | 소스 검사 | `.credentials`, `credentials.json`, OAuth 토큰 환경변수 참조 없음 | 단위 | tests/security.test.ts — TC-AI-22 |
 | TC-AI-23 | API 키·SDK 미사용 | - | 의존성·소스 검사 | `@anthropic-ai` 의존성·import, `api.anthropic.com`, `process.env.ANTHROPIC*` 없음 | 단위 | tests/security.test.ts — TC-AI-23 |
 | TC-AI-24 | API 키 환경변수 차단 | 사용자 환경에 ANTHROPIC_API_KEY/ANTHROPIC_AUTH_TOKEN | 러너 실행 후 자식 프로세스 환경 확인 | 자식 프로세스에 넘기지 않음(구독 로그인으로만 처리) | 통합 | tests/security.test.ts — TC-AI-24 **수정됨**: `buildChildEnv`가 ANTHROPIC_API_KEY·ANTHROPIC_AUTH_TOKEN·ANTHROPIC_BASE_URL·CLAUDE_CODE_USE_BEDROCK·CLAUDE_CODE_USE_VERTEX를 제거 |
-| TC-AI-25 | 셸 미사용 | - | 소스 검사 | `child_process`는 claude-cli.ts와 로그인 창(browser.ts, 설치된 Chrome/Edge를 자동화 없이 띄움)에서만, `shell: true`·`exec(` 없음 | 단위 | tests/security.test.ts — TC-AI-25 |
+| TC-AI-25 | 셸 미사용 | - | 소스 검사 | `child_process`는 claude-cli.ts에서만, `shell: true`·`exec(` 없음 | 단위 | tests/security.test.ts — TC-AI-25 |
 | TC-AI-26 | 명령 주입 방지(프롬프트) | 프롬프트에 `"; rm -rf / & $(whoami)` 포함 | 러너 실행 | 인자 배열에 들어가지 않음(표준입력으로만) | 통합 | tests/security.test.ts — TC-AI-26 |
 | TC-AI-27 | 명령 주입 방지(인자) | 모델 값에 공백·세미콜론 | 러너 실행 | 인자 하나로 그대로 전달 | 통합 | tests/security.test.ts — TC-AI-27 |
 | TC-AI-30 | 프롬프트 파일 목록 | - | prompts 폴더 확인 | 3개(analyze-posting, import-resume, import-applications) | 단위 | tests/prompts.test.ts — TC-AI-30 |
@@ -465,7 +465,6 @@ AI 작업이 끝나면 `data/ai-work/<번호>/`를 바로 지운다. 올린 이�
 | TC-NEW-21 | 실제 채용 사이트 링크 | 실제 리멤버·원티드·그룹바이·잡코리아 공고 링크를 등록 | 실제 사이트에는 접속하지 않기로 했고(약관·차단), 사이트 구조는 수시로 바뀜 |
 | TC-RESUME-20 | 브라우저 새로고침·탭 닫기 시 이탈 확인 | 주소창 새로고침/탭 닫기 | beforeunload 대화상자는 브라우저 UI로 Playwright가 자동 수락·거부해 실제 표시를 확인할 수 없음 |
 | TC-IMPORT-25 | 실제 캡처 이미지 인식 | 이미지 올려 추출 | 실제 Claude의 이미지 인식 품질 확인이라 가짜 claude로는 불가(자동 테스트에서 실제 claude 호출 금지) |
-| TC-SETTINGS-10 | [로그인 창 열기] | 사이트별 버튼 클릭 → 브라우저 창에서 직접 로그인 → 창 닫기 | 실제 사이트 로그인 창을 띄우고 사람이 로그인해야 하며 자격 증명은 자동 입력하지 않는다 |
 | TC-AI-40 | 실제 claude 호출 | 실제 공고·이력서로 분석, 이력서 PDF/DOCX 가져오기 | 자동 테스트에서는 실제 claude 호출을 금지(사용량·비결정적 결과). 프롬프트 품질은 사람이 확인 |
 | TC-AI-41 | 실서버 재시작 복구 | 서버 프로세스를 강제 종료 후 재시작 | 단위(TC-AI-08)로 로직은 확인됨. 실제 프로세스 종료·재기동은 환경 의존이라 수동 |
 | TC-DATA-16 | 데이터 백업/복원 실사용 | 데이터 폴더 복사 후 다른 위치에서 실행 | 백업 UI·복원은 5단계. 파일 복사 자체는 OS 작업 |
@@ -501,7 +500,7 @@ AI 작업이 끝나면 `data/ai-work/<번호>/`를 바로 지운다. 올린 이�
 | TC-AI-24 (Vitest) | 환경에 `ANTHROPIC_API_KEY` 등이 있으면 `claude`에 넘어가 API 과금 위험 | 수정됨. `buildChildEnv`(`claude-cli.ts`)가 5개 변수를 제거. `run()`과 `runClaudeVersion()` 모두 사용 |
 | TC-DATA-05 (Vitest) | `Acme Corporation` → `acmeoration` | 수정됨. 긴 패턴을 먼저 적용 |
 | TC-DATA-06 (Vitest) | `Incredible Inc` → `redible`, `Corpay` → `ay` | 수정됨. 뒤쪽 단어 경계 |
-| F-1 | 로그인 창이 브라우저 잠금을 쥐면 링크 추출 작업이 무한 대기해 큐가 멈춤 | 수정됨. 잠금 대기 60초 제한, 초과 시 "사이트 로그인 창이 열려 있습니다…" 실패 |
+| F-1 | 다른 작업이 브라우저 잠금을 쥐면 링크 추출 작업이 무한 대기해 큐가 멈춤 | 수정됨. 잠금 대기 60초 제한, 초과 시 "브라우저를 다른 작업(PDF 만들기 등)이 쓰고 있습니다…" 실패 |
 | F-2 | 세션 ID가 없는데 "다시 맞춰 달라"고만 재요청 | 수정됨. 세션 ID가 없으면 재시도 없이 schema 오류 |
 | F-4 | 없는 회사로 연결 가능, 지원 기록의 회사는 그대로 | 수정됨. 한국어 오류로 거부, 같은 트랜잭션에서 지원 기록 회사도 변경 |
 | F-3 | 목록이 분석 result·raw_text·작업 result/usage 전체를 읽음, 인덱스 없음 | 수정됨. 필요한 컬럼만 select, 인덱스 4개(`drizzle/0002_indexes.sql`) |
@@ -522,7 +521,7 @@ AI 작업이 끝나면 `data/ai-work/<번호>/`를 바로 지운다. 올린 이�
 | TC-NEW-12 | `tests/posting-url.test.ts`, `tests/extract.test.ts` | http(s) 외 거부(등록, 추출) |
 | TC-NEW-13 | `tests/posting-url.test.ts` | gclid 등 추적 파라미터 무시 |
 | TC-AI-24 | `tests/security.test.ts` | `buildChildEnv`가 5개 변수 제거, 테스트용 env 유지 |
-| TC-LOCK-01~03 | `tests/browser-lock.test.ts` | 잠금 대기 제한, 로그인 창이 열린 채 공고 작업 처리 시 60초 뒤 실패하고 큐가 다음으로 진행 |
+| TC-LOCK-01~03 | `tests/browser-lock.test.ts` | 잠금 대기 제한, 브라우저 잠금이 잡힌 채 공고 작업 처리 시 60초 뒤 실패하고 큐가 다음으로 진행 |
 | TC-AI-27 | `tests/run-validated.test.ts` | 세션 ID 없으면 재시도 안 함 |
 | TC-IMP-V1~V3 | `tests/import-review.test.ts` | 가져오기 입력 zod 스키마, `validDate` |
 | TC-CO-F4 | `tests/repos.test.ts` | 없는 회사 거부, 지원 기록 회사 동기화 |

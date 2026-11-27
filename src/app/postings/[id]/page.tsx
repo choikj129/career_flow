@@ -190,7 +190,6 @@ async function PostingDetail({
         {tab === "analysis" && (
           <AnalysisTab
             postingId={postingId}
-            site={posting.site}
             url={posting.url}
             selectedId={rawA ? Number(rawA) : undefined}
             job={job}
@@ -218,7 +217,6 @@ async function PostingDetail({
 
 async function AnalysisTab({
   postingId,
-  site,
   url,
   selectedId,
   job,
@@ -226,7 +224,6 @@ async function AnalysisTab({
   jobFailed,
 }: {
   postingId: number;
-  site: string;
   url: string | null;
   selectedId: number | undefined;
   job: ReturnType<typeof latestJobFor>;
@@ -334,11 +331,6 @@ async function AnalysisTab({
           <h3>분석에 실패했습니다</h3>
           <p style={{ margin: 0 }}>{failure.message}</p>
           {failure.kind === "extract_failed" && <PasteGuide url={url} />}
-          {failure.kind === "extract_failed" && site !== "other" && (
-            <p className="small" style={{ margin: "8px 0 0" }}>
-              로그인이 필요한 사이트라면 <Link href="/settings">설정 → 사이트 로그인</Link>에서 한 번 로그인하면 다음부터 자동으로 읽습니다.
-            </p>
-          )}
           {failure.settingsLink && (
             <p className="small" style={{ margin: "8px 0 0" }}>
               <Link href="/settings">설정으로 이동</Link>
