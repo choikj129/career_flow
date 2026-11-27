@@ -99,6 +99,10 @@ test.describe('북마크 버튼', () => {
     await expect(page.getByText('받은 공고가 없습니다. 공고 페이지에서 북마크바의 [Career Flow로 보내기]를 누르세요.')).toBeVisible();
     await expect(page.getByRole('link', { name: '공고 등록으로' })).toHaveAttribute('href', '/postings/new');
     await expect(page.getByRole('link', { name: '설정에서 북마크 버튼 받기' })).toHaveAttribute('href', '/settings#bookmarklet');
+    // 깨진 내용은 "없음"이 아니라 읽지 못했다고 알린다
+    await page.goto('/postings/receive#cf=%7Bbroken');
+    await expect(page.getByText('받은 내용을 읽지 못했습니다')).toBeVisible();
+    await expect(page.getByRole('link', { name: '공고 등록으로' })).toBeVisible();
   });
 
   test('TC-BM-20 폭 1024·1240·1440에서 가로 넘침이 없다', async ({ page }) => {
@@ -125,6 +129,8 @@ test.describe('북마크 버튼', () => {
     await context.grantPermissions(['clipboard-read', 'clipboard-write']);
     const code = await readCode(page);
     const link = page.getByRole('link', { name: 'Career Flow로 보내기' });
+    // 설치 안내 번호가 보인다
+    expect(await page.locator('#bookmarklet ol').evaluate((el) => getComputedStyle(el).listStyleType)).toBe('decimal');
     await link.click();
     expect(new URL(page.url()).pathname).toBe('/settings');
     await toast(page, '북마크바로 끌어다 놓으세요');

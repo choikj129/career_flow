@@ -26,10 +26,13 @@ export function ReceiveBookmarklet({ hasResume, siteNotes }: { hasResume: boolea
     if (started.current) return; // 개발 모드에서 효과가 두 번 실행돼도 한 번만
     started.current = true;
     const raw = window.location.hash;
-    window.history.replaceState(null, "", "/postings/receive");
+    window.history.replaceState(window.history.state, "", "/postings/receive");
     const payload = parseBookmarkletHash(raw);
     if (!payload) {
-      queueMicrotask(() => setView({ kind: "empty" }));
+      // 북마크 버튼이 보낸 모양인데 읽지 못한 경우와, 아무것도 받지 않은 경우를 나눈다.
+      queueMicrotask(() =>
+        setView(raw.startsWith("#cf=") ? { kind: "error", message: "받은 값의 형식이 맞지 않습니다." } : { kind: "empty" }),
+      );
       return;
     }
     queueMicrotask(() => setView({ kind: "loading" }));

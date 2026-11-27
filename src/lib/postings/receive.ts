@@ -11,6 +11,13 @@ import { registerPosting, reanalyzePosting, setPostingText } from './repo';
 export type { ReceiveResult };
 
 const MAX_TITLE_LENGTH = 300;
+/** n자로 자르되 서로게이트 쌍을 가르지 않는다(자른 끝이 앞쪽 절반이면 한 글자 더 뺀다). */
+function safeSlice(s: string, n: number): string {
+  if (s.length <= n) return s;
+  const out = s.slice(0, n);
+  return /[\uD800-\uDBFF]$/.test(out) ? out.slice(0, -1) : out;
+}
+
 const CUT_NOTE = ' (본문이 길어 앞 5만 자만 저장했습니다)';
 
 /**
@@ -27,11 +34,11 @@ export function normalizeReceivedText(
     .replace(/[^\S\n]+$/gm, '')
     .replace(/\n{4,}/g, '\n\n\n')
     .trim();
-  const head = title.trim().slice(0, MAX_TITLE_LENGTH);
+  const head = safeSlice(title.trim(), MAX_TITLE_LENGTH);
   const whole = head ? `페이지 제목: ${head}\n\n${body}` : body;
   const tooLong = whole.length > MAX_POSTING_TEXT_LENGTH;
   return {
-    text: tooLong ? whole.slice(0, MAX_POSTING_TEXT_LENGTH) : whole,
+    text: tooLong ? safeSlice(whole, MAX_POSTING_TEXT_LENGTH) : whole,
     bodyLength: body.length,
     cut: cut || tooLong,
   };

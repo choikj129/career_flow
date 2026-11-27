@@ -50,7 +50,7 @@ export function BookmarkletCard({ code, createdAt }: { code: string; createdAt: 
         </a>
         <span className="muted small">북마크바로 끌어다 놓으세요</span>
       </p>
-      <ol className="small" style={{ margin: "12px 0 0", paddingLeft: 20 }}>
+      <ol className="small" style={{ margin: "12px 0 0", paddingLeft: 22, listStyle: "decimal" }}>
         <li>Chrome에서 Ctrl+Shift+B로 북마크바를 켭니다.</li>
         <li>위 버튼을 북마크바로 끌어다 놓습니다.</li>
         <li>공고 페이지에서 북마크바의 [Career Flow로 보내기]를 누릅니다.</li>

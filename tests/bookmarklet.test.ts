@@ -7,7 +7,7 @@ import {
 } from '@/lib/bookmarklet/token';
 import { buildBookmarkletCode } from '@/lib/bookmarklet/code';
 import { parseBookmarkletHash } from '@/lib/bookmarklet/payload';
-import { normalizeReceivedText } from '@/lib/postings/receive';
+import { normalizeReceivedText, receiveFromBookmarklet } from '@/lib/postings/receive';
 
 test('TC-BM-01 token: create once, regenerate, check', async () => {
   const db = makeTestDb();
@@ -88,4 +88,71 @@ test('TC-BM-04 normalizeReceivedText', () => {
   expect(
     normalizeReceivedText('가'.repeat(400), 'abc', false).text.startsWith('페이지 제목: ' + '가'.repeat(300) + '\n\n'),
   ).toBe(true);
+});
+
+// ───────── 북마크 버튼 코드를 가짜 화면(document·window)에서 실행해 본다 ─────────
+import { BOOKMARKLET_SOURCE } from '@/lib/bookmarklet/code';
+
+function runBookmarklet(page: { text: string; title: string; href: string }) {
+  const opened: string[] = [];
+  const alerts: string[] = [];
+  const body = { innerText: page.text, querySelectorAll: () => [] as unknown[] };
+  const doc = {
+    title: page.title,
+    body,
+    querySelector: () => null,
+    querySelectorAll: () => [] as unknown[],
+  };
+  const source = BOOKMARKLET_SOURCE.replace(/\n\s*/g, '')
+    .replace('__APP__', JSON.stringify('http://127.0.0.1:3939'))
+    .replace('__TOKEN__', JSON.stringify('tok'));
+  new Function('location', 'document', 'window', 'alert', 'setTimeout', source)(
+    { origin: 'https://jobs.example.com', href: page.href },
+    doc,
+    { open: (u: string) => opened.push(u) },
+    (m: string) => alerts.push(m),
+    (fn: () => void) => fn(),
+  );
+  const hash = opened[0]?.split('#cf=')[1];
+  return { alerts, payload: hash ? (JSON.parse(decodeURIComponent(hash)) as Record<string, unknown>) : null };
+}
+
+test('TC-BM-02b surrogate pairs are not split and lone surrogates do not break sending', () => {
+  // 50,000자 경계에 이모지(서로게이트 쌍)가 걸린다: 49,999자 + 😀(2자) + 나머지
+  const cutAtPair = 'a'.repeat(49_999) + '😀' + 'b'.repeat(10);
+  const r1 = runBookmarklet({ text: cutAtPair, title: '제목', href: 'https://jobs.example.com/1' });
+  expect(r1.alerts).toEqual([]);
+  expect(r1.payload!.c).toBe(true);
+  expect((r1.payload!.x as string).length).toBe(49_999);
+  expect(() => encodeURIComponent(r1.payload!.x as string)).not.toThrow();
+
+  // 짝 없는 서로게이트는 대체 문자로 바꾼다
+  const r2 = runBookmarklet({ text: '가'.repeat(400) + '\uD83D 끝\uDE00', title: '제\uD83D목', href: 'https://jobs.example.com/2' });
+  expect(r2.alerts).toEqual([]);
+  expect(r2.payload!.x).toContain('�');
+  expect(r2.payload!.t).toBe('제�목');
+});
+
+test('TC-BM-02c long title is cut to 300 and the server accepts long urls', async () => {
+  const longUrl = 'https://jobs.example.com/1?' + 'utm_x=' + 'a'.repeat(4000);
+  const r = runBookmarklet({ text: '가'.repeat(400), title: '긴'.repeat(2000), href: longUrl });
+  expect((r.payload!.t as string).length).toBe(300);
+  expect(r.payload!.u).toBe(longUrl);
+  const { receiveBookmarkletAction } = await import('@/app/_actions/bookmarklet');
+  // 긴 주소는 서버 검사를 통과해 등록된다(저장은 canonicalizeUrl 기준)
+  const db = makeTestDb();
+  const reg = receiveFromBookmarklet(
+    { token: getOrCreateBookmarkletToken(db).token, url: longUrl, title: r.payload!.t as string, text: '가'.repeat(400), cut: false },
+    db,
+  );
+  expect(reg.kind).toBe('registered');
+  const bad = await receiveBookmarkletAction({ token: 'x', url: 'https://a.com/' + 'a'.repeat(9000), title: 't', text: 'x', cut: false });
+  expect(bad.kind).toBe('error');
+  if (bad.kind === 'error') expect(bad.message).toContain('url');
+});
+
+test('TC-BM-04b server cut is surrogate safe', () => {
+  const n = normalizeReceivedText('', 'a'.repeat(49_999) + '😀' + 'b', false);
+  expect(n.cut).toBe(true);
+  expect(n.text.length).toBe(49_999);
 });

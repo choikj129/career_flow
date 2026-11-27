@@ -803,6 +803,7 @@ AI 작업이 끝나면 `data/ai-work/<번호>/`를 바로 지운다. 올린 이�
 |---|---|---|---|---|
 | TC-BM-01 | 확인 값 | 빈 설정 | `getOrCreateBookmarkletToken` 두 번 → 같은 32자 base64url. `regenerateBookmarkletToken` → 값·만든 시각 바뀜. `checkBookmarkletToken`: 맞음 true / 틀림·빈 값·길이 다름·문자열 아님·저장 없음 false | 단위 · `tests/bookmarklet.test.ts` |
 | TC-BM-02 | 코드 만들기 | 토큰·출처 `http://127.0.0.1:3939` | `javascript:`로 시작, 줄바꿈 없음, 6,000자 이하. 뒤를 `decodeURIComponent`한 원문이 `new Function`으로 문법 오류 없음, 토큰·출처가 JSON 문자열로 들어 있음 | 단위 · 〃 |
+| TC-BM-02b | 코드 실행(가짜 화면) | 50,000자 경계에 이모지 / 짝 없는 서로게이트 / 제목 2,000자 / 4,000자 꼬리 주소 | 서로게이트 쌍을 가르지 않고 짝 없는 것은 U+FFFD로 바꿔 보내기 성공, 제목 300자, 긴 주소 등록됨(상한 8,000자, 넘으면 오류 문구에 칸 이름), 서버 자르기도 쌍 보존(`TC-BM-04b`) | 단위 · `tests/bookmarklet.test.ts` |
 | TC-BM-03 | 조각 읽기 | `parseBookmarkletHash` | 올바른 `#cf=` → 값 그대로. 접두 없음·JSON 깨짐·`v: 2`·필드 빠짐·타입 틀림 → null | 단위 · 〃 |
 | TC-BM-04 | 본문 정리 | `normalizeReceivedText` | 빈 줄 5개 → 2개, 줄 끝 공백 제거, 맨 앞 "페이지 제목: …". 50,001자 → 50,000자·`cut` true. `bodyLength`는 제목 줄 빼고 셈 | 단위 · 〃 |
 | TC-BM-05 | 새 링크 등록 | 맞는 토큰, 원티드 주소, 본문 400자 | `registered`, 공고 1개, 본문 출처 `bookmarklet`, 사이트 원티드, 출처 이름 없음, 분석 작업 1개 | 통합 · `tests/bookmarklet-receive.test.ts` |
