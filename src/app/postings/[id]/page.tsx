@@ -36,6 +36,7 @@ import { EditPostingInfo } from "./EditPostingInfo";
 import { DeletePostingButton } from "./DeletePostingButton";
 import { NotesForm } from "./NotesForm";
 import { PasteForm } from "./PasteForm";
+import { FolderNotice } from "./FolderNotice";
 import { RecordActions } from "./RecordActions";
 import { RetryButton } from "./RetryButton";
 import { StatusChange } from "./StatusChange";
@@ -171,6 +172,7 @@ async function PostingDetail({
       </div>
 
       <DuplicateBanner prior={prior} />
+      <FolderNotice postingId={postingId} companyName={company?.displayName ?? "회사 이름"} />
 
       <div className="tabs" role="tablist">
         {TABS.map((t) => (
@@ -515,6 +517,7 @@ function RecordItem({
               site: app.site,
               siteNote: app.siteNote,
               appliedAt: app.appliedAt,
+              postingId: app.postingId ?? undefined,
             }}
             siteNotes={siteNotes}
           />

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { submittedFormDataAction, updateApplicationAction } from "@/app/_actions/applications";
 import type { SubmittedFormData } from "@/lib/applications/submitted-options";
 import { DocSelects, useSubmittedValues } from "./DocSelects";
+import { notifyFolderNotice } from "@/lib/applications/folder-notice";
 import { SITE_IDS, SITE_LABELS, type SiteId } from "@/lib/domain/types";
 import { Modal } from "./Modal";
 import { useAction } from "./useAction";
@@ -16,6 +17,8 @@ export type EditableRecord = {
   site: SiteId;
   siteNote: string | null;
   appliedAt: string;
+  /** 공고 화면에서 열 때만 넘긴다(저장 뒤 지원 폴더 안내용, D-34) */
+  postingId?: number;
 };
 
 /** 지원 기록 수정 창. 상태는 여기서 바꾸지 않는다. docs/spec/screens.md 3.10 */
@@ -67,7 +70,10 @@ export function ApplicationEditModal({
                 // 직접 바꾼 때만 보낸다(그대로면 지금 기록 값을 다시 검증하지 않는다)
                 submitted: submitted.touched ? (submitted.value ?? undefined) : undefined,
               }),
-            onClose,
+            () => {
+              onClose();
+              if (record.postingId != null && form && submitted.value) notifyFolderNotice(record.postingId, submitted.value.resume);
+            },
           );
         }}
       >
