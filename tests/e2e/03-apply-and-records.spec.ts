@@ -47,52 +47,6 @@ test.describe.serial('지원 완료부터 삭제까지(공고 하나의 일생)'
     await expect(page.getByRole('row', { name: /지원테스트/ })).toHaveCount(0);
   });
 
-  test('TC-DS-01 표에서 공고 있는 행을 펼쳐 상태를 바꾸면 목록과 공고 상세에 반영된다', async ({ page }) => {
-    await page.goto(`/?q=${encodeURIComponent('지원테스트')}`);
-    const row = page.locator('tbody tr.row-link').filter({ hasText: '지원테스트' });
-    await row.click();
-    await expect(row).toHaveAttribute('aria-expanded', 'true');
-    const panel = page.locator('.rec-panel').first();
-    await expect(panel.getByRole('link', { name: '공고 보기 →' })).toBeVisible();
-    await expect(panel.getByRole('button', { name: '기록 삭제' })).toHaveCount(0); // 삭제는 공고 상세에서
-    await panel.getByLabel('새 상태').selectOption('document_passed');
-    await panel.getByRole('button', { name: '저장', exact: true }).click();
-    await toast(page, '상태를 바꿨습니다');
-    await expect(row).toContainText('서류합격');
-    await page.goto(`/postings/${id}`);
-    await expect(page.locator('.p-state')).toContainText('서류합격');
-  });
-
-  test('TC-DS-02 상태별 보드: 공고 있는 카드도 창에서 상태를 바꾼다, [공고 보기 →]로 이동', async ({ page }) => {
-    await page.goto(`/?view=status&q=${encodeURIComponent('지원테스트')}`);
-    await page.locator('.kcard', { hasText: '지원테스트' }).click();
-    const dlg = page.getByRole('dialog');
-    await expect(dlg).toContainText('지원테스트');
-    await expect(dlg).not.toContainText('공고 없이 기록만 있는 지원입니다.');
-    await dlg.getByLabel('새 상태').selectOption('assignment');
-    await dlg.getByRole('button', { name: '저장', exact: true }).click();
-    await toast(page, '상태를 바꿨습니다');
-    await expect(page.locator('.col').nth(2).locator('.kcard', { hasText: '지원테스트' })).toHaveCount(1);
-    await page.locator('.kcard', { hasText: '지원테스트' }).click();
-    await page.getByRole('dialog').getByRole('link', { name: '공고 보기 →' }).click();
-    await expect(page).toHaveURL(new RegExp(`/postings/${id}$`));
-  });
-
-  test('TC-DS-03 공고 있는 행 패널: 1024·1240·1440 폭에서 keep-all, 가로 넘침 없음', async ({ page }) => {
-    for (const width of [1024, 1240, 1440]) {
-      await page.setViewportSize({ width, height: 900 });
-      await page.goto(`/?q=${encodeURIComponent('지원테스트')}`);
-      await page.locator('tbody tr.row-link').filter({ hasText: '지원테스트' }).click();
-      const panel = page.locator('.rec-panel').first();
-      await expect(panel).toBeVisible();
-      const css = await panel.evaluate((el) => ({
-        b: getComputedStyle(el).wordBreak,
-        fits: el.scrollWidth <= el.clientWidth + 1 && document.documentElement.scrollWidth <= window.innerWidth,
-      }));
-      expect(css).toEqual({ b: 'keep-all', fits: true });
-    }
-  });
-
   test('TC-DETAIL-02 상태 변경: 면접 차수 기본값 1, 타임라인에 한 줄 추가', async ({ page }) => {
     await page.goto(`/postings/${id}`);
     await page.getByRole('button', { name: '상태 변경' }).click();
@@ -307,4 +261,64 @@ test.describe.serial('상태 이력 수정·삭제(기록만 행)', () => {
       expect(box!.x + box!.width).toBeLessThanOrEqual(width);
     });
   }
+});
+
+test.describe.serial('대시보드에서 공고 있는 지원의 상태 변경', () => {
+  let id = 0;
+
+  test('TC-DS-00 준비: 공고를 등록하고 지원 완료로 저장', async ({ page }) => {
+    setFake('seeded', {});
+    id = await registerByPaste(page, body(['회사명: 상태변경랩', '포지션: 상태 서버', '적합도: 61']));
+    await waitAnalyzed(page);
+    await page.getByRole('button', { name: '지원 완료' }).click();
+    const dlg = page.getByRole('dialog', { name: '지원 완료로 기록' });
+    await dlg.getByRole('button', { name: '저장' }).click();
+    await toast(page, '지원 완료로 저장했습니다');
+  });
+
+  test('TC-DS-01 표에서 공고 있는 행을 펼쳐 상태를 바꾸면 목록과 공고 상세에 반영된다', async ({ page }) => {
+    await page.goto(`/?q=${encodeURIComponent('상태변경랩')}`);
+    const row = page.locator('tbody tr.row-link').filter({ hasText: '상태변경랩' });
+    await row.click();
+    await expect(row).toHaveAttribute('aria-expanded', 'true');
+    const panel = page.locator('.rec-panel').first();
+    await expect(panel.getByRole('link', { name: '공고 보기 →' })).toBeVisible();
+    await expect(panel.getByRole('button', { name: '기록 삭제' })).toHaveCount(0); // 삭제는 공고 상세에서
+    await panel.getByLabel('새 상태').selectOption('document_passed');
+    await panel.getByRole('button', { name: '저장', exact: true }).click();
+    await toast(page, '상태를 바꿨습니다');
+    await expect(row).toContainText('서류합격');
+    await page.goto(`/postings/${id}`);
+    await expect(page.locator('.p-state')).toContainText('서류합격');
+  });
+
+  test('TC-DS-02 상태별 보드: 공고 있는 카드도 창에서 상태를 바꾼다, [공고 보기 →]로 이동', async ({ page }) => {
+    await page.goto(`/?view=status&q=${encodeURIComponent('상태변경랩')}`);
+    await page.locator('.kcard', { hasText: '상태변경랩' }).click();
+    const dlg = page.getByRole('dialog');
+    await expect(dlg).toContainText('상태변경랩');
+    await expect(dlg).not.toContainText('공고 없이 기록만 있는 지원입니다.');
+    await dlg.getByLabel('새 상태').selectOption('assignment');
+    await dlg.getByRole('button', { name: '저장', exact: true }).click();
+    await toast(page, '상태를 바꿨습니다');
+    await expect(page.locator('.col').nth(2).locator('.kcard', { hasText: '상태변경랩' })).toHaveCount(1);
+    await page.locator('.kcard', { hasText: '상태변경랩' }).click();
+    await page.getByRole('dialog').getByRole('link', { name: '공고 보기 →' }).click();
+    await expect(page).toHaveURL(new RegExp(`/postings/${id}$`));
+  });
+
+  test('TC-DS-03 공고 있는 행 패널: 1024·1240·1440 폭에서 keep-all, 가로 넘침 없음', async ({ page }) => {
+    for (const width of [1024, 1240, 1440]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(`/?q=${encodeURIComponent('상태변경랩')}`);
+      await page.locator('tbody tr.row-link').filter({ hasText: '상태변경랩' }).click();
+      const panel = page.locator('.rec-panel').first();
+      await expect(panel).toBeVisible();
+      const css = await panel.evaluate((el) => ({
+        b: getComputedStyle(el).wordBreak,
+        fits: el.scrollWidth <= el.clientWidth + 1 && document.documentElement.scrollWidth <= window.innerWidth,
+      }));
+      expect(css).toEqual({ b: 'keep-all', fits: true });
+    }
+  });
 });
